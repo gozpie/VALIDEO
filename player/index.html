@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>VALIDEO Player – Sandbox</title>
+
+  <link rel="stylesheet" href="valideo-player.css">
+
+  <style>
+    body{
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(1200px 600px at top, #1b1f3a, #05060c);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .demo{
+      width: min(1100px, 94vw);
+    }
+
+    .demo h1{
+      color: #fff;
+      font-weight: 500;
+      margin: 0 0 14px;
+      opacity: .9;
+      letter-spacing: .4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="demo">
+    <h1>VALIDEO Player – Test</h1>
+    <div id="player"></div>
+  </div>
+
+  <script src="valideo-player.js"></script>
+
+  <script>
+    ValideoPlayer.mount('#player', {
+      src: 'demo.mp4',   // mets n'importe quelle vidéo ici
+      fps: 25
+    });
+  </script>
+
+</body>
+</html>

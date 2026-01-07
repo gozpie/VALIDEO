@@ -1,0 +1,255 @@
+/* =========================================================
+   VALIDEO PLAYER — CSS
+   - Commandes sous la vidéo
+   - Timeline épaisse
+   - Lecture en bleu
+   - Aucun arrondi
+   - Preview visible au survol
+   ========================================================= */
+/* ===============================
+   BASE PLAYER (COMMUN)
+================================ */
+
+.valideo-player{
+  width: 100%;
+  background: #000;
+}
+
+.vp{
+  width: 100%;
+  background: #000;
+}
+
+/* ===== ZONE VIDEO ===== */
+
+.vp__stage{
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.vp__video{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #000;
+  cursor: pointer;
+}
+
+/* ===== BARRE DE CONTROLES (SOUS LA VIDÉO) ===== */
+
+.vp__bar{
+  width: 100%;
+  padding: 10px 0 6px 0;
+  background: #0b0b0b;
+  color: #fff;
+  user-select: none;
+}
+
+/* ===== TIMELINE ===== */
+
+.vp__seek{
+  width: 100%;
+  padding: 8px 0;
+}
+
+.vp__seekbar{
+  position: relative;
+  width: 100%;
+  height: 20px;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.vp__seekbar::before{
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  transform: translateY(-50%);
+  height: 12px;
+  background: #2a2a2a;
+}
+
+/* partie lue */
+.vp__seekfill{
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 12px;
+  width: 0%;
+  background: #1e5bff;
+}
+
+/* curseur */
+.vp__seekknob{
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 22px;
+  background: #fff;
+  pointer-events: none;
+}
+
+/* ===== MARKERS ===== */
+
+.vp__markers{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vp__marker{
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 18px;
+  background: #143cff;
+}
+/* ===== PREVIEW AU SURVOL ===== */
+
+.vp__preview{
+  position: absolute;
+  width: 200px;
+  background: #000;
+  border: 1px solid #222;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.vp__previewCanvas{
+  width: 100%;
+  display: block;
+}
+
+.vp__previewTC{
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 6px;
+  text-align: center;
+  background: #000;
+  color: #fff;
+}
+
+/* ===== LIGNE DE CONTROLES ===== */
+
+.vp__row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 0 10px;
+}
+
+.vp__btn{
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.vp__btn:hover{
+  background: rgba(255,255,255,0.1);
+}
+
+.vp__svg{
+  width: 18px;
+  height: 18px;
+  fill: #fff;
+}
+
+.vp__svgPause{ display: none; }
+.vp__btn.isPause .vp__svgPlay{ display: none; }
+.vp__btn.isPause .vp__svgPause{ display: block; }
+
+.vp__svgMuted{ display: none; }
+.vp__btn.isMuted .vp__svgVol{ display: none; }
+.vp__btn.isMuted .vp__svgMuted{ display: block; }
+
+.vp__vol{ width: 90px; }
+
+.vp__time{
+  font-family: monospace;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.vp__spacer{ flex: 1; }
+
+/* =========================================================
+   PREVIEW DOCK (entre vidéo et timeline)
+   ========================================================= */
+
+/* conteneur de docking */
+.vp__previewDock{
+  position: relative;
+  width: 100%;
+  height: 160px;              /* réserve l’espace */
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* preview flottante */
+.vp__preview{
+  position: absolute;
+  top: 8px;
+  pointer-events: none;
+  background: #000;
+  border: 1px solid #222;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* canvas preview */
+.vp__previewCanvas{
+  z-index: 10;
+  display: block;
+  width: 200px;
+  height: auto;
+  background: #000;
+}
+
+/* timecode preview */
+.vp__previewTC{
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 6px;
+  text-align: center;
+  background: #000;
+  color: #fff;
+  border-top: 1px solid #222;
+}
+
+.page-visualization .vp__bar{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+}
+
+/* preview AU-DESSUS de la timeline */
+.page-visualization .vp__preview{
+  bottom: calc(100% + 8px);
+}
+
+.page-validation .vp__bar{
+  position: relative;
+  background: #0b0b0b;
+  padding: 10px 0 6px 0;
+}
+
+/* preview ENTRE vidéo et timeline */
+.page-validation .vp__preview{
+  bottom: auto;
+  top: -120px; /* juste sous la vidéo */
+}
