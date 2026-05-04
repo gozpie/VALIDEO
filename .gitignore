@@ -1,0 +1,18 @@
+# Fichier de configuration avec les credentials — NE JAMAIS versionner
+config.php
+.env
+
+# Dossier d'upload vidéos (fichiers lourds, propres à chaque serveur)
+uploads/
+
+# Logs
+*.log
+error_log
+
+# Fichiers système macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Cache éditeurs
+.vscode/settings.json
+*.swp
