@@ -246,11 +246,83 @@ un avertissement propose le conform.
 
 40 tests (22 purs, 18 sur fichiers réels). **Total : 333 tests verts.**
 
+### Étape 9 — Détection de capacités et stratégie de lecture (§59, §58, §60, §118)
+
+- **Classement de machine** en `LOW` / `MEDIUM` / `HIGH` / `WORKSTATION` à partir
+  des cœurs, de la mémoire, de WebGPU/WebGL 2 et de WebCodecs. Le classement est
+  volontairement **conservateur** : mieux vaut sous-estimer une machine que
+  saturer la mémoire d'un portable en pleine session.
+- **Budgets de cache** par profil (RAM, disque, GPU, workers de décodage,
+  décodage anticipé), **plafonnés au quota de stockage réellement disponible** :
+  promettre 50 Gio de cache sur un quota de 2 Gio ne produirait que des échecs
+  d'écriture.
+- Le classement **s'explique** : il retourne ses raisons et la liste des
+  limitations à signaler honnêtement à l'utilisateur.
+- **Stratégie de lecture conforme à §60** : `direct`, `proxy`, `transcode` ou
+  `unavailable`. Un ProRes n'est jamais « non pris en charge » — il demande un
+  proxy, et la réponse le dit. `unavailable` est réservé au média hors ligne.
+- Interrogation de l'environnement **défensive et injectable** : testable pour
+  des configurations qu'on n'a pas sous la main.
+
+22 tests.
+
+### Étape 10 — `@valideo/audio-engine` : pics et mesures (§19, §31)
+
+- **Pyramide de pics** : chaque niveau est construit depuis le **précédent**, pas
+  depuis les échantillons — le coût total reste linéaire. Chaque case retient
+  min, max **et RMS** : l'enveloppe donne la silhouette, le RMS donne le
+  remplissage, bien plus représentatif de la sonie perçue.
+- **Le zoom ne recalcule rien** (§19) : `readWaveform` choisit le niveau adapté
+  et ne lit que lui.
+- Stockage en entiers 16 bits : la pyramide complète pèse **3,1 %** de l'audio.
+  Une heure de mono à 48 kHz = 20,6 Mio, construite en ~0,8 s ; la lecture d'une
+  vue de 1600 colonnes reste sous la milliseconde quel que soit le zoom.
+- Vérifié : une **crête isolée d'une seule image** reste visible à tous les
+  niveaux de dézoom — c'est tout l'intérêt de stocker min/max plutôt qu'une
+  moyenne.
+- **Mesures** : crête, RMS, et un afficheur à montée instantanée et chute
+  progressive avec maintien de crête, comme un bargraphe professionnel.
+- La sonie LUFS est marquée **`PARTIEL`** dans le code : la pondération K et la
+  porte du calcul intégré ne sont pas implémentées, donc la valeur ne vaut pas
+  pour une validation broadcast. C'est écrit, pas dissimulé (§1003).
+
+16 tests.
+
+### Étape 11 — `@valideo/keyboard` : raccourcis et JKL (§33, §34)
+
+- **Travail sur la position physique des touches** (`KeyboardEvent.code`), pas
+  sur le caractère produit. Sur un clavier AZERTY, la touche à la position du Q
+  américain produit « a » : un montage se fait à la position des doigts.
+- Modificateur `Mod` abstrait — Cmd sur macOS, Ctrl ailleurs — donc **une seule**
+  table pour les deux plateformes.
+- **Catalogue de 60 actions** nommées, indépendantes des touches : c'est ce qui
+  permet plusieurs presets et un éditeur visuel sans dupliquer une ligne de
+  logique.
+- **Trois presets** : par défaut, style Avid, style Final Cut. Aucun asset ni
+  marque tierce — seules les **conventions ergonomiques** sont reprises, ce que
+  le cahier des charges autorise explicitement.
+- **Résolution contextuelle** : la même touche peut faire une chose dans la
+  timeline et une autre dans le moniteur ; le contexte précis l'emporte sur le
+  global.
+- **Détection de conflits et d'actions inconnues** — le validateur a d'ailleurs
+  attrapé une vraie erreur dans mon preset « style Final Cut », où deux actions
+  se disputaient Suppr.
+- La personnalisation **remplace** l'ancienne touche au lieu de s'y ajouter.
+- **JKL (§33)** en un seul entier signé : L incrémente, J décrémente, K remet à
+  zéro. Ce modèle produit tout le comportement attendu — L, LL, LLL montent les
+  paliers ; depuis 3×, J **ralentit** à 2× au lieu d'inverser brutalement ; en
+  continuant, on passe par l'arrêt puis on inverse. K maintenu transforme J et L
+  en ralenti.
+- **Son pendant le shuttle (§32)** : coupé au-delà d'un seuil configurable
+  plutôt que de produire un artefact.
+
+28 tests. **Total : 395 tests verts.**
+
 ## NEXT
 
-1. Détection de capacités navigateur (§59, §118).
-2. Pyramide de pics audio pour les formes d'onde (§19).
-3. Génération de proxies (§11) et cache (§53).
+1. Application web : coquille d'interface et rendu Canvas de la timeline.
+2. Génération de proxies (§11) et caches (§53).
+3. Moteur de lecture : horloge audio maître (§22).
 
 ## BLOCKED
 

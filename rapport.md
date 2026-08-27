@@ -232,3 +232,46 @@ Le cas de la cadence variable est traité comme l'exige la section 13 : le
 fichier de test déclare une cadence de 30 images par seconde au niveau du flux,
 alors que la mesure des horodatages révèle des durées d'image de 0,033 et de
 0,1 seconde. Le média est marqué comme variable et un conform est proposé.
+
+---
+
+## 2026-08-27 — Capacités machine, pics audio et raccourcis clavier
+
+### Objectif
+
+Étapes 9 à 11 : détecter ce dont la machine est capable, préparer l'affichage
+des formes d'onde, et poser le moteur de raccourcis.
+
+### Modifications
+
+**Détection de capacités** (dans `media-engine`) — classement de la machine en
+quatre profils, budgets de cache plafonnés au quota de stockage réellement
+disponible, et surtout une stratégie de lecture qui ne dit jamais « format non
+pris en charge » quand le serveur peut résoudre le problème, comme l'exige la
+section 60. Un ProRes n'est pas refusé : il demande un proxy.
+
+**`nle/packages/audio-engine`** — pyramide de pics audio pour les formes d'onde.
+Chaque niveau est construit depuis le précédent, donc le coût total reste
+linéaire, et un changement de zoom ne recalcule rien : il choisit simplement le
+niveau adapté. La pyramide complète pèse 3,1 % de l'audio d'origine.
+
+Les mesures de crête et de valeur efficace sont complètes. La sonie LUFS est
+explicitement marquée comme partielle dans le code : la pondération et la porte
+du calcul intégré ne sont pas implémentées, la valeur ne vaut donc pas pour une
+validation broadcast. C'est écrit plutôt que dissimulé.
+
+**`nle/packages/keyboard`** — moteur de raccourcis configurable avec trois
+presets, détection de conflits, résolution contextuelle et navigation JKL.
+
+Les raccourcis suivent la position physique des touches et non le caractère
+produit : sur un clavier AZERTY, un monteur retrouve ses raccourcis au même
+endroit sous ses doigts.
+
+### Vérification qui a servi
+
+Le détecteur de conflits a trouvé une vraie erreur dans mon propre preset
+« style Final Cut », où deux actions se disputaient la touche Suppr.
+
+### Vérifications
+
+395 tests verts au total.

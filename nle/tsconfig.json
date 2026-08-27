@@ -23,6 +23,12 @@
       "path": "./packages/media-engine"
     },
     {
+      "path": "./packages/audio-engine"
+    },
+    {
+      "path": "./packages/keyboard"
+    },
+    {
       "path": "./apps/media-worker"
     }
   ]

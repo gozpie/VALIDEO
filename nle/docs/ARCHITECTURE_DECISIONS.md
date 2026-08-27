@@ -311,3 +311,69 @@ au disque : il transforme une sortie ffprobe en `MediaAssetDoc`.
 sorties construites à la main, et d'intégration sur des fichiers réellement
 encodés. Quand FFmpeg manque, les seconds sont ignorés **avec un message
 explicite** — jamais silencieusement réussis (§1003).
+
+---
+
+## ADR-019 — Les raccourcis suivent la position physique des touches
+
+**Contexte.** Sur un clavier AZERTY, la touche à la position du `Q` américain
+produit « a ». Un raccourci défini sur le caractère se déplace donc sous les
+doigts selon la disposition.
+
+**Décision.** Le moteur travaille sur `KeyboardEvent.code` (position physique),
+jamais sur `key`.
+
+**Conséquences.** Un monteur retrouve ses raccourcis à la même place quelle que
+soit sa disposition clavier — c'est ce que font les NLE de métier. L'affichage,
+lui, reste localisé (`Maj`, `Échap`, `←`).
+
+---
+
+## ADR-020 — JKL tient dans un seul entier signé
+
+**Contexte.** Le comportement attendu de J/K/L est riche : paliers de vitesse,
+la touche opposée qui ralentit, passage par l'arrêt avant inversion, ralenti
+avec K maintenu. Une implémentation à coups de conditions devient vite fausse.
+
+**Décision.** Un entier `step` : 0 = arrêt, positif = avant au palier
+`ladder[step-1]`, négatif = arrière. L incrémente, J décrémente, K remet à zéro.
+
+**Conséquences.** Tout le comportement en découle sans cas particulier. Depuis
+3×, J donne 2× (ralentit), puis 1×, puis 0 (arrêt), puis −1× (inversion) — ce
+que fait un NLE professionnel, obtenu gratuitement.
+
+---
+
+## ADR-021 — Une pyramide de pics se construit niveau par niveau
+
+**Contexte.** §19 demande plusieurs niveaux de pics et interdit tout recalcul
+pendant le zoom. Construire chaque niveau depuis les échantillons d'origine
+coûterait *n* × nombre de niveaux.
+
+**Décision.** Seul le niveau le plus fin parcourt les échantillons ; chaque
+niveau suivant est construit depuis le précédent. Chaque case retient min, max
+et RMS, en entiers 16 bits.
+
+**Conséquences.** Construction linéaire. La pyramide complète pèse 3,1 % de
+l'audio (20,6 Mio pour une heure de mono à 48 kHz). Le zoom se contente de
+choisir un niveau.
+
+**Limite assumée.** Au zoom maximal de la timeline, un pixel couvre moins
+d'échantillons qu'une case du niveau le plus fin : la forme d'onde y devient
+légèrement escalierée. C'est là que le rendu devra lire l'audio conformé
+directement. Descendre la taille de case doublerait le coût mémoire pour un gain
+visible dans un seul cas de zoom.
+
+---
+
+## ADR-022 — La stratégie de lecture ne dit jamais « non pris en charge »
+
+**Contexte.** §60 l'interdit explicitement quand le serveur peut résoudre le
+problème.
+
+**Décision.** `decidePlayback` renvoie une **stratégie** — `direct`, `proxy`,
+`transcode` — et non un verdict. `unavailable` est réservé au seul cas où rien
+ne peut être fait : le média est hors ligne.
+
+**Conséquences.** Un ProRes n'est pas « non supporté » : il demande un proxy, et
+la réponse porte la raison en clair, prête à être affichée.

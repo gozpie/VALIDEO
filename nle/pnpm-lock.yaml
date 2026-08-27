@@ -49,7 +49,22 @@ importers:
         specifier: ^22.19.0
         version: 22.20.1
 
+  packages/audio-engine:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+
   packages/command-system:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/keyboard:
     dependencies:
       '@valideo/shared':
         specifier: workspace:*
