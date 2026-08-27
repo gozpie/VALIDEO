@@ -57,3 +57,47 @@ séparément est respecté.
 
 Ordre imposé par la section 1002 : types partagés → schéma de projet versionné
 → système de commandes (undo/redo) → modèle de timeline → moteur de requête.
+
+---
+
+## 2026-08-27 — Types partagés et schéma de projet versionné
+
+### Objectif
+
+Étapes 3 et 4 de l'ordre imposé par la section 1002 : la base de types
+transverses, puis le format de projet qui devra survivre aux migrations.
+
+### Modifications
+
+**`nle/packages/shared`** — identifiants typés (le compilateur refuse de
+confondre un identifiant de clip et un identifiant de piste), type `Result`, et
+la taxonomie d'erreurs de la section 106 (code, message utilisateur, action
+proposée, détail technique conservé).
+
+Règle d'architecture posée : une contrainte de montage violée est un résultat
+d'erreur normal, affichable ; une incohérence interne est une exception qui doit
+remonter bruyamment. Cela évite le `try/catch` fourre-tout qui masque les vrais
+bugs.
+
+**`nle/packages/project-model`** — schéma de projet v1 complet et validé
+(projet, bins, séquences, pistes, clips, transitions, effets, keyframes,
+marqueurs, médias avec flux vidéo/audio, colorimétrie, alpha, cadence variable,
+timecode embarqué, statuts hors ligne et proxy), mécanisme de migration
+v1 → v2 → v3, sérialisation déterministe, et les 8 presets de séquence de la
+section 68.
+
+Un projet enregistré par une version plus récente du logiciel est refusé
+explicitement plutôt que rétrogradé en perdant des données, comme l'exige la
+section 1003.
+
+### Écart assumé par rapport au cahier des charges
+
+La section 71 demande de stocker le point de sortie source d'un clip. Il n'est
+pas stocké mais **dérivé** de l'entrée source, de la durée et de la vitesse :
+stocker les deux serait redondant, et la première opération de trim qui
+oublierait d'en mettre un à jour rendrait le clip incohérent sans que rien ne le
+détecte. C'est un écart à la lettre, pas à l'intention (ADR-006).
+
+### Vérifications
+
+110 tests verts au total, typecheck strict et lint sans avertissement.

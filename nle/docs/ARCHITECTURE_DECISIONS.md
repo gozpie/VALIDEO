@@ -94,3 +94,53 @@ sûrs de JS). Les ticks servent **uniquement** aux frontières d'import/export
 **Conséquences.** À cadences identiques, l'image `n` donne exactement l'image
 `n` (testé sur 500 images en 25 et en 23.976). Pas de décalage d'une image aux
 raccords.
+
+---
+
+## ADR-006 — Le point de sortie source n'est pas stocké, il est dérivé
+
+**Contexte.** §71 liste `sourceIn` **et** `sourceOut` dans le modèle de clip.
+Or un clip porte aussi `duration` (sur la timeline) et `speed`. Les quatre
+valeurs sont liées : `sourceOut = sourceIn + duration × speed` (aux conversions
+de cadence près).
+
+**Décision.** On stocke `start`, `duration`, `sourceIn` et `speed`.
+`sourceOut` est **dérivé**, jamais stocké.
+
+**Conséquences.** Une redondance dans un modèle de données est une source de
+bugs : au premier *trim* ou changement de vitesse qui oublie de mettre à jour
+l'une des deux valeurs, le clip devient incohérent d'une manière que rien ne
+détecte. En dérivant, l'incohérence est structurellement impossible.
+
+C'est un écart assumé par rapport à la lettre de §71, pas à son intention.
+
+---
+
+## ADR-007 — Un refus de montage est un `Result`, un invariant cassé est une exception
+
+**Contexte.** Deux familles d'échec très différentes se ressemblent en JS.
+
+**Décision.**
+
+- Contrainte métier violée (piste verrouillée, média hors ligne, chevauchement
+  interdit) → `Err(AppError)`, avec code, message utilisateur, action proposée
+  et détail technique (§106). C'est une issue **normale**.
+- Incohérence interne (identifiant inconnu, invariant cassé) → **exception**
+  `InvariantError`. C'est un **bug**.
+
+**Conséquences.** Aucun `try/catch` fourre-tout n'avale les vrais bugs en même
+temps que les refus légitimes. L'interface sait quoi afficher sans deviner.
+
+---
+
+## ADR-008 — zod uniquement à la frontière
+
+**Contexte.** Le moteur doit être rapide ; la validation ne doit pas s'inviter
+dans les chemins chauds.
+
+**Décision.** zod est une dépendance de `project-model` **seulement**, et n'est
+appelé qu'au chargement et à l'enregistrement d'un document. `time-core`,
+`shared` et le futur `timeline-model` restent sans dépendance.
+
+**Conséquences.** Tout ce qui franchit la frontière est ensuite considéré comme
+structurellement sain : le moteur ne revalide pas à chaque image.

@@ -49,15 +49,51 @@ entière, image par image**, en 23.976, 24, 25, 29.97 NDF, 29.97 DF, 50 et
    29.97 ne vaut exactement une heure. Le résidu de 3,6 ms/heure du drop-frame
    est maintenant un test documenté (→ ADR-003).
 
+### Étape 3 — `@valideo/shared`
+
+- Identifiants **typés** (branded types) : le compilateur refuse de confondre un
+  `ClipId` et un `TrackId`, alors que ce sont deux chaînes à l'exécution.
+- `Result<T, E>` avec une règle d'architecture explicite : une contrainte de
+  montage violée est un `Err` (issue normale, affichable — §106), une incohérence
+  interne est une **exception** (bug, doit remonter bruyamment). Cette séparation
+  évite le `try/catch` fourre-tout qui avale les vrais bugs.
+- Taxonomie d'erreurs de §106 : code, message utilisateur, action proposée,
+  détail technique conservé, caractère réessayable.
+- `platform.ts` — les rares globales (`crypto`, `TextEncoder`) déclarées **une
+  seule fois** : les paquets du moteur ne dépendent ni du typage DOM ni de celui
+  de Node, pour tourner à l'identique dans un onglet, un Worker et sur serveur.
+
+8 tests.
+
+### Étape 4 — `@valideo/project-model` (§45, §68, §69, §71, §72)
+
+- **Schéma v1 complet** validé par zod : projet, bins, séquences, pistes, clips,
+  transitions, effets, keyframes, marqueurs, médias avec flux vidéo/audio,
+  espace colorimétrique, alpha, VFR, timecode embarqué, checksum, statuts
+  online/offline et proxy.
+- **Runner de migrations** v1 → v2 → v3. Un projet écrit par une version plus
+  récente est **refusé explicitement** plutôt que rétrogradé en perdant des
+  données (§1003). Le registre de production est vide — la v1 est la première
+  version publiée, il n'y a rien à migrer — mais le mécanisme est complet et
+  testé sur une chaîne à deux étapes, y compris les cas d'échec : étape
+  manquante, migration qui lève, migration qui oublie de mettre à jour
+  `schemaVersion`, document migré mais structurellement invalide.
+- **Sérialisation déterministe** : clés triées, donc deux enregistrements d'un
+  projet identique produisent des octets identiques. Les sommes de contrôle sont
+  fiables et l'autosave peut détecter qu'il n'y a rien à écrire (§44).
+- Fabriques et les 8 presets de séquence de §68 (ARRI, RED, Blackmagic, AVCHD,
+  DSLR, Digital Cinema, XDCAM, Broadcast).
+
+20 tests. **Total : 110 tests verts.**
+
 ## NEXT
 
 Dans l'ordre imposé par §1002 :
 
-1. `@valideo/shared` — types transverses, identifiants, résultats d'erreur.
-2. `@valideo/project-model` — schéma de projet v1 versionné + migrations.
-3. `@valideo/command-system` — command pattern, undo/redo transactionnel (§43, §70).
-4. `@valideo/timeline-model` — pistes, clips, insert/overwrite/lift/extract/
+1. `@valideo/command-system` — command pattern, undo/redo transactionnel (§43, §70).
+2. `@valideo/timeline-model` — pistes, clips, insert/overwrite/lift/extract/
    ripple/roll/slip/slide/razor (§14, §91, §92).
+3. `@valideo/timeline-engine` — interval tree, requêtes, rendu Canvas virtualisé.
 
 ## BLOCKED
 
