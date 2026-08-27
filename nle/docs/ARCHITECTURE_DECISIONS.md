@@ -144,3 +144,73 @@ appelé qu'au chargement et à l'enregistrement d'un document. `time-core`,
 
 **Conséquences.** Tout ce qui franchit la frontière est ensuite considéré comme
 structurellement sain : le moteur ne revalide pas à chaque image.
+
+---
+
+## ADR-009 — Une commande est une fonction pure, l'annulation reprend l'état précédent
+
+**Contexte.** Le command pattern classique demande d'écrire, pour chaque
+opération, sa fonction inverse. Pour un *ripple delete* qui touche plusieurs
+pistes, découpe des clips et décale le reste du montage, cette inverse est
+presque impossible à garder juste dans le temps.
+
+**Décision.** Une commande est une fonction **pure** `état → état`, et
+l'historique conserve les deux états. Annuler = reprendre l'état d'avant.
+
+**Conséquences.** Aucune logique inverse à écrire ni à maintenir : l'undo est
+correct par construction, y compris pour les opérations composées. Le coût
+mémoire reste faible grâce au partage de structure — une entrée ne duplique que
+le chemin réellement modifié, ce qui est vérifié par un test dédié (§57).
+
+---
+
+## ADR-010 — Tout geste continu porte une clé de fusion
+
+**Contexte.** Un glisser-déposer produit des dizaines de commandes par seconde.
+Sans traitement, l'historique devient inutilisable et « annuler » ne recule que
+d'une image.
+
+**Décision.** Chaque commande porte une `mergeKey` optionnelle. Deux commandes
+consécutives de même clé, rapprochées dans le temps, fusionnent en une seule
+entrée qui conserve l'état d'**avant le début du geste**.
+
+**Conséquences.** Un déplacement de 60 étapes = une entrée d'historique, et
+annuler ramène au point de départ du geste. Vérifié par test.
+
+---
+
+## ADR-011 — Toute opération de montage repasse par une vérification d'invariants
+
+**Contexte.** Les invariants d'une piste (clips triés, sans chevauchement, de
+durée ≥ 1) sont ce qui permet la recherche dichotomique, donc la fluidité sur
+10 000 clips (§55). Un chevauchement introduit silencieusement ne se manifeste
+que bien plus tard, au rendu ou à l'export, quand son origine est devenue
+introuvable.
+
+**Décision.** Chaque opération se termine par `finalize()`, qui revérifie les
+invariants de toute la séquence. Une opération qui les violerait est **refusée**
+et l'état d'origine est conservé.
+
+**Conséquences.** Coût O(n) par opération de montage — négligeable, ces
+opérations ne sont pas dans un chemin par image. En échange, un état incohérent
+est structurellement impossible. Un *fuzz* de 5 600 opérations aléatoires le
+confirme.
+
+---
+
+## ADR-012 — Un trim se borne aux poignées, une commande de durée se refuse
+
+**Contexte.** Deux cas qui semblent proches : l'utilisateur tire un bord à la
+souris, ou il saisit une durée précise.
+
+**Décision.**
+
+- **Geste interactif** (trim, roll, slip, slide) : borné à ce que la source rend
+  possible. On ne refuse pas un trim trop long, on s'arrête à la dernière image
+  disponible. C'est le comportement attendu d'un NLE.
+- **Commande de valeur** (rate stretch vers une durée donnée) : **refusée** si
+  elle écraserait un voisin. Raboter en silence une valeur explicitement
+  demandée serait un mensonge.
+
+**Conséquences.** L'outil interactif borne le geste avant d'appeler la commande ;
+la commande reste stricte.

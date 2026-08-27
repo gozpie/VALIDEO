@@ -101,3 +101,50 @@ détecte. C'est un écart à la lettre, pas à l'intention (ADR-006).
 ### Vérifications
 
 110 tests verts au total, typecheck strict et lint sans avertissement.
+
+---
+
+## 2026-08-27 — Système de commandes et modèle de timeline
+
+### Objectif
+
+Étapes 5 et 6 de la section 1002 : l'annulation transactionnelle, puis le cœur
+du logiciel — les opérations de montage professionnelles.
+
+### Modifications
+
+**`nle/packages/command-system`** — command pattern, transactions atomiques et
+historique undo/redo.
+
+Le choix structurant est qu'une commande est une fonction *pure* de l'état vers
+un nouvel état. L'annulation n'a donc besoin d'aucune fonction inverse écrite à
+la main : il suffit de reprendre l'état précédent. C'est ce qui rend
+l'annulation d'un ripple delete fiable, là où une inverse manuelle serait presque
+impossible à garder juste.
+
+Les gestes continus fusionnent : un glisser-déposer de 60 étapes ne produit
+qu'une seule entrée d'annulation, et annuler ramène au début du geste.
+
+**`nle/packages/timeline-model`** — toutes les opérations de montage exigées par
+les sections 14, 91, 92, 93 et 94 : overwrite, insert, lift, extract, razor,
+add edit, déplacement, trim simple, ripple trim, Q/W, roll, slip, slide,
+étirement temporel, liaison audio/vidéo.
+
+La correspondance entre le référentiel de la timeline et celui de la source est
+exacte : un rush 50p sur une timeline 25p consomme bien deux images source par
+image de timeline, et la vitesse se combine correctement par-dessus.
+
+Chaque opération se termine par une vérification des invariants de la timeline.
+Une opération qui produirait un chevauchement est refusée, jamais appliquée à
+moitié.
+
+### Vérifications
+
+246 tests verts au total, dont un test de robustesse qui enchaîne 5 600
+opérations de montage aléatoires sur plusieurs graines et vérifie après chacune
+qu'aucun chevauchement, aucune durée nulle et aucun ordre cassé n'apparaît.
+
+Un bug réel a été trouvé et corrigé grâce à ces tests : le ripple trim sur le
+point d'entrée décalait le clip vers la droite en laissant un trou, au lieu de le
+laisser en place et de faire remonter la suite, ce qui produisait un
+chevauchement.

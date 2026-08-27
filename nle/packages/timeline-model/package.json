@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/timeline-model",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Modele de timeline et operations de montage : insert, overwrite, lift, extract, trim, ripple, roll, slip, slide, razor.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@valideo/shared": "workspace:*",
+    "@valideo/time-core": "workspace:*",
+    "@valideo/project-model": "workspace:*",
+    "@valideo/command-system": "workspace:*"
+  }
+}

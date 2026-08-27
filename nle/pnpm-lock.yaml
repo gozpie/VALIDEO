@@ -30,6 +30,12 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)
 
+  packages/command-system:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/project-model:
     dependencies:
       '@valideo/shared':
@@ -45,6 +51,21 @@ importers:
   packages/shared: {}
 
   packages/time-core: {}
+
+  packages/timeline-model:
+    dependencies:
+      '@valideo/command-system':
+        specifier: workspace:*
+        version: link:../command-system
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
 
 packages:
 

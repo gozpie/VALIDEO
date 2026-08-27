@@ -86,14 +86,82 @@ entière, image par image**, en 23.976, 24, 25, 29.97 NDF, 29.97 DF, 50 et
 
 20 tests. **Total : 110 tests verts.**
 
+### Étape 5 — `@valideo/command-system` (§43, §70)
+
+- **Command pattern** où une commande est une fonction *pure* de l'état vers un
+  nouvel état. Conséquence : l'annulation n'a besoin d'aucune logique inverse
+  écrite à la main — il suffit de reprendre l'état précédent. C'est ce qui rend
+  l'undo fiable sur une opération composée comme le *ripple delete*, où une
+  inverse manuelle serait presque impossible à garder juste.
+- **Transactions atomiques** : si une étape échoue, l'ensemble échoue et l'état
+  d'origine ressort intact. Aucune modification partielle n'atteint le projet —
+  c'est littéralement la séquence de §70.
+- **Fusion des gestes continus** : 60 micro-déplacements d'un glisser-déposer ne
+  produisent qu'**une seule** entrée d'annulation, et annuler revient au début du
+  geste. Sans ça, l'historique est inutilisable.
+- Profondeur configurable, saut direct à une étape (panneau Historique),
+  suivi de l'état modifié pour l'autosave (§44), abonnements.
+- **Partage de structure** vérifié par test : une entrée d'historique ne duplique
+  pas les parties inchangées du projet (§57).
+
+24 tests.
+
+### Étape 6 — `@valideo/timeline-model` (§14, §80, §91, §92, §93, §94, §38)
+
+Le cœur du logiciel. Toutes les opérations sont pures, et **toutes repassent par
+une vérification d'invariants** avant d'être rendues : une opération qui
+produirait un chevauchement est refusée, jamais appliquée à moitié.
+
+Opérations implémentées et testées :
+
+| Opération | Comportement vérifié |
+|---|---|
+| Overwrite | efface ce qu'il recouvre, coupe un clip traversé en deux, n'allonge la séquence que s'il la dépasse |
+| Insert | ouvre un trou, coupe le clip traversé, décale les pistes en *sync lock*, épargne les pistes verrouillées |
+| Lift | retire et laisse le trou |
+| Extract | retire et referme ; **refuse** de refermer par-dessus du contenu encore présent sur une piste synchronisée |
+| Razor / Add Edit | coupe continue en source, identifiant neuf pour la seconde moitié, sans effet sur une coupe existante |
+| Déplacement | recouvre à l'arrivée, libère l'origine, refuse vidéo → piste audio |
+| Trim simple | raccourcit en laissant un trou, rallonge en recouvrant le voisin |
+| Ripple trim | sur le point d'entrée, le clip **garde sa place** et la suite remonte |
+| Q / W (§93) | *ripple trim* jusqu'à la tête de lecture |
+| Roll | déplace la coupe, durée totale constante, borné par les deux clips **et** par les poignées |
+| Slip | fait défiler la source sous le clip sans le bouger |
+| Slide | déplace le clip en ajustant ses deux voisins, portée totale constante |
+| Rate stretch | change la durée en conservant la portion de source utilisée |
+| Link / Unlink | groupes audio/vidéo (§80) |
+
+**Correspondance timeline ↔ source exacte.** Un clip vit dans deux référentiels :
+position et durée en images de la séquence, point d'entrée en images de la
+source. Les cadences peuvent différer et la vitesse s'ajoute par-dessus ; toute
+la conversion passe par `time-core` en rationnel exact. Testé : une image de
+timeline 25p consomme deux images d'une source 50p ; 24 images à 23.976 valent
+exactement 30 images à 29.97.
+
+**Butées de poignées.** Un trim ne s'arrête pas au hasard : il s'arrête à la
+dernière image réellement disponible dans la source. Quand la source est
+inconnue (média hors ligne), rien n'est contraint plutôt que d'inventer.
+
+**112 tests**, dont un **fuzz déterministe** : 5 600 opérations de montage
+aléatoires enchaînées sur 7 graines, en vérifiant après *chaque* opération
+qu'aucun chevauchement, aucune durée nulle, aucun ordre cassé n'apparaît — et
+qu'aucun refus ne passe par une exception. Une graine qui échouerait est
+rejouable à l'identique.
+
+Un bug réel attrapé et corrigé : le *ripple trim* sur le point d'entrée décalait
+le clip vers la droite en laissant un trou, au lieu de le laisser en place et de
+faire remonter la suite. Il produisait un chevauchement.
+
+**Total : 246 tests verts.**
+
 ## NEXT
 
 Dans l'ordre imposé par §1002 :
 
-1. `@valideo/command-system` — command pattern, undo/redo transactionnel (§43, §70).
-2. `@valideo/timeline-model` — pistes, clips, insert/overwrite/lift/extract/
-   ripple/roll/slip/slide/razor (§14, §91, §92).
-3. `@valideo/timeline-engine` — interval tree, requêtes, rendu Canvas virtualisé.
+1. `@valideo/timeline-engine` — index par intervalles, requêtes de rendu,
+   virtualisation (§17, §55).
+2. `MediaAsset` et import local, puis backend FFprobe (§8, §9).
+3. Détection de capacités navigateur (§59, §118).
 
 ## BLOCKED
 
