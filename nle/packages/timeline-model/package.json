@@ -6,8 +6,19 @@
   "description": "Modele de timeline et operations de montage : insert, overwrite, lift, extract, trim, ripple, roll, slip, slide, razor.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "scripts": { "build": "tsc -b" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures.d.ts",
+      "default": "./dist/fixtures.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
   "dependencies": {
     "@valideo/shared": "workspace:*",
     "@valideo/time-core": "workspace:*",

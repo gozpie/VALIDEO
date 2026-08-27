@@ -148,3 +148,42 @@ Un bug réel a été trouvé et corrigé grâce à ces tests : le ripple trim su
 point d'entrée décalait le clip vers la droite en laissant un trou, au lieu de le
 laisser en place et de faire remonter la suite, ce qui produisait un
 chevauchement.
+
+---
+
+## 2026-08-27 — Moteur de timeline : viewport, virtualisation et accrochage
+
+### Objectif
+
+Étape 7 de la section 1002. C'est le module qui décide de la fluidité exigée par
+la section 2.
+
+### Modifications
+
+**`nle/packages/timeline-engine`** — viewport et zoom autour du pointeur,
+niveaux de détail, graduations, modèle de rendu virtualisé, désignation au
+pointeur et accrochage magnétique.
+
+Ce module ne connaît ni React ni Canvas. Il transforme une séquence et un
+viewport en une simple liste d'éléments à dessiner. Il est donc testable sans
+navigateur, mesurable en isolation, et pourra tourner dans un worker.
+
+Deux choix ont un effet direct sur la fluidité : seuls les clips visibles
+produisent un élément, et les coordonnées sont bornées aux bords de la vue
+plutôt que de laisser des rectangles de plusieurs millions de pixels au moteur
+de dessin.
+
+### Vérifications
+
+293 tests verts au total. Les performances sont mesurées et non affirmées, sur
+une séquence de 10 000 clips répartis sur 100 pistes :
+
+- modèle de rendu d'une vue : 0,11 à 0,28 ms, alors qu'une image à 60 images par
+  seconde dispose de 16,6 ms ;
+- requête sur une piste de 100 000 clips : 0,001 ms, aussi rapide à la fin de la
+  piste qu'à son début ;
+- accrochage complet : 0,44 ms.
+
+Ces mesures ont révélé deux vraies faiblesses, corrigées : une recherche
+quadratique dans le modèle de rendu, et un parcours linéaire complet dans la
+collecte des points d'accrochage, qui coûtait plus du double.

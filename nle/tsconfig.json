@@ -15,6 +15,9 @@
     },
     {
       "path": "./packages/timeline-model"
+    },
+    {
+      "path": "./packages/timeline-engine"
     }
   ]
 }

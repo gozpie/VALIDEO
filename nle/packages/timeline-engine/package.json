@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/timeline-engine",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Viewport, zoom, niveaux de detail, index de requete et modele de rendu de la timeline.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@valideo/shared": "workspace:*",
+    "@valideo/time-core": "workspace:*",
+    "@valideo/project-model": "workspace:*",
+    "@valideo/timeline-model": "workspace:*"
+  }
+}

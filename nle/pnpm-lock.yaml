@@ -52,6 +52,21 @@ importers:
 
   packages/time-core: {}
 
+  packages/timeline-engine:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      '@valideo/timeline-model':
+        specifier: workspace:*
+        version: link:../timeline-model
+
   packages/timeline-model:
     dependencies:
       '@valideo/command-system':

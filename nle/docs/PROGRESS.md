@@ -154,14 +154,60 @@ faire remonter la suite. Il produisait un chevauchement.
 
 **Total : 246 tests verts.**
 
+### Étape 7 — `@valideo/timeline-engine` (§2, §17, §55, §77, §103)
+
+Le moteur qui décide de la fluidité. Il ne connaît **ni React ni Canvas** : il
+est purement calculatoire, donc testable et exécutable hors du thread
+d'interface.
+
+- **Viewport immuable** — correspondance temps ↔ pixels, zoom autour du
+  pointeur (l'image sous le curseur reste fixe, vérifié au 10⁻⁹ près), zoom
+  clavier, *fit*, défilement, `scrollIntoView`, bornage du défilement.
+  Une image occupe jusqu'à 64 px au zoom maximal ; au zoom minimal, **plus de
+  20 heures** tiennent dans 1000 px (§17).
+- **Niveaux de détail** — vignettes, formes d'onde, étiquettes et grille image
+  s'éteignent automatiquement quand elles deviendraient illisibles. Principe de
+  §55 : ce qui n'est pas lisible ne doit pas être calculé.
+- **Graduations** — échelle construite à partir de la cadence, donc les repères
+  tombent sur des secondes et des minutes rondes, jamais sur des valeurs
+  arbitraires.
+- **Modèle de rendu virtualisé** — produit une liste plate d'éléments visibles.
+  Les coordonnées sont **bornées au viewport** : dessiner un rectangle de
+  −2 000 000 px à +2 000 000 px est lent et imprécis, on le coupe aux bords en
+  signalant le débordement.
+- **Désignation au pointeur** — corps de clip, bord entrant, bord sortant, avec
+  une règle qui empêche les zones de trim de dévorer un clip étroit.
+  Sélection au rectangle.
+- **Accrochage magnétique** — seuil exprimé en **pixels**, donc utilisable à tous
+  les zooms. Un clip déplacé s'accroche par son début **ou** par sa fin, selon
+  le plus proche.
+
+**Performances mesurées, pas affirmées** (§103), sur une séquence de
+**10 000 clips répartis sur 100 pistes** :
+
+| Opération | Mesure |
+|---|---|
+| Modèle de rendu d'une vue | **0,11 – 0,28 ms** |
+| Zoom | < 0,001 ms |
+| Requête sur une piste de **100 000 clips** | **0,001 ms** |
+| Accrochage complet | 0,44 ms |
+
+Pour référence, une image à 60 FPS dispose de 16,6 ms. Les tests vérifient aussi
+qu'interroger la **fin** d'une piste de 100 000 clips ne coûte pas plus cher que
+son début — la signature d'une dichotomie, par opposition à un filtre linéaire.
+
+Deux optimisations réelles trouvées par ces mesures : une recherche quadratique
+piste-par-calque dans le modèle de rendu, et un parcours linéaire complet dans
+la collecte des points d'accrochage (1,03 ms → 0,44 ms).
+
+47 tests. **Total : 293 tests verts.**
+
 ## NEXT
 
-Dans l'ordre imposé par §1002 :
-
-1. `@valideo/timeline-engine` — index par intervalles, requêtes de rendu,
-   virtualisation (§17, §55).
-2. `MediaAsset` et import local, puis backend FFprobe (§8, §9).
-3. Détection de capacités navigateur (§59, §118).
+1. `MediaAsset` et import local, puis backend FFprobe sur de vraies fixtures
+   générées avec FFmpeg (§8, §9, §101).
+2. Détection de capacités navigateur (§59, §118).
+3. Pyramide de pics audio pour les formes d'onde (§19).
 
 ## BLOCKED
 

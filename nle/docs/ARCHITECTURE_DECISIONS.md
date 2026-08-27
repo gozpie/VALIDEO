@@ -214,3 +214,50 @@ souris, ou il saisit une durée précise.
 
 **Conséquences.** L'outil interactif borne le geste avant d'appeler la commande ;
 la commande reste stricte.
+
+---
+
+## ADR-013 — Les clips utilisent une dichotomie, pas un *interval tree*
+
+**Contexte.** §55 suggère un *interval tree* pour l'index spatial de la timeline.
+
+**Décision.** Les clips d'une piste sont **triés et sans chevauchement** — c'est
+un invariant garanti par `timeline-model`. Sur des intervalles disjoints triés,
+une recherche dichotomique est déjà optimale : O(log n + k). Un *interval tree*
+n'apporterait rien et coûterait une structure à maintenir à chaque montage.
+
+Un *interval tree* reste pertinent pour les ensembles réellement chevauchants
+(marqueurs à durée, transitions superposées) ; il sera introduit là, quand ces
+objets existeront, et pas avant.
+
+**Conséquences.** Mesuré : 0,001 ms pour interroger une piste de 100 000 clips,
+au début comme à la fin.
+
+---
+
+## ADR-014 — Le moteur de timeline ignore React et Canvas
+
+**Contexte.** §2 interdit une timeline faite de composants React re-rendus à
+chaque image.
+
+**Décision.** `timeline-engine` transforme (séquence, viewport) en une **liste
+plate** d'éléments à dessiner. Aucun import d'interface, aucun DOM.
+
+**Conséquences.** Le module est testable sans navigateur, mesurable en isolation,
+et peut tourner dans un Worker. Le rendu Canvas qui le consommera n'aura qu'à
+parcourir la liste ; changer de technologie d'affichage ne touchera pas à cette
+logique.
+
+---
+
+## ADR-015 — Les flottants sont autorisés dans le viewport, et nulle part ailleurs
+
+**Contexte.** ADR-002 interdit les flottants pour le temps.
+
+**Décision.** Le viewport manipule des pixels et une échelle en `number`
+flottant. C'est légitime : il s'agit de position à l'écran, pas de temps de
+montage. **Toute frontière vers le modèle repasse par des images entières**
+(`xToTime` tronque explicitement).
+
+**Conséquences.** Le zoom et le défilement restent lisses (pas de crantage), et
+aucune imprécision de sous-pixel ne peut contaminer une position de montage.
