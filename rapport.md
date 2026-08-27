@@ -187,3 +187,48 @@ une séquence de 10 000 clips répartis sur 100 pistes :
 Ces mesures ont révélé deux vraies faiblesses, corrigées : une recherche
 quadratique dans le modèle de rendu, et un parcours linéaire complet dans la
 collecte des points d'accrochage, qui coûtait plus du double.
+
+---
+
+## 2026-08-27 — Analyse média sur de vrais fichiers
+
+### Objectif
+
+Étape 8 de la section 1002 : lire réellement les caractéristiques techniques
+d'un média, comme l'exige la section 9.
+
+### Modifications
+
+**`nle/scripts/make-fixtures.sh`** — génère de vraies fixtures média avec
+FFmpeg : les cinq cadences imposées, un timecode drop-frame embarqué, un vrai
+fichier à cadence variable, du ProRes 422 HQ, du DNxHR, du ProRes 4444 avec
+couche alpha, de l'audio 5.1 en 24 bits et en 96 kHz, une séquence d'images, un
+fichier étiqueté HDR et un fichier tronqué.
+
+**`nle/packages/media-engine`** — analyse pure : formats de pixel, colorimétrie,
+détection de cadence variable, mise en modèle. Aucun processus lancé, donc
+testable sans FFmpeg.
+
+**`nle/apps/media-worker`** — le seul module qui exécute ffprobe.
+
+### Trois bugs réels, trouvés en confrontant le code à de vrais fichiers
+
+1. La cadence mesurée écrasait la cadence déclarée : 23.976 devenait
+   12250000/10427 au lieu de 24000/1001. La déclaration fait désormais foi, la
+   mesure ne sert qu'à détecter la variabilité.
+2. ffprobe liste les images dans l'ordre de décodage et non d'affichage. Avec
+   des images B, les horodatages sautent, ce qui faisait passer pour variable
+   la cadence de presque tous les fichiers H.264. Les horodatages sont
+   maintenant triés avant mesure.
+3. En JavaScript, `Number('')` vaut zéro : la ligne vide en fin de sortie
+   ffprobe devenait un horodatage fantôme et déclenchait une fausse détection de
+   cadence variable.
+
+### Vérifications
+
+333 tests verts au total, dont 18 qui analysent de vrais fichiers encodés.
+
+Le cas de la cadence variable est traité comme l'exige la section 13 : le
+fichier de test déclare une cadence de 30 images par seconde au niveau du flux,
+alors que la mesure des horodatages révèle des durées d'image de 0,033 et de
+0,1 seconde. Le média est marqué comme variable et un conform est proposé.

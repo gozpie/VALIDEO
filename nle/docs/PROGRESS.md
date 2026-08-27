@@ -202,12 +202,55 @@ la collecte des points d'accrochage (1,03 ms → 0,44 ms).
 
 47 tests. **Total : 293 tests verts.**
 
+### Étape 8 — Analyse média : `@valideo/media-engine` + `apps/media-worker` (§8, §9, §13, §29, §83, §101)
+
+**Ces tests analysent de vrais fichiers**, pas des sorties ffprobe enregistrées.
+`scripts/make-fixtures.sh` encode réellement, avec FFmpeg 6.1.1 :
+
+- les cinq cadences de §100 : 23.976, 25, 29.97 DF, 50, 59.94 ;
+- un timecode drop-frame et un timecode non drop-frame embarqués ;
+- un **vrai fichier à cadence variable** (deux segments 30p et 10p concaténés) ;
+- ProRes 422 HQ 10 bits, DNxHR HQ, **ProRes 4444 avec couche alpha** 12 bits ;
+- audio 48 kHz stéréo, **5.1 en 24 bits**, 96 kHz ;
+- une séquence d'images PNG ;
+- un fichier étiqueté **HDR PQ / BT.2020** ;
+- un fichier tronqué, pour vérifier le message d'erreur.
+
+Séparation nette : `media-engine` est **pur** (aucun processus, aucun disque),
+`apps/media-worker` est le seul module qui lance ffprobe.
+
+Ce qui est lu et vérifié : conteneur, codec, profil, niveau, définition, format
+de pixel, **profondeur réelle**, alpha et son mode, sous-échantillonnage,
+rapport d'aspect, ordre de trame, colorimétrie complète (primaires, transfert,
+matrice, plage) avec détection PQ/HLG, codec audio, fréquence
+d'échantillonnage, disposition des canaux, timecode embarqué, date de création,
+taille et date de modification.
+
+**Trois bugs réels, tous trouvés en confrontant le code à de vrais fichiers :**
+
+1. **La cadence mesurée écrasait la cadence déclarée.** Reconstruire 23.976
+   depuis des horodatages quantifiés donnait `12250000/10427` au lieu de
+   `24000/1001`. La déclaration fait foi ; la mesure ne sert qu'à *détecter* la
+   variabilité et à fournir une moyenne quand le média est réellement VFR.
+2. **ffprobe liste les images en ordre de décodage, pas de présentation.** Dès
+   qu'il y a des images B, la suite des horodatages saute (…0,40 puis 0,48, le
+   0,44 arrivant plus loin). Sans tri préalable, tout fichier avec images B
+   était déclaré à cadence variable.
+3. **`Number('')` vaut `0`.** La ligne vide en fin de sortie ffprobe devenait un
+   horodatage 0 fantôme, créant un doublon et une fausse détection de VFR.
+
+**Le cas VFR est traité comme l'exige §13** : le fichier de test déclare
+`r_frame_rate = 30/1` au niveau du flux ; la mesure des horodatages révèle des
+durées d'image de 0,033 s **et** 0,1 s. Le média est marqué à cadence variable et
+un avertissement propose le conform.
+
+40 tests (22 purs, 18 sur fichiers réels). **Total : 333 tests verts.**
+
 ## NEXT
 
-1. `MediaAsset` et import local, puis backend FFprobe sur de vraies fixtures
-   générées avec FFmpeg (§8, §9, §101).
-2. Détection de capacités navigateur (§59, §118).
-3. Pyramide de pics audio pour les formes d'onde (§19).
+1. Détection de capacités navigateur (§59, §118).
+2. Pyramide de pics audio pour les formes d'onde (§19).
+3. Génération de proxies (§11) et cache (§53).
 
 ## BLOCKED
 

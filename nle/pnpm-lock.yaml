@@ -30,11 +30,45 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)
 
+  apps/media-worker:
+    dependencies:
+      '@valideo/media-engine':
+        specifier: workspace:*
+        version: link:../../packages/media-engine
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../../packages/project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../../packages/time-core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.1
+
   packages/command-system:
     dependencies:
       '@valideo/shared':
         specifier: workspace:*
         version: link:../shared
+
+  packages/media-engine:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
 
   packages/project-model:
     dependencies:

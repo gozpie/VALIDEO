@@ -18,6 +18,12 @@
     },
     {
       "path": "./packages/timeline-engine"
+    },
+    {
+      "path": "./packages/media-engine"
+    },
+    {
+      "path": "./apps/media-worker"
     }
   ]
 }

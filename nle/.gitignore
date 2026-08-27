@@ -6,3 +6,6 @@ coverage/
 .vitest/
 tmp/
 fixtures/generated/
+
+# Fixtures média : régénérées par scripts/make-fixtures.sh, jamais versionnées
+fixtures/generated/

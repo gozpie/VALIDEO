@@ -261,3 +261,53 @@ montage. **Toute frontière vers le modèle repasse par des images entières**
 
 **Conséquences.** Le zoom et le défilement restent lisses (pas de crantage), et
 aucune imprécision de sous-pixel ne peut contaminer une position de montage.
+
+---
+
+## ADR-016 — La cadence déclarée fait foi ; la mesure sert à détecter la variabilité
+
+**Contexte.** §13 exige de ne pas supposer que l'image *n* est à l'instant
+*n*/cadence. Première tentative : reconstruire la cadence depuis les
+horodatages mesurés.
+
+**Décision.** La cadence **déclarée** par le conteneur est retenue quand le
+média est à cadence constante. La mesure des horodatages sert uniquement à
+**détecter** la variabilité, et à fournir une cadence moyenne quand le média est
+effectivement variable.
+
+**Pourquoi.** Les horodatages sont quantifiés sur la base de temps du
+conteneur. Reconstruire 23.976 depuis ces valeurs donne `12250000/10427` — une
+fraction absurde — alors que le conteneur déclare exactement `24000/1001`.
+Mesurer est indispensable pour *détecter*, désastreux pour *remplacer*.
+
+---
+
+## ADR-017 — Les horodatages sont triés avant toute mesure
+
+**Contexte.** Un démultiplexeur restitue les images dans l'ordre de **décodage**,
+pas d'affichage. Avec des images B, la suite saute : …0,40 ; 0,48 ; puis 0,44.
+
+**Décision.** `analyzeTimestamps` trie la liste avant de calculer les écarts.
+
+**Conséquences.** Le simple désordre n'est plus un signal — il est normal. En
+revanche, deux images portant le **même** horodatage restent signalées : ça,
+c'est réellement suspect.
+
+Sans ce tri, tout fichier encodé avec des images B — c'est-à-dire la quasi-
+totalité des H.264 — était déclaré à cadence variable.
+
+---
+
+## ADR-018 — L'analyse média est pure, l'exécution de processus est isolée
+
+**Contexte.** L'analyse doit être testable sans FFmpeg installé, tout en étant
+vérifiée sur de vrais fichiers.
+
+**Décision.** `@valideo/media-engine` ne lance aucun processus et ne touche pas
+au disque : il transforme une sortie ffprobe en `MediaAssetDoc`.
+`apps/media-worker` est le **seul** module qui exécute ffprobe.
+
+**Conséquences.** Deux niveaux de test complémentaires : unitaires purs sur des
+sorties construites à la main, et d'intégration sur des fichiers réellement
+encodés. Quand FFmpeg manque, les seconds sont ignorés **avec un message
+explicite** — jamais silencieusement réussis (§1003).
