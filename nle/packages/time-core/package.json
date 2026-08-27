@@ -1,0 +1,11 @@
+{
+  "name": "@valideo/time-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Temps rationnel frame-accurate : Rational, TimeBase, Timecode drop-frame et non drop-frame.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsc -b" }
+}
