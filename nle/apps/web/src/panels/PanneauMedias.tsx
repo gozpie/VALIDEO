@@ -5,7 +5,7 @@
  * determiner. Le codec, le profil, la colorimetrie et le timecode embarque
  * exigent ffprobe (§9) : ils sont marques « à analyser » plutot que devines.
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MediaAssetDoc } from '@valideo/project-model';
 import { isErr } from '@valideo/shared';
 import { overwriteCommand } from '@valideo/timeline-model';
@@ -18,6 +18,14 @@ export interface ProprietesMedias {
   readonly etat: EtatEditeur;
   readonly actions: ActionsEditeur;
   readonly timecode: (image: number) => string;
+  /**
+   * Reçoit de quoi ouvrir le sélecteur de fichiers depuis l'extérieur.
+   *
+   * Le raccourci d'import vit dans l'App, mais l'entrée fichier vit ici. Plutôt
+   * que d'aller chercher l'élément dans le document — ce qui casserait au
+   * premier changement de balisage —, le panneau REMET sa commande d'ouverture.
+   */
+  readonly surCommandeImport?: (ouvrir: () => void) => void;
 }
 
 function libelleFlux(asset: MediaAssetDoc): string {
@@ -38,10 +46,19 @@ function libelleFlux(asset: MediaAssetDoc): string {
   return morceaux.join(' · ');
 }
 
-export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): React.JSX.Element {
+export function PanneauMedias({
+  etat,
+  actions,
+  timecode,
+  surCommandeImport,
+}: ProprietesMedias): React.JSX.Element {
   const entreeRef = useRef<HTMLInputElement | null>(null);
   const [enCours, definirEnCours] = useState(false);
   const [avertissements, definirAvertissements] = useState<readonly string[]>([]);
+
+  useEffect(() => {
+    surCommandeImport?.(() => entreeRef.current?.click());
+  }, [surCommandeImport]);
 
   const importer = useCallback(
     async (fichiers: FileList | null) => {

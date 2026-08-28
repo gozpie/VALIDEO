@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { appError, isErr } from '@valideo/shared';
 import type { AppError } from '@valideo/shared';
 import { formatTimecode, parseTimecodeEntry, rational } from '@valideo/time-core';
-import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
+import { ACTIONS, DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
@@ -71,6 +71,7 @@ import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { DialogueVitesse } from './panels/DialogueVitesse.js';
 import { DialogueRenommage } from './panels/DialogueRenommage.js';
+import { DialogueRaccourcis } from './panels/DialogueRaccourcis.js';
 import type { ReglagesVitesse } from './panels/DialogueVitesse.js';
 import { clipDepuisMedia, pisteDAccueil, typeDeMedia } from './media/placement.js';
 import { usePersistance } from './persistance.js';
@@ -124,6 +125,14 @@ export function App(): React.JSX.Element {
   const [defilementVertical, definirDefilementVertical] = useState(0);
   const [shuttle] = useState(() => new ShuttleController());
   const [vitesse, definirVitesse] = useState(0);
+  /** Lecture en boucle sur la plage marquée, ou sur toute la séquence. */
+  const [boucle, definirBoucle] = useState(false);
+  /**
+   * Position à restaurer après une écoute autour du raccord. `null` hors
+   * écoute : c'est ce qui distingue « la lecture s'est arrêtée » de « on n'a
+   * jamais demandé d'écoute ».
+   */
+  const retourApresEcouteRef = useRef<number | null>(null);
   const [clipsMuets, definirClipsMuets] = useState<readonly string[]>([]);
 
   // Références lues par le transport : il vit hors du cycle de rendu React et
@@ -320,6 +329,14 @@ export function App(): React.JSX.Element {
 
   /** Menu contextuel ouvert, avec sa cible. `null` quand aucun n'est ouvert. */
   const [menu, setMenu] = useState<CibleMenu | null>(null);
+  /** Menu de la barre supérieure ouvert, avec sa position. */
+  const [menuBarre, setMenuBarre] = useState<{ nom: string; x: number; y: number } | null>(null);
+  const [raccourcisOuverts, setRaccourcisOuverts] = useState(false);
+  /** Ouvre le sélecteur de fichiers du panneau Médias. Fourni par ce panneau. */
+  const ouvrirImportRef = useRef<(() => void) | null>(null);
+  const enregistrerCommandeImport = useCallback((ouvrir: () => void) => {
+    ouvrirImportRef.current = ouvrir;
+  }, []);
   /** Élément en cours de renommage : clip ou piste. */
   const [renommage, setRenommage] = useState<
     { readonly type: 'clip' | 'piste'; readonly id: string; readonly nom: string } | null
@@ -652,6 +669,54 @@ export function App(): React.JSX.Element {
           shuttle.togglePlay();
           definirVitesse(shuttle.rate());
           return true;
+        case 'file.import':
+          ouvrirImportRef.current?.();
+          return true;
+        case 'track.toggleTargetV1':
+        case 'track.toggleTargetA1': {
+          const kind = actionId === 'track.toggleTargetV1' ? 'video' : 'audio';
+          const piste = etat.sequence.tracks.find((t) => t.kind === kind && t.index === 0);
+          if (piste === undefined) return true;
+          actions.executer(
+            setTrackFlagsCommand(piste.id, { targeted: !piste.targeted }, 'Cibler la piste'),
+          );
+          return true;
+        }
+        case 'timeline.toggleFullscreen':
+          if (document.fullscreenElement === null) void document.documentElement.requestFullscreen();
+          else void document.exitFullscreen();
+          return true;
+        case 'playback.loop':
+          definirBoucle((v) => !v);
+          return true;
+        case 'playback.playAroundEdit': {
+          // Convention NLE : on rejoue quelques secondes autour du raccord, puis
+          // on rend la tête là où elle était. Sans ce retour, chaque écoute
+          // déplacerait le point qu'on essaie justement de juger.
+          const cadence = Math.max(1, Math.round(base.rate.n / base.rate.d));
+          retourApresEcouteRef.current = etat.tete;
+          actions.definirTete(Math.max(0, etat.tete - cadence * 2));
+          shuttle.togglePlay();
+          definirVitesse(shuttle.rate());
+          return true;
+        }
+        // §1003 : ces actions ont une touche et un libellé, mais rien derrière.
+        // Se taire laisserait croire à une frappe perdue ; on dit ce qui manque.
+        case 'edit.nest':
+        case 'edit.group':
+        case 'tool.pen':
+        case 'tool.zoom':
+        case 'file.export':
+        case 'file.saveAs':
+        case 'file.commandPalette':
+        case 'timeline.maximizePanel':
+          actions.signalerErreur(
+            appError('EDIT_REJECTED', `« ${libelleAction(actionId)} » n’est pas implémenté.`, {
+              action: 'Cette commande fait partie du plan, pas encore du socle',
+              detail: actionId,
+            }),
+          );
+          return true;
         default:
           return false;
       }
@@ -662,6 +727,8 @@ export function App(): React.JSX.Element {
       duree,
       etat,
       persistance,
+      base.rate.d,
+      base.rate.n,
       pistesAffectees,
       pistesExtract,
       pistesNavigables,
@@ -914,6 +981,148 @@ export function App(): React.JSX.Element {
     ];
   }, [actions, etat, executerAction, menu]);
 
+
+  /**
+   * Menus de la barre supérieure.
+   *
+   * Ils étaient jusqu'ici de simples étiquettes inertes — exactement ce que
+   * §1003 interdit. Chaque entrée déclenche désormais l'action réelle, ou est
+   * grisée avec la raison. Les menus qui n'auraient rien à proposer
+   * (« Graphiques », « Fenêtre ») ont été retirés plutôt que laissés vides.
+   */
+  const MENUS_BARRE = useMemo<
+    readonly { readonly nom: string; readonly elements: readonly ElementMenu[] }[]
+  >(() => {
+    const acte = (id: string) => () => {
+      executerAction(id);
+    };
+    const rienACopier = etat.selection.size === 0;
+    const pressePapiersVide = pressePapiers.current === null;
+    const clipUnique = etat.selection.size === 1;
+    const clipCourant = clipUnique ? (findClip(etat.sequence, [...etat.selection][0] ?? '')?.clip ?? null) : null;
+
+    return [
+      {
+        nom: 'Fichier',
+        elements: [
+          { id: 'bm-importer', libelle: 'Importer des médias…', raccourci: 'Ctrl+I', onChoisir: acte('file.import') },
+          { separateur: true, id: 'bf1' },
+          { id: 'bm-enregistrer', libelle: 'Enregistrer', raccourci: 'Ctrl+S', onChoisir: acte('file.save') },
+          {
+            id: 'bm-exporter',
+            libelle: 'Exporter…',
+            desactivee: true,
+            raison: 'L’export n’est pas implémenté : il demande un encodeur, qui n’existe pas encore dans ce socle.',
+          },
+        ],
+      },
+      {
+        nom: 'Édition',
+        elements: [
+          {
+            id: 'bm-annuler',
+            libelle: 'Annuler',
+            raccourci: 'Ctrl+Z',
+            desactivee: !etat.historique.canUndo,
+            raison: 'Rien à annuler.',
+            onChoisir: acte('edit.undo'),
+          },
+          {
+            id: 'bm-retablir',
+            libelle: 'Rétablir',
+            raccourci: 'Ctrl+Maj+Z',
+            desactivee: !etat.historique.canRedo,
+            raison: 'Rien à rétablir.',
+            onChoisir: acte('edit.redo'),
+          },
+          { separateur: true, id: 'be1' },
+          { id: 'bm-couper', libelle: 'Couper', raccourci: 'Ctrl+X', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.cut') },
+          { id: 'bm-copier', libelle: 'Copier', raccourci: 'Ctrl+C', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.copy') },
+          { id: 'bm-coller', libelle: 'Coller', raccourci: 'Ctrl+V', desactivee: pressePapiersVide, raison: 'Le presse-papiers est vide.', onChoisir: acte('edit.paste') },
+          { id: 'bm-coller-inserer', libelle: 'Coller par insertion', raccourci: 'Ctrl+Maj+V', desactivee: pressePapiersVide, raison: 'Le presse-papiers est vide.', onChoisir: acte('edit.pasteInsert') },
+          { separateur: true, id: 'be2' },
+          { id: 'bm-tout', libelle: 'Tout sélectionner', raccourci: 'Ctrl+A', onChoisir: acte('edit.selectAll') },
+          { id: 'bm-effacer', libelle: 'Effacer', raccourci: 'Suppr', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.delete') },
+          { id: 'bm-effacer-ripple', libelle: 'Supprimer et raccorder', raccourci: 'Maj+Suppr', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.rippleDelete') },
+        ],
+      },
+      {
+        nom: 'Clip',
+        elements: [
+          { id: 'bm-vitesse', libelle: 'Vitesse et durée…', raccourci: 'Ctrl+R', desactivee: !clipUnique, raison: 'Sélectionnez un seul clip.', onChoisir: acte('edit.speedDuration') },
+          { id: 'bm-raccord', libelle: 'Ajouter un raccord', raccourci: 'Ctrl+K', onChoisir: acte('edit.addEdit') },
+          { id: 'bm-lier', libelle: 'Lier / Délier', raccourci: 'Ctrl+Maj+L', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.linkToggle') },
+          {
+            id: 'bm-actif',
+            libelle: 'Activer le clip',
+            cochee: clipCourant?.enabled === true,
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: () =>
+              actions.executer(setClipEnabledCommand([...etat.selection], clipCourant?.enabled !== true)),
+          },
+          {
+            id: 'bm-renommer',
+            libelle: 'Renommer…',
+            desactivee: clipCourant === null,
+            raison: 'Sélectionnez un seul clip.',
+            onChoisir: () => {
+              if (clipCourant !== null) {
+                setRenommage({ type: 'clip', id: clipCourant.id, nom: clipCourant.name });
+              }
+            },
+          },
+        ],
+      },
+      {
+        nom: 'Séquence',
+        elements: [
+          { id: 'bm-piste-video', libelle: 'Ajouter une piste vidéo', onChoisir: () => actions.executer(addTrackCommand('video')) },
+          { id: 'bm-piste-audio', libelle: 'Ajouter une piste audio', onChoisir: () => actions.executer(addTrackCommand('audio')) },
+          { separateur: true, id: 'bs1' },
+          { id: 'bm-entree', libelle: 'Marquer l’entrée', raccourci: 'I', onChoisir: acte('marks.markIn') },
+          { id: 'bm-sortie', libelle: 'Marquer la sortie', raccourci: 'O', onChoisir: acte('marks.markOut') },
+          {
+            id: 'bm-lift',
+            libelle: 'Lift',
+            raccourci: ';',
+            desactivee: workAreaRange(etat.sequence) === null,
+            raison: 'Aucune plage marquée.',
+            onChoisir: acte('edit.lift'),
+          },
+          {
+            id: 'bm-extract',
+            libelle: 'Extract',
+            raccourci: '’',
+            desactivee: workAreaRange(etat.sequence) === null,
+            raison: 'Aucune plage marquée.',
+            onChoisir: acte('edit.extract'),
+          },
+          { separateur: true, id: 'bs2' },
+          { id: 'bm-ajuster', libelle: 'Ajuster la séquence', onChoisir: acte('timeline.zoomToFit') },
+        ],
+      },
+      {
+        nom: 'Marqueur',
+        elements: [
+          { id: 'bm-marqueur', libelle: 'Ajouter un marqueur', raccourci: 'M', onChoisir: acte('marks.addMarker') },
+          { id: 'bm-marqueur-suivant', libelle: 'Marqueur suivant', raccourci: 'Maj+M', onChoisir: acte('nav.nextMarker') },
+          { id: 'bm-marqueur-precedent', libelle: 'Marqueur précédent', raccourci: 'Ctrl+Maj+M', onChoisir: acte('nav.previousMarker') },
+        ],
+      },
+      {
+        nom: 'Aide',
+        elements: [
+          {
+            id: 'bm-raccourcis',
+            libelle: 'Raccourcis clavier…',
+            onChoisir: () => setRaccourcisOuverts(true),
+          },
+        ],
+      },
+    ];
+  }, [actions, etat, executerAction]);
+
   useEffect(() => {
     const surTouche = (e: KeyboardEvent): void => {
       const cible = e.target;
@@ -961,12 +1170,46 @@ export function App(): React.JSX.Element {
 
     let id = 0;
 
+    // Bornes de la lecture. Trois cas, dans cet ordre de priorité :
+    //   1. écoute autour du raccord : on s'arrête après le point visé ;
+    //   2. lecture en boucle sur la plage marquée, si elle existe ;
+    //   3. sinon, toute la séquence.
+    const cadence = Math.max(1, Math.round(base.rate.n / base.rate.d));
+    const retour = retourApresEcouteRef.current;
+    const plage = workAreaRange(etat.sequence);
+    const debutLecture = retour !== null ? etat.tete : (boucle && plage !== null ? plage.start : 0);
+    const finLecture =
+      retour !== null
+        ? Math.min(duree, retour + cadence * 2)
+        : boucle && plage !== null
+          ? plage.end
+          : duree;
+
     if (vitesse === 1) {
       void transport.demarrer(etat.sequence, etat.tete, duree).then(() => {
         definirClipsMuets(transport.etat().ignores.map((i) => `${i.raison}`));
       });
       const suivre = (): void => {
-        actions.definirTete(Math.min(duree, Math.round(transport.position())));
+        const position = Math.round(transport.position());
+        if (position >= finLecture) {
+          if (retour !== null) {
+            // Fin de l'écoute : la tête revient EXACTEMENT là où elle était.
+            transport.arreter();
+            retourApresEcouteRef.current = null;
+            actions.definirTete(retour);
+            shuttle.stop();
+            definirVitesse(0);
+            return;
+          }
+          if (boucle) {
+            transport.arreter();
+            actions.definirTete(debutLecture);
+            void transport.demarrer(etat.sequence, debutLecture, duree);
+            id = requestAnimationFrame(suivre);
+            return;
+          }
+        }
+        actions.definirTete(Math.min(duree, position));
         id = requestAnimationFrame(suivre);
       };
       id = requestAnimationFrame(suivre);
@@ -984,6 +1227,14 @@ export function App(): React.JSX.Element {
       brut += vitesse * dt * (base.rate.n / base.rate.d);
       const image = Math.max(0, Math.min(duree, Math.round(brut)));
       actions.definirTete(image);
+      // Le va-et-vient rapide reboucle aussi sur la plage marquée : sans cela,
+      // activer la boucle puis accélérer la ferait silencieusement disparaître.
+      if (boucle && plage !== null && vitesse > 0 && image >= finLecture) {
+        brut = debutLecture;
+        actions.definirTete(debutLecture);
+        id = requestAnimationFrame(pas);
+        return;
+      }
       if (image >= duree || image <= 0) {
         shuttle.stop();
         definirVitesse(0);
@@ -1031,19 +1282,23 @@ export function App(): React.JSX.Element {
     <div className="app">
       <header className="barre-menu">
         <span className="marque">VALIDEO</span>
-        {[
-          'Fichier',
-          'Édition',
-          'Clip',
-          'Séquence',
-          'Marqueur',
-          'Graphiques',
-          'Fenêtre',
-          'Aide',
-        ].map((m) => (
-          <span className="menu" key={m}>
-            {m}
-          </span>
+        {MENUS_BARRE.map((m) => (
+          <button
+            type="button"
+            className={`menu ${menuBarre?.nom === m.nom ? 'ouvert' : ''}`}
+            key={m.nom}
+            data-test={`barre-${m.nom.toLowerCase()}`}
+            aria-haspopup="menu"
+            aria-expanded={menuBarre?.nom === m.nom}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setMenuBarre((c) =>
+                c?.nom === m.nom ? null : { nom: m.nom, x: r.left, y: r.bottom },
+              );
+            }}
+          >
+            {m.nom}
+          </button>
         ))}
         <span className="espace" />
         <span className="etiquette-etat partiel">Socle · montage fonctionnel</span>
@@ -1089,7 +1344,12 @@ export function App(): React.JSX.Element {
             <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
           </div>
           <div className="panneau-corps">
-            <PanneauMedias etat={etat} actions={actions} timecode={timecode} />
+            <PanneauMedias
+              etat={etat}
+              actions={actions}
+              timecode={timecode}
+              surCommandeImport={enregistrerCommandeImport}
+            />
             <div className="panneau-entete" style={{ marginTop: 8 }}>
               <span className="titre">Clips de la séquence</span>
             </div>
@@ -1184,7 +1444,22 @@ export function App(): React.JSX.Element {
             >
               {vitesse !== 0 ? '⏸' : '▶'}
             </button>
+            <button
+              type="button"
+              className={boucle ? 'actif' : ''}
+              onClick={() => executerAction('playback.loop')}
+              title="Lecture en boucle sur la plage marquée (Ctrl+L)"
+              aria-pressed={boucle}
+              data-test="boucle"
+            >
+              ⟳
+            </button>
             <span className="espace" style={{ flex: 1 }} />
+            {boucle && (
+              <span className="mono" data-test="etat-boucle">
+                {workAreaRange(etat.sequence) === null ? 'boucle · séquence' : 'boucle · plage'}
+              </span>
+            )}
             {vitesse !== 0 && (
               <span className="mono" data-test="etat-lecture">
                 {vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}
@@ -1246,6 +1521,18 @@ export function App(): React.JSX.Element {
         </span>
       </footer>
 
+      {menuBarre !== null && (
+        <MenuContextuel
+          position={{ x: menuBarre.x, y: menuBarre.y }}
+          elements={MENUS_BARRE.find((m) => m.nom === menuBarre.nom)?.elements ?? []}
+          onFermer={() => setMenuBarre(null)}
+        />
+      )}
+
+      {raccourcisOuverts && (
+        <DialogueRaccourcis clavier={DEFAULT_KEYMAP} onFermer={() => setRaccourcisOuverts(false)} />
+      )}
+
       {menu !== null && (
         <MenuContextuel
           position={{ x: menu.x, y: menu.y }}
@@ -1288,4 +1575,9 @@ export function App(): React.JSX.Element {
       )}
     </div>
   );
+}
+
+/** Libellé lisible d'une action, pour les messages d'indisponibilité. */
+function libelleAction(id: string): string {
+  return ACTIONS.find((a) => a.id === id)?.label ?? id;
 }

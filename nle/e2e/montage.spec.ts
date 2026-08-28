@@ -1081,3 +1081,68 @@ test('renommer une piste depuis son menu contextuel', async ({ page }) => {
   await expect(historique(page)).toContainText(['Renommer la piste']);
   await expect(page.locator('.entete-piste').nth(2)).toContainText('Image principale');
 });
+
+test('la barre de menus déclenche de vraies actions (§1003)', async ({ page }) => {
+  await page.getByTestId('barre-édition').click();
+  const menu = page.locator('.menu-contextuel');
+  await expect(menu).toBeVisible();
+  // Rien n'a encore été fait : Annuler est grisé, avec sa raison.
+  await expect(page.getByTestId('menu-bm-annuler')).toBeDisabled();
+  await expect(page.getByTestId('menu-bm-annuler')).toHaveAttribute('title', 'Rien à annuler.');
+
+  await page.getByTestId('menu-bm-tout').click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('.barre-etat')).toContainText('17 sélectionnés');
+});
+
+test('l’export annonce qu’il n’existe pas au lieu de ne rien faire (§1003)', async ({ page }) => {
+  await page.getByTestId('barre-fichier').click();
+  await expect(page.getByTestId('menu-bm-exporter')).toBeDisabled();
+  await expect(page.getByTestId('menu-bm-exporter')).toHaveAttribute(
+    'title',
+    /n’est pas implémenté/,
+  );
+  await page.keyboard.press('Escape');
+
+  // Et au clavier, la touche le dit plutôt que de sembler perdue.
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Control+m');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('n’est pas implémenté');
+});
+
+test('la table des raccourcis est engendrée depuis le clavier en vigueur (§34)', async ({
+  page,
+}) => {
+  await page.getByTestId('barre-aide').click();
+  await page.getByTestId('menu-bm-raccourcis').click();
+  const table = page.getByTestId('table-raccourcis');
+  await expect(table).toBeVisible();
+  await expect(table).toContainText('Lecture / Pause');
+
+  await page.getByTestId('filtre-raccourcis').fill('lame');
+  await expect(table.locator('tr')).toHaveCount(1);
+  await expect(table).toContainText('C');
+
+  await page.keyboard.press('Escape');
+  await expect(table).toHaveCount(0);
+});
+
+test('la lecture en boucle reprend à l’entrée marquée (§22)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('KeyI');
+  for (let i = 0; i < 12; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('KeyO');
+
+  await page.getByTestId('boucle').click();
+  await expect(page.getByTestId('etat-boucle')).toHaveText('boucle · plage');
+  await expect(page.getByTestId('boucle')).toHaveAttribute('aria-pressed', 'true');
+
+  // La tête revient dans la plage plutôt que de la dépasser.
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(1200);
+  await page.keyboard.press('Space');
+  const tc = await page.locator('.barre-etat .mono').first().innerText();
+  const images = Number.parseInt(tc.split(':')[3] ?? '99', 10);
+  expect(images).toBeLessThanOrEqual(13);
+});

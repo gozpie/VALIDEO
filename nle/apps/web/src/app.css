@@ -396,3 +396,18 @@
   border-radius: 5px;
   box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
 }
+
+.table-raccourcis { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.table-raccourcis td { padding: 3px 6px; border-bottom: 1px solid var(--bord); }
+.table-raccourcis .categorie { color: var(--texte-doux); width: 7em; }
+.table-raccourcis .touches { text-align: right; color: var(--texte-fort); white-space: nowrap; }
+
+.barre-menu .menu {
+  padding: 2px 8px;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--texte);
+  font-size: var(--t-sm);
+}
+.barre-menu .menu:hover, .barre-menu .menu.ouvert { background: var(--accent-doux); color: var(--texte-fort); }
