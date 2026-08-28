@@ -29,6 +29,7 @@ import {
   overwriteCommand,
   pasteCommand,
   previousMarker,
+  replaceClipCommand,
   rippleTrimToPlayheadCommand,
   unlinkCommand,
   liftCommand,
@@ -50,6 +51,7 @@ import {
 } from '@valideo/timeline-engine';
 import type { Viewport } from '@valideo/timeline-engine';
 import { Timeline } from './timeline/Timeline.js';
+import type { DeposeMedia } from './timeline/Timeline.js';
 import { timebaseDeSequence } from './timeline/draw.js';
 import { useEditeur } from './store.js';
 import type { Outil } from './store.js';
@@ -231,6 +233,70 @@ export function App(): React.JSX.Element {
     const ciblees = etat.sequence.tracks.filter((t) => t.targeted).map((t) => t.id);
     return ciblees.length > 0 ? ciblees : etat.sequence.tracks.map((t) => t.id);
   }, [etat.sequence.tracks]);
+
+  /**
+   * Dépose d'un média sur la timeline.
+   *
+   * Trois gestes, trois opérations réelles : dépose simple = overwrite,
+   * Ctrl = insert, Alt sur un clip = remplacement. Elles passent toutes par le
+   * même calcul de durée que le bouton « Poser » et les raccourcis — un seul
+   * endroit, `placement.ts`, pour qu'aucune des trois ne dérive d'une image.
+   */
+  const surDeposeMedia = useCallback(
+    (depose: DeposeMedia) => {
+      const asset = etat.document.media.find((m) => m.id === depose.mediaId);
+      if (asset === undefined || depose.trackId === null) return;
+      if (asset.status !== 'online') {
+        actions.signalerErreur(
+          appError('MEDIA_OFFLINE', `« ${asset.name} » est hors ligne.`, {
+            action: 'Reliez-le à un fichier avant de le monter',
+          }),
+        );
+        return;
+      }
+      const piste = etat.sequence.tracks.find((t) => t.id === depose.trackId);
+      if (piste === undefined) return;
+      if (piste.locked) {
+        actions.signalerErreur(
+          appError('TRACK_LOCKED', `La piste ${piste.name} est verrouillée.`, {
+            action: 'Déverrouillez-la pour y déposer un média',
+          }),
+        );
+        return;
+      }
+      // Une piste vidéo n'accueille pas un média sans image, et l'inverse non
+      // plus : le dire vaut mieux que de poser un clip muet là où l'on
+      // attendait du son.
+      const type = typeDeMedia(asset);
+      if (piste.kind !== type) {
+        actions.signalerErreur(
+          erreurMontage(
+            `« ${asset.name} » est un média ${type === 'video' ? 'vidéo' : 'audio'}.`,
+            `Déposez-le sur une piste ${type === 'video' ? 'vidéo' : 'audio'}`,
+          ),
+        );
+        return;
+      }
+
+      if (depose.mode === 'replace' && depose.clipId !== null) {
+        actions.executer(
+          replaceClipCommand(
+            { clipId: depose.clipId, mediaId: asset.id, name: asset.name, kind: type },
+            etat.contexte,
+          ),
+        );
+        return;
+      }
+
+      const clip = clipDepuisMedia(asset, etat.sequence, piste.id, depose.image);
+      actions.executer(
+        depose.mode === 'insert'
+          ? insertCommand({ clip, trackId: piste.id, at: depose.image }, etat.contexte)
+          : overwriteCommand({ clip, trackId: piste.id, at: depose.image }, etat.contexte),
+      );
+    },
+    [actions, etat.contexte, etat.document.media, etat.sequence],
+  );
 
   const executerAction = useCallback(
     (actionId: string): boolean => {
@@ -756,7 +822,11 @@ export function App(): React.JSX.Element {
             <div className="panneau-entete" style={{ marginTop: 8 }}>
               <span className="titre">Clips de la séquence</span>
             </div>
-            <PanneauProjet sequence={etat.sequence} timecode={timecode} />
+            <PanneauProjet
+              sequence={etat.sequence}
+              selection={etat.selection}
+              timecode={timecode}
+            />
           </div>
         </section>
 
@@ -855,6 +925,7 @@ export function App(): React.JSX.Element {
           <Timeline
             etat={etat}
             actions={actions}
+            surDeposeMedia={surDeposeMedia}
             vue={vue}
             definirVue={definirVue}
             defilementVertical={defilementVertical}

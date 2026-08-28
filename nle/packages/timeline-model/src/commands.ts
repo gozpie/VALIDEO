@@ -251,3 +251,13 @@ export function updateMarkerCommand(
 ): SequenceCommand {
   return command({ label, apply: (seq) => mark.updateMarker(seq, markerId, modifs) });
 }
+
+export function replaceClipCommand(
+  options: ops.ReplaceOptions,
+  ctx: TimelineContext,
+): SequenceCommand {
+  return command({
+    label: 'Remplacer le clip',
+    apply: (seq) => ops.replaceClip(seq, options, ctx),
+  });
+}

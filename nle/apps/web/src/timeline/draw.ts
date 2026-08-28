@@ -125,6 +125,13 @@ export type FournisseurVignette = (
   secondesDansLeClip: number,
 ) => ImageBitmap | null;
 
+export interface ApercuDepose {
+  readonly trackId: string;
+  readonly start: number;
+  readonly duration: number;
+  readonly mode: 'overwrite' | 'insert' | 'replace';
+}
+
 export interface OptionsRendu {
   readonly sequence: SequenceDoc;
   readonly modele: RenderModel;
@@ -137,6 +144,8 @@ export interface OptionsRendu {
   readonly debutTimecode: number;
   readonly geste: ApercuGeste | null;
   readonly dpr: number;
+  /** Apercu de depose : plage et piste visees, ou `null`. */
+  readonly depose?: ApercuDepose | null | undefined;
   readonly formeOnde?: FournisseurFormeOnde | undefined;
   readonly vignette?: FournisseurVignette | undefined;
 }
@@ -177,6 +186,7 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
   dessinerGraduationsVerticales(ctx, o);
   dessinerClips(ctx, o);
   dessinerApercu(ctx, o);
+  dessinerApercuDepose(ctx, o);
 
   ctx.restore();
 
@@ -201,6 +211,56 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
  * La couleur vient du document : c est la seule chose qui distingue deux
  * reperes voisins quand le zoom les rapproche.
  */
+/**
+ * Aperçu d une depose de media.
+ *
+ * Montre la place EXACTE que prendra le clip -- meme conversion de duree que
+ * l operation qui suivra --, et distingue les trois modes : un cadre plein pour
+ * l overwrite, un liseré d insertion pour l insert, un cadre sur le clip
+ * remplace pour le replace. Sans cela, deposer serait un pari.
+ */
+function dessinerApercuDepose(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
+  const d = o.depose;
+  if (d === null || d === undefined) return;
+  const piste = o.modele.tracks.find((t) => t.trackId === d.trackId);
+  if (piste === undefined) return;
+
+  const x1 = timeToX(o.viewport, d.start);
+  const x2 = timeToX(o.viewport, d.start + d.duration);
+  ctx.save();
+  ctx.strokeStyle = PALETTE.accroche;
+  ctx.fillStyle = PALETTE.accroche;
+  ctx.lineWidth = 2;
+
+  if (d.mode === 'insert') {
+    // L insertion ne recouvre rien : ce qui compte est le POINT ou la timeline
+    // s ouvrira, pas l etendue du clip.
+    const x = Math.round(x1) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, piste.y);
+    ctx.lineTo(x, piste.y + piste.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 5, piste.y);
+    ctx.lineTo(x + 5, piste.y);
+    ctx.lineTo(x, piste.y + 6);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.globalAlpha = 0.18;
+    ctx.fillRect(x1, piste.y + 1, x2 - x1, piste.height - 2);
+    ctx.globalAlpha = 1;
+    ctx.setLineDash(d.mode === 'replace' ? [] : [5, 3]);
+    ctx.strokeRect(
+      Math.round(x1) + 0.5,
+      piste.y + 1.5,
+      Math.round(x2 - x1) - 1,
+      piste.height - 3,
+    );
+  }
+  ctx.restore();
+}
+
 function dessinerMarqueurs(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
   const y = HAUTEUR_REGLE - 7;
   for (const m of o.sequence.markers) {

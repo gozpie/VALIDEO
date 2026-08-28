@@ -343,3 +343,4 @@
 .note-modale.alerte { color: var(--avert); }
 .table-projet tbody tr.selectionnee { background: var(--accent-doux); }
 .table-projet tbody tr[draggable='true'] { cursor: grab; }
+.table-projet tbody tr.selectionnee td { color: var(--texte-fort); }

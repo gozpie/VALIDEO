@@ -55,7 +55,13 @@ import type { ActionsEditeur, EtatEditeur } from '../store.js';
 import { readWaveform } from '@valideo/audio-engine';
 import { CacheVignettes } from '../media/thumbnails.js';
 import { HAUTEUR_REGLE, dessinerTimeline, timebaseDeSequence } from './draw.js';
-import type { ApercuGeste, FournisseurFormeOnde, FournisseurVignette } from './draw.js';
+import type {
+  ApercuDepose,
+  ApercuGeste,
+  FournisseurFormeOnde,
+  FournisseurVignette,
+} from './draw.js';
+import { dureeSurTimeline } from '../media/placement.js';
 
 type Geste =
   | { type: 'aucun' }
@@ -86,6 +92,17 @@ export interface ProprietesTimeline {
   readonly definirVue: (v: Viewport | ((v: Viewport) => Viewport)) => void;
   readonly defilementVertical: number;
   readonly definirDefilementVertical: React.Dispatch<React.SetStateAction<number>>;
+  /** Dépose d'un média venu du panneau Médias. */
+  readonly surDeposeMedia: (depose: DeposeMedia) => void;
+}
+
+export interface DeposeMedia {
+  readonly mediaId: string;
+  readonly image: number;
+  readonly trackId: string | null;
+  /** Clip survolé, pour le remplacement. */
+  readonly clipId: string | null;
+  readonly mode: 'overwrite' | 'insert' | 'replace';
 }
 
 export function Timeline({
@@ -95,6 +112,7 @@ export function Timeline({
   definirVue,
   defilementVertical,
   definirDefilementVertical,
+  surDeposeMedia,
 }: ProprietesTimeline): React.JSX.Element {
   const toileRef = useRef<HTMLCanvasElement | null>(null);
   const conteneurRef = useRef<HTMLDivElement | null>(null);
@@ -110,7 +128,37 @@ export function Timeline({
   }
   const cacheVignettes = cacheVignettesRef.current;
 
+  /** Dépose en cours, pour l'aperçu. `null` hors survol. */
+  const [depose, setDepose] = useState<DeposeMedia | null>(null);
+
   const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
+
+  /**
+   * Aperçu de la dépose, calculé avec la MÊME conversion de durée que
+   * l'opération qui suivra : ce que l'utilisateur voit est exactement ce qu'il
+   * obtiendra, et non une estimation.
+   */
+  const apercuDepose = useMemo<ApercuDepose | null>(() => {
+    if (depose === null || depose.trackId === null) return null;
+    const asset = etat.document.media.find((m) => m.id === depose.mediaId);
+    if (asset === undefined) return null;
+    if (depose.mode === 'replace' && depose.clipId !== null) {
+      const trouve = findClip(etat.sequence, depose.clipId);
+      if (trouve === undefined) return null;
+      return {
+        trackId: depose.trackId,
+        start: trouve.clip.start,
+        duration: trouve.clip.duration,
+        mode: 'replace',
+      };
+    }
+    return {
+      trackId: depose.trackId,
+      start: depose.image,
+      duration: dureeSurTimeline(asset, etat.sequence),
+      mode: depose.mode,
+    };
+  }, [depose, etat.document.media, etat.sequence]);
   const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
 
   // Mesure du conteneur : la timeline suit la taille du panneau.
@@ -260,6 +308,7 @@ export function Timeline({
       base,
       debutTimecode: etat.sequence.startTimecode,
       geste: apercu,
+      depose: apercuDepose,
       dpr: window.devicePixelRatio || 1,
       formeOnde,
       vignette,
@@ -272,6 +321,7 @@ export function Timeline({
     taille,
     graduations,
     base,
+    apercuDepose,
     formeOnde,
     vignette,
   ]);
@@ -640,6 +690,40 @@ export function Timeline({
     );
   }, [etat.tete, definirVue, taille.largeur]);
 
+  /**
+   * Cible d'une dépose : image et piste sous le pointeur.
+   *
+   * Le type MIME n'est pas lisible pendant le survol -- le navigateur ne
+   * révèle les données qu'à la dépose --, on se sert donc du média
+   * SÉLECTIONNÉ, que le panneau vient de marquer au départ du glisser. C'est
+   * la même valeur que celle qui sera déposée, pas une approximation.
+   */
+  const cibleDepose = useCallback(
+    (e: React.DragEvent): DeposeMedia | null => {
+      const mediaId = etat.mediaSelectionne;
+      if (mediaId === null) return null;
+      const toile = toileRef.current;
+      if (toile === null) return null;
+      const rect = toile.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (y < HAUTEUR_REGLE) return null;
+
+      const impact = hitTest(modele, vueMesuree, x, y - HAUTEUR_REGLE);
+      const image = Math.max(0, xToTime(vueMesuree, x));
+      // Alt remplace le clip survolé ; sans clip dessous, il n'y a rien à
+      // remplacer et l'on retombe sur un overwrite plutôt que de ne rien faire.
+      const mode =
+        e.altKey && impact.clipId !== null
+          ? 'replace'
+          : e.ctrlKey || e.metaKey
+            ? 'insert'
+            : 'overwrite';
+      return { mediaId, image, trackId: impact.trackId, clipId: impact.clipId, mode };
+    },
+    [etat.mediaSelectionne, modele, vueMesuree],
+  );
+
   return (
     <div className="timeline-corps">
       {/* Pas de prop de defilement : `modele.tracks[].y` porte deja le
@@ -654,6 +738,27 @@ export function Timeline({
         data-scroll={Math.round(vueMesuree.scroll)}
         data-echelle={vueMesuree.pixelsPerFrame.toFixed(4)}
         data-largeur={Math.round(vueMesuree.width)}
+        data-depose={depose === null ? undefined : depose.mode}
+        onDragOver={(e) => {
+          const cible = cibleDepose(e);
+          if (cible === null || cible.trackId === null) {
+            setDepose(null);
+            return;
+          }
+          // Sans `preventDefault`, le navigateur refuse la dépose : il n'y a
+          // pas d'autre façon de déclarer qu'une zone accepte un glisser.
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          setDepose(cible);
+        }}
+        onDragLeave={() => setDepose(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          const cible = cibleDepose(e);
+          setDepose(null);
+          if (cible === null || cible.trackId === null) return;
+          surDeposeMedia(cible);
+        }}
       >
         <canvas
           ref={toileRef}

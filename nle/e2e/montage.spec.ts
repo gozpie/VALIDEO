@@ -9,9 +9,15 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
-/** Ligne du panneau Projet correspondant à un clip. */
+/**
+ * Ligne du panneau Projet correspondant à un clip.
+ *
+ * Le sélecteur exige `data-clip` : le panneau Médias emploie la même classe de
+ * table, et un média portant le nom d'un clip renverrait sa ligne à sa place —
+ * avec des colonnes qui ne veulent pas dire la même chose.
+ */
 function ligne(page: Page, nom: string): Locator {
-  return page.locator('.table-projet tbody tr', { hasText: nom }).first();
+  return page.locator('.table-projet tbody tr[data-clip]', { hasText: nom }).first();
 }
 
 async function debutDe(page: Page, nom: string): Promise<string> {
@@ -843,4 +849,84 @@ test('le trim ripple jusqu’à la tête retire la portion et referme', async ({
   expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:08');
   // Et l'ambiance synchronisée de A2 a été raccourcie, pas décalée.
   expect(await debutDe(page, 'Ambiance_salle.wav')).toBe('01:00:00:00');
+});
+
+test('glisser-déposer un média sur la timeline crée un clip (§91)', async ({ page }) => {
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_48k_stereo.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+
+  const source = page.locator('[data-test="ligne-media"]').first();
+  // A1 est la cinquième piste affichée (V3, V2, V1, A1, A2, A3, A4).
+  const cible = await centreClip(page, 3, 0.7);
+
+  await source.hover();
+  await page.mouse.down();
+  await page.mouse.move(cible.x, cible.y, { steps: 12 });
+  // L'aperçu de dépose est visible AVANT le relâchement : on voit où ça tombe.
+  await expect(page.locator('.timeline-toile')).toHaveAttribute('data-depose', 'overwrite');
+  await page.mouse.up();
+
+  await expect(historique(page)).toContainText(['Overwrite']);
+  await expect(page.locator('.timeline-toile')).not.toHaveAttribute('data-depose', 'overwrite');
+});
+
+test('déposer un média audio sur une piste vidéo est refusé et expliqué', async ({ page }) => {
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_48k_stereo.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+
+  const source = page.locator('[data-test="ligne-media"]').first();
+  const cible = await centreClip(page, 2, 0.7); // V1
+  await source.hover();
+  await page.mouse.down();
+  await page.mouse.move(cible.x, cible.y, { steps: 12 });
+  await page.mouse.up();
+
+  await expect(page.locator('.barre-etat .alerte')).toContainText('est un média audio');
+  await expect(historique(page)).toHaveCount(1);
+});
+
+test('Alt sur un clip le remplace sans le déplacer ni le rallonger (§91)', async ({ page }) => {
+  // 4 s à 25 i/s = 100 images : assez pour couvrir A004, qui en dure 62.
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_enveloppe.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+
+  const debutAvant = await debutDe(page, 'A004_insert_mains.wav');
+  const source = page.locator('[data-test="ligne-media"]').first();
+  // A1 est la quatrième piste affichée. La fraction vise A004 : elle est
+  // relevée sur la vue réelle, pas déduite d'un rapport d'images — la vue
+  // ajustée garde une marge, et supposer l'échelle donnait le clip d'à côté.
+  const cible = await centreClip(page, 3, 0.4);
+
+  await source.hover();
+  await page.mouse.down();
+  await page.mouse.move(cible.x, cible.y, { steps: 12 });
+  await page.keyboard.down('Alt');
+  await page.mouse.move(cible.x + 1, cible.y, { steps: 2 });
+  await expect(page.locator('.timeline-toile')).toHaveAttribute('data-depose', 'replace');
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+
+  await expect(historique(page)).toContainText(['Remplacer le clip']);
+  // Le clip n'a ni bougé ni changé de longueur : seule sa source a changé.
+  expect(await debutDe(page, 'audio_enveloppe.wav')).toBe(debutAvant);
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
+});
+
+test('un remplaçant trop court est refusé, pas rallongé en silence', async ({ page }) => {
+  // 2 s = 50 images, pour un clip d'ambiance qui en dure 825.
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_48k_stereo.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+
+  const source = page.locator('[data-test="ligne-media"]').first();
+  const cible = await centreClip(page, 4, 0.3); // A2, l'ambiance continue
+  await source.hover();
+  await page.mouse.down();
+  await page.mouse.move(cible.x, cible.y, { steps: 12 });
+  await page.keyboard.down('Alt');
+  await page.mouse.move(cible.x + 1, cible.y, { steps: 2 });
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+
+  await expect(page.locator('.barre-etat .alerte')).toContainText('trop court');
+  await expect(historique(page)).toHaveCount(1);
 });

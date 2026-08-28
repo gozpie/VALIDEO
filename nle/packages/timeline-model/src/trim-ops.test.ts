@@ -7,6 +7,7 @@ import {
   changeSpeed,
   linkClips,
   rateStretch,
+  replaceClip,
   setWorkArea,
   workAreaRange,
   rippleTrimToPlayhead,
@@ -493,5 +494,47 @@ describe('vitesse et durée (§38)', () => {
       ),
     );
     expect(findClip(next, 'b')?.clip.frameSampling).toBe('blend');
+  });
+});
+
+describe('remplacement de clip (§91)', () => {
+  it('garde la place, la durée et le travail fait sur le clip', () => {
+    const seq = threeInARow();
+    const avant = findClip(seq, 'b')!.clip;
+    const modifie = {
+      ...seq,
+      tracks: seq.tracks.map((t) => ({
+        ...t,
+        clips: t.clips.map((c) =>
+          c.id === 'b' ? { ...c, label: '#ff0000', opacity: { value: 42, keyframes: [] } } : c,
+        ),
+      })),
+    };
+    const next = unwrap(
+      replaceClip(modifie, { clipId: 'b', mediaId: 'autre', name: 'Plan B bis' }, ctx),
+    );
+    const b = findClip(next, 'b')!.clip;
+    expect(b.start).toBe(avant.start);
+    expect(b.duration).toBe(avant.duration);
+    expect(b.mediaId).toBe('autre');
+    expect(b.name).toBe('Plan B bis');
+    // Ce qui a été travaillé sur le clip survit au remplacement.
+    expect(b.label).toBe('#ff0000');
+    expect(b.opacity.value).toBe(42);
+  });
+
+  it('réinitialise vitesse et marche arrière, qui parlaient de l’ancienne source', () => {
+    const seq = unwrap(changeSpeed(threeInARow(), { clipId: 'b', speed: { n: 2, d: 1 } }, ctx));
+    const next = unwrap(replaceClip(seq, { clipId: 'b', mediaId: 'autre' }, ctx));
+    expect(findClip(next, 'b')?.clip.speed).toEqual({ n: 1, d: 1 });
+    expect(findClip(next, 'b')?.clip.reverse).toBe(false);
+  });
+
+  it('refuse un média trop court plutôt que de laisser une fin noire', () => {
+    // Source de 40 images pour un clip qui en demande 100.
+    const etroit = makeContext(TIMEBASES.TB25, boundedSource(0, 40));
+    const r = replaceClip(threeInARow(), { clipId: 'b', mediaId: 'court' }, etroit);
+    expect(isErr(r)).toBe(true);
+    if (isErr(r)) expect(r.error.detail).toContain('100 images demandées');
   });
 });

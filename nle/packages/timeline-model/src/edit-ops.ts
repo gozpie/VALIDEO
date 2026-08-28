@@ -838,6 +838,72 @@ export function changeSpeed(
   return finalize({ ...sequence, tracks });
 }
 
+// ------------------------------------------------------- Remplacement (§91)
+
+export interface ReplaceOptions {
+  readonly clipId: string;
+  /** Nouveau media. `null` pour un clip synthetique. */
+  readonly mediaId: string | null;
+  readonly name?: string;
+  readonly kind?: ClipDoc['kind'];
+  /** Point d entree dans la NOUVELLE source. Zero par defaut. */
+  readonly sourceIn?: number;
+}
+
+/**
+ * Remplace le materiau d un clip en gardant sa PLACE et sa DUREE.
+ *
+ * C est la difference avec un simple glisser-deposer : le clip ne bouge pas,
+ * ne change pas de longueur, et conserve tout ce qui a ete travaille dessus --
+ * effets, transformation, opacite, gain, etiquette. Seule la source change.
+ * Refaire le calage d un plan de remplacement a la main serait long et
+ * approximatif ; c est precisement ce que cette operation evite.
+ *
+ * La vitesse et l inversion sont REINITIALISEES : elles decrivaient un rapport
+ * a l ancienne source. Les conserver donnerait une duree source demandee sans
+ * rapport avec ce que le nouveau media contient.
+ */
+export function replaceClip(
+  sequence: SequenceDoc,
+  options: ReplaceOptions,
+  ctx: TimelineContext,
+): EditResult {
+  const found = requireClip(sequence, options.clipId);
+  if (!found.ok) return found;
+  const { clip, track } = found.value;
+
+  const remplacant: ClipDoc = {
+    ...clip,
+    mediaId: options.mediaId,
+    sourceIn: options.sourceIn ?? 0,
+    speed: { n: 1, d: 1 },
+    reverse: false,
+    ...(options.name === undefined ? {} : { name: options.name }),
+    ...(options.kind === undefined ? {} : { kind: options.kind }),
+  };
+
+  // La source doit pouvoir fournir toute la duree du clip : sinon le
+  // remplacement laisserait une fin noire, sans que rien ne le dise.
+  const info = ctx.resolveSource(remplacant);
+  if (info !== null) {
+    const requises = sourceFramesUsed(remplacant, ctx);
+    const disponibles = info.first + info.count - remplacant.sourceIn;
+    if (disponibles < requises) {
+      return err(
+        appError('EDIT_REJECTED', 'Ce média est trop court pour remplacer ce clip.', {
+          action: 'Choisissez un média plus long, ou raccourcissez le clip d’abord',
+          detail: `${String(requises)} images demandées, ${String(Math.max(0, disponibles))} disponibles.`,
+        }),
+      );
+    }
+  }
+
+  return finalize({
+    ...sequence,
+    tracks: mapTrack(sequence.tracks, track.id, (t) => placeClip(removeClip(t, clip.id), remplacant)),
+  });
+}
+
 // ------------------------------------------------------- Liaison A/V (§80)
 
 /** Lie plusieurs clips : ils se selectionnent et se deplacent ensemble. */

@@ -11,6 +11,8 @@ import { clipEnd } from '@valideo/timeline-model';
 
 export interface ProprietesPanneauProjet {
   readonly sequence: SequenceDoc;
+  /** Clips sélectionnés : le panneau doit montrer ce que la timeline montre. */
+  readonly selection: ReadonlySet<string>;
   readonly timecode: (image: number) => string;
 }
 
@@ -24,7 +26,11 @@ const NOMS_TYPE: Readonly<Record<string, string>> = {
   nestedSequence: 'Séquence imbriquée',
 };
 
-export function PanneauProjet({ sequence, timecode }: ProprietesPanneauProjet): React.JSX.Element {
+export function PanneauProjet({
+  sequence,
+  selection,
+  timecode,
+}: ProprietesPanneauProjet): React.JSX.Element {
   const elements = sequence.tracks.flatMap((piste) => piste.clips.map((clip) => ({ clip, piste })));
   elements.sort((a, b) => a.clip.start - b.clip.start || a.piste.name.localeCompare(b.piste.name));
 
@@ -42,7 +48,11 @@ export function PanneauProjet({ sequence, timecode }: ProprietesPanneauProjet): 
       </thead>
       <tbody>
         {elements.map(({ clip, piste }) => (
-          <tr key={clip.id}>
+          <tr
+            key={clip.id}
+            data-clip={clip.id}
+            className={selection.has(clip.id) ? 'selectionnee' : ''}
+          >
             <td>
               {clip.label !== null && (
                 <span className="pastille" style={{ background: clip.label }} />
