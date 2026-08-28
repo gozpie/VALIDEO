@@ -485,3 +485,53 @@ attendant fait clignoter un projet qui n'est pas celui de l'utilisateur.
 **Conséquences.** Plus de clignotement, et — effet secondaire utile — les tests
 de bout en bout deviennent déterministes : ils n'ont plus de fenêtre pendant
 laquelle ils liraient l'ancien document.
+
+---
+
+## ADR-030 — Le navigateur décode l'audio, le serveur analysera la vidéo
+
+**Contexte.** L'import doit fonctionner sans serveur, mais §9 exige des
+caractéristiques que le navigateur n'expose pas.
+
+**Décision.** Répartition selon ce qui est **réellement** possible :
+
+- **Audio** — `decodeAudioData` donne les échantillons. La pyramide de pics et
+  la forme d'onde sont donc entièrement réelles, sans serveur.
+- **Vidéo** — le navigateur donne la durée et la définition, rien de plus. Le
+  codec, le profil, le format de pixel, la colorimétrie et le timecode embarqué
+  restent **vides** jusqu'à l'analyse ffprobe.
+
+**Conséquences.** Aucun champ n'est deviné. Un média vidéo importé affiche ce
+qu'on sait de lui et rien d'autre, et l'interface annonce qu'une analyse
+complète reste à faire. Le service qui la fera est déjà écrit et testé
+(`apps/media-worker`).
+
+---
+
+## ADR-031 — Le zoom s'ancre sur la tête de lecture
+
+**Contexte.** Zoomer autour du centre de la vue est le comportement naïf. À
+chaque cran, le point de travail s'éloigne, et il faut repositionner la vue.
+
+**Décision.** Le zoom clavier et les boutons s'ancrent sur la **tête de
+lecture** quand elle est visible ; sinon ils retombent sur le centre. La molette
+continue de s'ancrer sous le pointeur, qui est alors le point d'intérêt.
+
+**Conséquences.** Le point de travail reste immobile pendant qu'on change
+d'échelle — le comportement de tous les NLE.
+
+---
+
+## ADR-032 — La largeur mesurée du canvas remonte dans le viewport partagé
+
+**Contexte.** Le viewport était créé avec une largeur arbitraire, puis la
+timeline mesurait la vraie largeur pour son propre usage. L'état partagé, lui,
+gardait la valeur arbitraire.
+
+**Décision.** L'observateur de redimensionnement remonte la largeur mesurée dans
+le viewport partagé.
+
+**Conséquences.** Tout ce qui dépend de la largeur — ajustement de séquence,
+ancrage du zoom, bornage du défilement — se calcule enfin sur la vue réelle.
+Le bug était invisible tant qu'on ne regardait que le rendu, qui utilisait la
+bonne largeur : seuls les calculs *dérivés* étaient faux.

@@ -1,6 +1,7 @@
 import type { Command } from '@valideo/command-system';
 import type { AppError } from '@valideo/shared';
-import type { ProjectDoc, SequenceDoc } from '@valideo/project-model';
+import type { MediaAssetDoc, ProjectDoc, SequenceDoc } from '@valideo/project-model';
+import type { PeakPyramid } from '@valideo/audio-engine';
 import type { TimelineContext } from '@valideo/timeline-model';
 export type Outil = 'selection' | 'trackSelect' | 'ripple' | 'rolling' | 'razor' | 'slip' | 'slide' | 'rateStretch' | 'hand';
 export interface EtatEditeur {
@@ -20,6 +21,8 @@ export interface EtatEditeur {
     readonly contexte: TimelineContext;
     /** Document complet, tel qu'il sera enregistré. */
     readonly document: ProjectDoc;
+    /** Pyramides de pics des médias dont l'audio a été décodé, par identifiant. */
+    readonly pics: ReadonlyMap<string, PeakPyramid>;
 }
 export interface ActionsEditeur {
     executer(commande: Command<SequenceDoc>): boolean;
@@ -36,6 +39,8 @@ export interface ActionsEditeur {
     /** Remplace le document courant, à l'ouverture ou après une reprise. */
     chargerDocument(doc: ProjectDoc): void;
     signalerErreur(erreur: AppError): void;
+    /** Ajoute un média analysé au projet, avec ses pics quand ils existent. */
+    ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null): void;
 }
 export declare function useEditeur(): [EtatEditeur, ActionsEditeur];
 /** Cadence de la séquence, en flottant, pour l affichage seul. */

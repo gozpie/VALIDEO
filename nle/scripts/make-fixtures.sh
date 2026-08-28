@@ -63,9 +63,16 @@ ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=1" \
   -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le "$OUT/alpha_prores4444.mov"
 
 # --- Audio (§31, §81) ---------------------------------------------------------
-ffmpeg $Q -f lavfi -i "${TONE}:duration=2" -c:a pcm_s16le "$OUT/audio_48k_stereo.wav"
+# `sine` produit du mono : on force deux canaux, comme le nom du fichier l'annonce.
+ffmpeg $Q -f lavfi -i "${TONE}:duration=2" -ac 2 -c:a pcm_s16le "$OUT/audio_48k_stereo.wav"
 ffmpeg $Q -f lavfi -i "${TONE}:duration=2" -ac 6 -c:a pcm_s24le "$OUT/audio_51.wav"
 ffmpeg $Q -f lavfi -i "sine=frequency=440:sample_rate=96000:duration=1" -c:a pcm_s24le "$OUT/audio_96k.wav"
+
+# Signal à enveloppe VARIABLE : quatre attaques suivies d'une décroissance.
+# Un sinus d'amplitude constante remplit toute la hauteur et ne permet pas de
+# vérifier qu'une forme d'onde suit réellement le signal.
+ffmpeg $Q -f lavfi -i "aevalsrc='0.95*sin(2*PI*440*t)*exp(-4*mod(t,1))':d=4:s=48000" \
+  -ac 2 -c:a pcm_s16le "$OUT/audio_enveloppe.wav"
 
 # --- Séquence d'images (§84) --------------------------------------------------
 mkdir -p "$OUT/sequence"

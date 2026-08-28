@@ -219,3 +219,122 @@ test('un travail non enregistré est proposé à la reprise après un rechargeme
   await expect(bandeau).toHaveCount(0);
   await expect(ligne(page, 'Générique début').locator('td').nth(3)).toHaveText(nonEnregistre);
 });
+
+test('importer un vrai fichier audio produit une forme d’onde réelle (§8, §19)', async ({
+  page,
+}) => {
+  // Fixture réellement encodée par scripts/make-fixtures.sh : 2 s de 440 Hz,
+  // stéréo, 48 kHz, PCM 16 bits.
+  const fixture = new URL('../fixtures/generated/audio_48k_stereo.wav', import.meta.url).pathname;
+
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+
+  const media = page.locator('tr[data-test="ligne-media"]');
+  await expect(media).toHaveCount(1);
+  await expect(media).toContainText('audio_48k_stereo.wav');
+  // Les caractéristiques affichées sont celles réellement décodées.
+  await expect(media).toContainText('2 ch');
+  await expect(media).toContainText('48 kHz');
+  // « décodé » signifie que la pyramide de pics existe : la forme d'onde sera vraie.
+  await expect(media).toContainText('décodé');
+  // 2 secondes à 25 i/s.
+  await expect(media.locator('td').nth(2)).toHaveText('01:00:02:00');
+});
+
+test('un média importé peut être posé sur la timeline et devient un clip', async ({ page }) => {
+  const fixture = new URL('../fixtures/generated/audio_48k_stereo.wav', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+  await expect(page.locator('tr[data-test="ligne-media"]')).toHaveCount(1);
+
+  const avant = await page.locator('.table-projet').last().locator('tbody tr').count();
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+
+  await expect(historique(page)).toContainText(['Overwrite']);
+  await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant + 1);
+  await expect(ligne(page, 'audio_48k_stereo.wav')).toBeVisible();
+
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant);
+});
+
+test('un fichier illisible est signalé sans casser l’application', async ({ page }) => {
+  const casse = new URL('../fixtures/generated/broken.mp4', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(casse);
+
+  const media = page.locator('tr[data-test="ligne-media"]');
+  await expect(media).toHaveCount(1);
+  await expect(media).toContainText('illisible');
+  // Le bouton « Poser » est désactivé : on ne monte pas un média illisible.
+  await expect(page.getByTitle('Poser à la tête de lecture (overwrite)')).toBeDisabled();
+  // Et la timeline reste utilisable.
+  await expect(page.locator('.timeline-toile canvas')).toBeVisible();
+});
+
+test('la forme d’onde est réellement dessinée à partir des échantillons (§19)', async ({
+  page,
+}) => {
+  const fixture = new URL('../fixtures/generated/audio_enveloppe.wav', import.meta.url).pathname;
+
+  /**
+   * Compte les pixels clairs d'une bande horizontale du canvas.
+   * Une piste audio sans média est un aplat uni ; une piste portant une forme
+   * d'onde contient beaucoup de pixels clairs. La différence est massive et ne
+   * dépend d'aucune couleur exacte.
+   */
+  const pixelsClairs = async (indexPiste: number): Promise<number> => {
+    const entete = await page.locator('.entete-piste').nth(indexPiste).boundingBox();
+    const toile = await page.locator('.timeline-toile canvas').boundingBox();
+    if (entete === null || toile === null) throw new Error('Géométrie introuvable');
+    const y = entete.y - toile.y + entete.height / 2;
+    return page.evaluate(
+      ({ y: yy, hauteur }) => {
+        const canvas = document.querySelector('.timeline-toile canvas') as HTMLCanvasElement;
+        const ctx = canvas.getContext('2d');
+        if (ctx === null) return 0;
+        const dpr = canvas.width / canvas.getBoundingClientRect().width;
+        const donnees = ctx.getImageData(
+          0,
+          Math.round((yy - hauteur / 2) * dpr),
+          canvas.width,
+          Math.round(hauteur * dpr),
+        ).data;
+        let clairs = 0;
+        for (let i = 0; i < donnees.length; i += 4) {
+          if ((donnees[i] ?? 0) > 170 && (donnees[i + 1] ?? 0) > 200 && (donnees[i + 2] ?? 0) > 180)
+            clairs += 1;
+        }
+        return clairs;
+      },
+      { y, hauteur: entete.height - 6 },
+    );
+  };
+
+  // Ordre d'affichage des pistes : V3, V2, V1, A1, A2, A3, A4 → A3 est l'index 5.
+  const A3 = 5;
+  const A2 = 4;
+  const A1 = 3;
+
+  // A3 est vide au départ : aucun pixel clair de forme d'onde.
+  const avant = await pixelsClairs(A3);
+
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+  await expect(page.locator('tr[data-test="ligne-media"]')).toContainText('décodé');
+  // On cible A3 pour y poser le média sans écraser la démo.
+  await page.locator('.entete-piste').nth(A3).locator('button').first().click();
+  await page.locator('.entete-piste').nth(A1).locator('button').first().click();
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+  await expect(ligne(page, 'audio_enveloppe.wav')).toBeVisible();
+
+  // Zoom sur le clip pour que la forme d'onde occupe une largeur mesurable.
+  await page.getByTitle('Zoom avant').click();
+  await page.getByTitle('Zoom avant').click();
+  await page.waitForTimeout(300);
+
+  const apres = await pixelsClairs(A3);
+  expect(apres).toBeGreaterThan(avant + 500);
+
+  // Un clip audio SANS média décodé ne reçoit aucune forme d'onde : on ne
+  // dessine pas de courbe inventée (§1003). A2 porte Ambiance_salle.wav, qui
+  // n'a pas de fichier derrière lui.
+  expect(await pixelsClairs(A2)).toBeLessThan(apres / 4);
+});

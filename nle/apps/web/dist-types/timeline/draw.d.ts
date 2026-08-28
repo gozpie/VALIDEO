@@ -6,15 +6,15 @@
  * React (section 2). Elle ne fait que lire un modele deja calcule par
  * `@valideo/timeline-engine`.
  *
- * Ce qui n est PAS dessine ici, volontairement : les formes d onde et les
- * vignettes. Le projet de demonstration ne reference aucun media reel ; dessiner
- * une forme d onde inventee serait exactement le « faire semblant » qu interdit
- * la section 1003. Le moteur de pics existe et est teste, il sera branche quand
- * de vrais medias seront analyses.
+ * Les formes d onde dessinees ici proviennent de VRAIS echantillons decodes par
+ * le navigateur. Un clip dont le media n a pas ete decode n en recoit aucune :
+ * il vaut mieux un fond uni qu une courbe inventee (section 1003). Les vignettes
+ * video restent absentes pour la meme raison, tant qu il n y a pas de decodeur.
  */
 import type { SequenceDoc } from '@valideo/project-model';
 import type { TimeBase } from '@valideo/time-core';
 import type { RenderModel, Viewport } from '@valideo/timeline-engine';
+import type { WaveformColumn } from '@valideo/audio-engine';
 export declare const HAUTEUR_REGLE = 24;
 export declare const PALETTE: {
     readonly fond: "#1e1e21";
@@ -59,6 +59,12 @@ export interface ApercuGeste {
         y2: number;
     } | null;
 }
+/**
+ * Fournit les colonnes de forme d onde d un clip, ou `null` si son media n a pas
+ * ete decode. La fonction est appelee pendant le dessin : elle doit se contenter
+ * de lire la pyramide de pics deja construite (section 19).
+ */
+export type FournisseurFormeOnde = (clip: RenderModel['clips'][number], colonnes: number) => readonly WaveformColumn[] | null;
 export interface OptionsRendu {
     readonly sequence: SequenceDoc;
     readonly modele: RenderModel;
@@ -71,6 +77,7 @@ export interface OptionsRendu {
     readonly debutTimecode: number;
     readonly geste: ApercuGeste | null;
     readonly dpr: number;
+    readonly formeOnde?: FournisseurFormeOnde | undefined;
 }
 export declare function timebaseDeSequence(sequence: SequenceDoc): TimeBase;
 /** Dessine tout. Appelee a chaque image pendant un geste. */

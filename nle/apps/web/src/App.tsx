@@ -23,7 +23,9 @@ import {
 import {
   clampScroll,
   fit,
+  timeToX,
   viewport as creerViewport,
+  zoomAt,
   zoomCentered,
 } from '@valideo/timeline-engine';
 import type { Viewport } from '@valideo/timeline-engine';
@@ -31,6 +33,7 @@ import { Timeline } from './timeline/Timeline.js';
 import { timebaseDeSequence } from './timeline/draw.js';
 import { useEditeur } from './store.js';
 import type { Outil } from './store.js';
+import { PanneauMedias } from './panels/PanneauMedias.js';
 import { PanneauProjet } from './panels/PanneauProjet.js';
 import { Moniteur } from './panels/Moniteur.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
@@ -90,6 +93,24 @@ export function App(): React.JSX.Element {
     [base, etat.sequence.startTimecode],
   );
 
+  /**
+   * Zoom clavier et zoom des boutons : centres sur la TETE DE LECTURE quand elle
+   * est visible, comme dans tout NLE. Zoomer sur le milieu de la vue eloigne du
+   * point de travail a chaque cran, ce qui oblige a repositionner sans cesse.
+   */
+  const zoomer = useCallback(
+    (facteur: number) => {
+      definirVue((v) => {
+        const vue = creerViewport(v.scroll, v.pixelsPerFrame, v.width);
+        const x = timeToX(vue, etat.tete);
+        const suivante =
+          x >= 0 && x <= vue.width ? zoomAt(vue, x, facteur) : zoomCentered(vue, facteur);
+        return facteur < 1 ? clampScroll(suivante, duree) : suivante;
+      });
+    },
+    [duree, etat.tete],
+  );
+
   const ajuster = useCallback(() => {
     definirVue((v) =>
       fit(creerViewport(v.scroll, v.pixelsPerFrame, v.width), Math.max(1, duree), 20),
@@ -129,10 +150,10 @@ export function App(): React.JSX.Element {
           actions.basculerAccrochage();
           return true;
         case 'timeline.zoomIn':
-          definirVue((v) => zoomCentered(v, 1.4));
+          zoomer(1.4);
           return true;
         case 'timeline.zoomOut':
-          definirVue((v) => clampScroll(zoomCentered(v, 1 / 1.4), duree));
+          zoomer(1 / 1.4);
           return true;
         case 'timeline.zoomToFit':
           ajuster();
@@ -198,7 +219,7 @@ export function App(): React.JSX.Element {
           return false;
       }
     },
-    [actions, ajuster, duree, etat, persistance, pistesNavigables, shuttle],
+    [actions, ajuster, duree, etat, persistance, pistesNavigables, shuttle, zoomer],
   );
 
   useEffect(() => {
@@ -331,6 +352,10 @@ export function App(): React.JSX.Element {
             <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
           </div>
           <div className="panneau-corps">
+            <PanneauMedias etat={etat} actions={actions} timecode={timecode} />
+            <div className="panneau-entete" style={{ marginTop: 8 }}>
+              <span className="titre">Clips de la séquence</span>
+            </div>
             <PanneauProjet sequence={etat.sequence} timecode={timecode} />
           </div>
         </section>
@@ -390,18 +415,10 @@ export function App(): React.JSX.Element {
               ↷
             </button>
             <span className="sep" />
-            <button
-              type="button"
-              onClick={() => definirVue((v) => zoomCentered(v, 1 / 1.6))}
-              title="Zoom arrière"
-            >
+            <button type="button" onClick={() => zoomer(1 / 1.6)} title="Zoom arrière">
               −
             </button>
-            <button
-              type="button"
-              onClick={() => definirVue((v) => zoomCentered(v, 1.6))}
-              title="Zoom avant"
-            >
+            <button type="button" onClick={() => zoomer(1.6)} title="Zoom avant">
               +
             </button>
             <button type="button" onClick={ajuster} title="Ajuster la séquence">

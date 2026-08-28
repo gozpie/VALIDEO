@@ -412,10 +412,49 @@ exigerait des commandes sérialisables, ce que le moteur ne fournit pas
 22 tests unitaires + 2 tests de bout en bout.
 **Total : 424 tests unitaires + 11 tests de bout en bout.**
 
+### Étape 14 — Import de vrais médias et formes d'onde réelles (§8, §19, §83)
+
+**La forme d'onde n'est plus une promesse.** On importe un fichier audio, le
+navigateur le décode intégralement, la pyramide de pics est construite à partir
+des **vrais échantillons**, et la timeline la dessine.
+
+- **Audio** : `decodeAudioData` décode le fichier entier. Nombre de canaux,
+  fréquence d'échantillonnage et durée affichés sont ceux réellement lus.
+- **Vidéo** : durée et définition lues via le navigateur ; le codec, le profil,
+  la colorimétrie et le timecode embarqué **restent vides** — ils exigent
+  ffprobe (§9), et le service d'analyse existe déjà, testé, prêt à être branché.
+  Le média est importable mais sa lecture reste annoncée comme indisponible.
+- **Fichier illisible** : signalé, bouton « Poser » désactivé, application
+  intacte.
+- **Les butées de trim deviennent exactes** : `resolveSource` retourne
+  désormais les vraies bornes du média. On ne peut plus tirer un clip au-delà de
+  ce que le fichier contient. Pour un clip sans média — titre, cache couleur —
+  il n'y a rien à borner, et rien n'est inventé.
+- **Dessin honnête** : un clip audio dont le média n'a pas été décodé ne reçoit
+  **aucune** forme d'onde. Un aplat uni vaut mieux qu'une courbe inventée.
+
+**Trois bugs réels trouvés en cherchant à voir la forme d'onde :**
+
+1. **La largeur du viewport restait figée** à sa valeur initiale dans l'état
+   partagé, alors que le canvas mesurait 1452 px. Tout ce qui en dépend —
+   « Ajuster », l'ancrage du zoom, le bornage du défilement — se calculait sur
+   une vue qui n'existait pas.
+2. **Le zoom se centrait sur le milieu de la vue** au lieu de la tête de
+   lecture. Dans un NLE, chaque cran de zoom éloignait donc du point de travail.
+3. La fixture nommée `audio_48k_stereo.wav` était en réalité **mono** : le nom
+   mentait. Corrigé dans le script de génération, pas dans le test.
+
+**Vérification au pixel près** : un test de bout en bout compte les pixels
+clairs de la piste avant et après l'import, et vérifie qu'une piste audio *sans*
+média décodé n'en reçoit aucun. C'est la preuve que la courbe vient des
+échantillons et non d'un décor.
+
+**Total : 424 tests unitaires + 15 tests de bout en bout.**
+
 ## NEXT
 
 1. Moteur de lecture : démuxeur, WebCodecs, horloge audio maître (§22, §901-1000).
-2. Import de médias réels dans l'application, branchement des formes d'onde.
+2. Branchement du service d'analyse ffprobe sur l'import (§9).
 3. Génération de proxies (§11) et caches (§53).
 
 ## BLOCKED

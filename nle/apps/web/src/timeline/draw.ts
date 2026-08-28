@@ -6,17 +6,17 @@
  * React (section 2). Elle ne fait que lire un modele deja calcule par
  * `@valideo/timeline-engine`.
  *
- * Ce qui n est PAS dessine ici, volontairement : les formes d onde et les
- * vignettes. Le projet de demonstration ne reference aucun media reel ; dessiner
- * une forme d onde inventee serait exactement le « faire semblant » qu interdit
- * la section 1003. Le moteur de pics existe et est teste, il sera branche quand
- * de vrais medias seront analyses.
+ * Les formes d onde dessinees ici proviennent de VRAIS echantillons decodes par
+ * le navigateur. Un clip dont le media n a pas ete decode n en recoit aucune :
+ * il vaut mieux un fond uni qu une courbe inventee (section 1003). Les vignettes
+ * video restent absentes pour la meme raison, tant qu il n y a pas de decodeur.
  */
 import type { SequenceDoc } from '@valideo/project-model';
 import type { TimeBase } from '@valideo/time-core';
 import { formatTimecode, timebase, rational } from '@valideo/time-core';
 import type { RenderModel, Viewport } from '@valideo/timeline-engine';
 import { timeToX } from '@valideo/timeline-engine';
+import type { WaveformColumn } from '@valideo/audio-engine';
 
 export const HAUTEUR_REGLE = 24;
 
@@ -103,6 +103,16 @@ export interface ApercuGeste {
   readonly rectangle: { x1: number; y1: number; x2: number; y2: number } | null;
 }
 
+/**
+ * Fournit les colonnes de forme d onde d un clip, ou `null` si son media n a pas
+ * ete decode. La fonction est appelee pendant le dessin : elle doit se contenter
+ * de lire la pyramide de pics deja construite (section 19).
+ */
+export type FournisseurFormeOnde = (
+  clip: RenderModel['clips'][number],
+  colonnes: number,
+) => readonly WaveformColumn[] | null;
+
 export interface OptionsRendu {
   readonly sequence: SequenceDoc;
   readonly modele: RenderModel;
@@ -115,6 +125,7 @@ export interface OptionsRendu {
   readonly debutTimecode: number;
   readonly geste: ApercuGeste | null;
   readonly dpr: number;
+  readonly formeOnde?: FournisseurFormeOnde | undefined;
 }
 
 function baseDe(sequence: SequenceDoc): TimeBase {
@@ -302,6 +313,15 @@ function dessinerClip(
   );
   ctx.stroke();
 
+  if (
+    o.modele.policy.waveforms &&
+    clip.kind === 'audio' &&
+    clip.width > 4 &&
+    o.formeOnde !== undefined
+  ) {
+    dessinerFormeOnde(ctx, o, clip, y, h);
+  }
+
   if (o.modele.policy.labels && clip.width > 28) {
     ctx.save();
     ctx.beginPath();
@@ -332,6 +352,57 @@ function dessinerClip(
       ctx.fillRect(ix - 2, y + 5, 4, 2);
     }
   }
+
+  ctx.restore();
+}
+
+/**
+ * Forme d onde : enveloppe (min/max) en clair, energie (RMS) en plus dense.
+ * Une colonne par pixel, lue au niveau de pyramide adapte au zoom.
+ */
+function dessinerFormeOnde(
+  ctx: CanvasRenderingContext2D,
+  o: OptionsRendu,
+  clip: RenderModel['clips'][number],
+  y: number,
+  h: number,
+): void {
+  const colonnes = Math.max(1, Math.floor(clip.width));
+  const donnees = o.formeOnde?.(clip, colonnes);
+  if (donnees === null || donnees === undefined || donnees.length === 0) return;
+
+  const milieu = y + h / 2;
+  const amplitude = (h - 10) / 2;
+  if (amplitude <= 1) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(clip.x, y, clip.width, h);
+  ctx.clip();
+
+  ctx.fillStyle = 'rgba(198, 236, 214, 0.45)';
+  for (let i = 0; i < donnees.length; i += 1) {
+    const col = donnees[i];
+    if (col === undefined) continue;
+    const haut = milieu - col.max * amplitude;
+    const bas = milieu - col.min * amplitude;
+    ctx.fillRect(clip.x + i, haut, 1, Math.max(1, bas - haut));
+  }
+
+  ctx.fillStyle = 'rgba(226, 248, 234, 0.85)';
+  for (let i = 0; i < donnees.length; i += 1) {
+    const col = donnees[i];
+    if (col === undefined) continue;
+    const demi = col.rms * amplitude;
+    ctx.fillRect(clip.x + i, milieu - demi, 1, Math.max(1, demi * 2));
+  }
+
+  ctx.strokeStyle = 'rgba(226, 248, 234, 0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(clip.x, Math.round(milieu) + 0.5);
+  ctx.lineTo(clip.x + clip.width, Math.round(milieu) + 0.5);
+  ctx.stroke();
 
   ctx.restore();
 }

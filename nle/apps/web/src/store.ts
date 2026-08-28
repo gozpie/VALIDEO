@@ -10,9 +10,11 @@ import { History } from '@valideo/command-system';
 import type { Command } from '@valideo/command-system';
 import type { AppError } from '@valideo/shared';
 import { isErr } from '@valideo/shared';
-import type { ProjectDoc, SequenceDoc } from '@valideo/project-model';
+import type { MediaAssetDoc, ProjectDoc, SequenceDoc } from '@valideo/project-model';
+import type { PeakPyramid } from '@valideo/audio-engine';
 import type { TimelineContext } from '@valideo/timeline-model';
 import { rational } from '@valideo/time-core';
+import type { SourceInfo } from '@valideo/timeline-model';
 import { timebaseDeSequence } from './timeline/draw.js';
 import { creerProjetDemo } from './demo-project.js';
 
@@ -44,6 +46,8 @@ export interface EtatEditeur {
   readonly contexte: TimelineContext;
   /** Document complet, tel qu'il sera enregistré. */
   readonly document: ProjectDoc;
+  /** Pyramides de pics des médias dont l'audio a été décodé, par identifiant. */
+  readonly pics: ReadonlyMap<string, PeakPyramid>;
 }
 
 export interface ActionsEditeur {
@@ -61,6 +65,8 @@ export interface ActionsEditeur {
   /** Remplace le document courant, à l'ouverture ou après une reprise. */
   chargerDocument(doc: ProjectDoc): void;
   signalerErreur(erreur: AppError): void;
+  /** Ajoute un média analysé au projet, avec ses pics quand ils existent. */
+  ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null): void;
 }
 
 export function useEditeur(): [EtatEditeur, ActionsEditeur] {
@@ -75,6 +81,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   }
   const history = historyRef.current;
   const [enveloppe, setEnveloppe] = useState<ProjectDoc>(demoRef.current);
+  const [pics, setPics] = useState<ReadonlyMap<string, PeakPyramid>>(() => new Map());
 
   const [sequence, setSequence] = useState<SequenceDoc>(() => history.current());
   const [instantane, setInstantane] = useState(() => history.snapshot());
@@ -103,16 +110,30 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
     [history, rafraichir],
   );
 
-  const contexte = useMemo<TimelineContext>(
-    () => ({
+  const contexte = useMemo<TimelineContext>(() => {
+    const parId = new Map(enveloppe.media.map((m) => [m.id, m]));
+    return {
       timebase: timebaseDeSequence(sequence),
-      // Le projet de démonstration ne référence aucun média : les bornes de
-      // source sont donc inconnues, et les trims ne sont pas contraints. Ce
-      // resolveur sera remplacé dès qu'un média réel sera analysé.
-      resolveSource: () => null,
-    }),
-    [sequence],
-  );
+      /**
+       * Bornes réelles de la source, quand le média est connu.
+       *
+       * C'est ce qui rend les butées de trim exactes : on ne peut plus tirer un
+       * clip au-delà de ce que le fichier contient. Pour un clip sans média —
+       * titre, cache couleur, calque d'effet — il n'y a rien à borner, et on
+       * retourne `null` plutôt que d'inventer une limite.
+       */
+      resolveSource: (clip): SourceInfo | null => {
+        if (clip.mediaId === null) return null;
+        const asset = parId.get(clip.mediaId);
+        if (asset === undefined) return null;
+        return {
+          first: 0,
+          count: asset.duration.frames,
+          rate: rational(asset.duration.base.rate.n, asset.duration.base.rate.d),
+        };
+      },
+    };
+  }, [enveloppe.media, sequence]);
 
   const actions = useMemo<ActionsEditeur>(
     () => ({
@@ -144,6 +165,12 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
       basculerAccrochage: () => setAccrochage((v) => !v),
       effacerErreur: () => setDerniereErreur(null),
       signalerErreur: (erreur: AppError) => setDerniereErreur(erreur),
+      ajouterMedia: (asset: MediaAssetDoc, nouveauxPics: PeakPyramid | null) => {
+        setEnveloppe((courante) => ({ ...courante, media: [...courante.media, asset] }));
+        if (nouveauxPics !== null) {
+          setPics((courants) => new Map(courants).set(asset.id, nouveauxPics));
+        }
+      },
       chargerDocument: (doc: ProjectDoc) => {
         const premiere = doc.sequences[0];
         if (premiere === undefined) return;
@@ -164,6 +191,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
 
   const etat: EtatEditeur = {
     document,
+    pics,
     sequence,
     selection,
     tete,

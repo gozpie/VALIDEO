@@ -25,6 +25,7 @@ import {
   ticks,
   viewport as creerViewport,
   xToTime,
+  xToTimeExact,
   zoomAt,
 } from '@valideo/timeline-engine';
 import type { Viewport } from '@valideo/timeline-engine';
@@ -51,8 +52,9 @@ import {
   IconeVerrou,
 } from '../panels/Icones.js';
 import type { ActionsEditeur, EtatEditeur } from '../store.js';
+import { readWaveform } from '@valideo/audio-engine';
 import { HAUTEUR_REGLE, dessinerTimeline, timebaseDeSequence } from './draw.js';
-import type { ApercuGeste } from './draw.js';
+import type { ApercuGeste, FournisseurFormeOnde } from './draw.js';
 
 type Geste =
   | { type: 'aucun' }
@@ -103,17 +105,26 @@ export function Timeline({
   const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
 
   // Mesure du conteneur : la timeline suit la taille du panneau.
+  //
+  // La largeur mesurée est REMONTÉE dans le viewport partagé. Sans cela, l'état
+  // conserverait sa largeur initiale arbitraire, et tout ce qui en dépend --
+  // ajustement de la séquence, ancrage du zoom, bornage du défilement -- se
+  // calculerait sur une vue qui n'existe pas.
   useLayoutEffect(() => {
     const noeud = conteneurRef.current;
     if (noeud === null) return undefined;
     const observateur = new ResizeObserver((entrees) => {
       const rect = entrees[0]?.contentRect;
       if (rect === undefined) return;
-      setTaille({ largeur: Math.max(1, rect.width), hauteur: Math.max(1, rect.height) });
+      const largeur = Math.max(1, rect.width);
+      setTaille({ largeur, hauteur: Math.max(1, rect.height) });
+      definirVue((v) =>
+        v.width === largeur ? v : creerViewport(v.scroll, v.pixelsPerFrame, largeur),
+      );
     });
     observateur.observe(noeud);
     return () => observateur.disconnect();
-  }, []);
+  }, [definirVue]);
 
   const vueMesuree = useMemo<Viewport>(
     () => creerViewport(vue.scroll, vue.pixelsPerFrame, taille.largeur),
@@ -132,6 +143,44 @@ export function Timeline({
   );
 
   const graduations = useMemo(() => ticks(vueMesuree, base, 90), [vueMesuree, base]);
+
+  const mediasParId = useMemo(
+    () => new Map(etat.document.media.map((m) => [m.id, m])),
+    [etat.document.media],
+  );
+
+  /**
+   * Forme d onde d un clip, lue dans la pyramide de pics du média.
+   *
+   * On ne calcule que la portion VISIBLE du clip, une colonne par pixel : un
+   * clip de deux heures dont on voit trois secondes ne coûte que ces trois
+   * secondes (§19, §55).
+   */
+  const formeOnde = useMemo<FournisseurFormeOnde>(
+    () => (clip, colonnes) => {
+      if (clip.mediaId === null) return null;
+      const pyramide = etat.pics.get(clip.mediaId);
+      const media = mediasParId.get(clip.mediaId);
+      if (pyramide === undefined || media === undefined) return null;
+
+      const cadenceSource = media.duration.base.rate.n / media.duration.base.rate.d;
+      const cadenceSequence = base.rate.n / base.rate.d;
+      const vitesse = clip.speed.n / clip.speed.d;
+      if (cadenceSource <= 0 || cadenceSequence <= 0) return null;
+
+      // Instant source correspondant à une position de timeline, en secondes.
+      const secondesA = (x: number): number => {
+        const decalage = xToTimeExact(vueMesuree, x) - clip.start;
+        return clip.sourceIn / cadenceSource + (decalage * vitesse) / cadenceSequence;
+      };
+
+      const debut = secondesA(clip.x) * pyramide.sampleRate;
+      const fin = secondesA(clip.x + clip.width) * pyramide.sampleRate;
+      if (!Number.isFinite(debut) || !Number.isFinite(fin) || fin <= debut) return null;
+      return readWaveform(pyramide, 0, debut, fin, colonnes);
+    },
+    [base.rate.d, base.rate.n, etat.pics, mediasParId, vueMesuree],
+  );
 
   /** Redessine immediatement, sans passer par React. */
   const redessiner = useCallback(() => {
@@ -172,8 +221,9 @@ export function Timeline({
       debutTimecode: etat.sequence.startTimecode,
       geste: apercu,
       dpr: window.devicePixelRatio || 1,
+      formeOnde,
     });
-  }, [etat.sequence, etat.tete, modele, vueMesuree, taille, graduations, base]);
+  }, [etat.sequence, etat.tete, modele, vueMesuree, taille, graduations, base, formeOnde]);
 
   // Dimensionnement du canvas en pixels physiques : sans cela le rendu est flou
   // sur un écran à haute densité.
@@ -539,7 +589,15 @@ export function Timeline({
         etat={etat}
         actions={actions}
       />
-      <div className="timeline-toile" ref={conteneurRef}>
+      {/* État du viewport exposé pour les tests de bout en bout : c'est la seule
+          façon de vérifier le zoom et le défilement, qui vivent dans un canvas. */}
+      <div
+        className="timeline-toile"
+        ref={conteneurRef}
+        data-scroll={Math.round(vueMesuree.scroll)}
+        data-echelle={vueMesuree.pixelsPerFrame.toFixed(4)}
+        data-largeur={Math.round(vueMesuree.width)}
+      >
         <canvas
           ref={toileRef}
           style={{ cursor: curseur }}

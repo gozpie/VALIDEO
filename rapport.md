@@ -387,3 +387,48 @@ code plutôt que sous-entendu.
 notamment qu'après un déplacement de clip, un enregistrement et un rechargement
 complet de la page, le montage revient exactement tel quel ; et qu'un travail
 non enregistré laissé par une session interrompue est bien proposé à la reprise.
+
+---
+
+## 2026-08-28 — Import de vrais médias et formes d'onde réelles
+
+### Objectif
+
+Permettre d'importer ses propres fichiers, et faire passer les formes d'onde de
+la promesse à la réalité.
+
+### Modifications
+
+**`nle/apps/web`** — import de fichiers par le panneau Projet. Les fichiers
+audio sont intégralement décodés par le navigateur : le nombre de canaux, la
+fréquence d'échantillonnage et la durée affichés sont ceux réellement lus, et la
+forme d'onde dessinée dans la timeline provient des vrais échantillons.
+
+Les fichiers vidéo sont importés avec leur durée et leur définition. Le codec, le
+profil, la colorimétrie et le timecode embarqué restent vides : le navigateur ne
+les expose pas, et les deviner serait un mensonge. Le service d'analyse ffprobe,
+déjà écrit et testé, les complétera.
+
+Conséquence importante : les butées de trim deviennent exactes. On ne peut plus
+tirer un clip au-delà de ce que le fichier contient réellement.
+
+Un clip audio dont le média n'a pas été décodé ne reçoit aucune forme d'onde :
+un aplat uni vaut mieux qu'une courbe inventée.
+
+### Trois bugs réels trouvés en cherchant à voir la forme d'onde
+
+1. La largeur du viewport restait figée à sa valeur initiale dans l'état
+   partagé, alors que le canvas en faisait une tout autre. L'ajustement de
+   séquence, l'ancrage du zoom et le bornage du défilement se calculaient donc
+   sur une vue qui n'existait pas.
+2. Le zoom se centrait sur le milieu de la vue au lieu de la tête de lecture :
+   chaque cran éloignait du point de travail.
+3. Une fixture nommée « stereo » était en réalité mono. Le nom mentait ; c'est le
+   script de génération qui a été corrigé, pas le test.
+
+### Vérifications
+
+424 tests unitaires et 15 tests de bout en bout. L'un d'eux compte les pixels
+clairs de la piste avant et après l'import, et vérifie qu'une piste audio sans
+média décodé n'en reçoit aucun : c'est la preuve que la courbe vient bien des
+échantillons.

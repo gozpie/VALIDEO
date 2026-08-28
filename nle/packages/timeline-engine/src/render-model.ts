@@ -55,6 +55,10 @@ export interface ClipDrawItem {
   readonly linked: boolean;
   readonly speedPercent: number | null;
   readonly label: string | null;
+  /** Necessaires au dessin de la forme d onde : ou lire dans la source. */
+  readonly mediaId: string | null;
+  readonly sourceIn: number;
+  readonly speed: { readonly n: number; readonly d: number };
   /** Position et duree reelles, pour les interactions. */
   readonly start: number;
   readonly duration: number;
@@ -182,6 +186,9 @@ export function buildRenderModel(
         linked: clip.linkGroup !== null,
         speedPercent: speedPercentOf(clip),
         label: clip.label,
+        mediaId: clip.mediaId,
+        sourceIn: clip.sourceIn,
+        speed: clip.speed,
         start: clip.start,
         duration: clip.duration,
       });
