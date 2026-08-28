@@ -640,6 +640,58 @@ recharger. C'est cette simulation qui a révélé les défauts 4 et 5 ci-dessus.
 
 **Total : 524 tests unitaires + 56 tests de bout en bout.**
 
+## Espace de travail à panneaux ancrables (§6, §73)
+
+La disposition était une grille CSS figée : deux colonnes, trois rangées, et
+aucun moyen de la changer. Un monteur qui travaille sur un seul écran veut une
+grande timeline ; sur deux écrans il veut deux moniteurs larges ; en repérage
+il veut le Projet en pleine hauteur. Une grille ne sait exprimer qu'une seule
+de ces trois dispositions.
+
+**Ce qui fonctionne réellement**, à la souris et au clavier :
+
+- saisir l'onglet d'un panneau et le déposer sur le bord d'une zone — il s'y
+  ancre en créant une division — ou au centre, pour le mettre en onglet ;
+- redimensionner par les poignées, avec **aimantation** sur le quart, le tiers,
+  la moitié, les deux tiers et les trois quarts ; la poignée s'allume quand
+  elle colle ; double-clic pour égaliser ;
+- manœuvrer une poignée aux **flèches** du clavier, par pas de 2 % (10 % avec
+  Maj) ;
+- fermer un panneau, et le rouvrir par le menu **Fenêtre**, qui coche ceux qui
+  sont affichés ;
+- **Échap** abandonne un déplacement engagé par erreur ;
+- la disposition est **conservée** d'une session à l'autre, et
+  « Réinitialiser la disposition » remet le banc de montage d'origine.
+
+**Le modèle est un arbre binaire de découpes**, pur, sans React ni DOM
+(ADR-042). Il tient quatre invariants — une zone n'est jamais vide, l'onglet
+actif appartient à sa zone, une division a exactement deux enfants, un panneau
+n'est jamais à deux endroits — et **toute opération qui les violerait rend
+l'arbre inchangé** plutôt qu'une disposition cassée, comme les opérations de
+montage (ADR-011).
+
+**34 tests unitaires**, dont un fuzz déterministe : sept graines, mille gestes
+chacune — dépôt, fermeture, activation, redimensionnement — avec vérification
+des invariants après **chaque** geste, et vérification qu'un panneau fermé peut
+toujours revenir. Plus **8 tests de bout en bout** dans un vrai navigateur, qui
+glissent réellement les onglets à la souris.
+
+**Portée déclarée (§1003).** Il n'y a **pas de panneau flottant** : c'est un
+choix, et l'arbre le garantit par construction — aucun état ne représente un
+panneau hors de l'arbre. Et **déplacer** un panneau d'une zone à l'autre le
+remonte, puisqu'il change de parent dans l'arbre React ; changer d'ONGLET, lui,
+ne remonte rien, ce qu'un test vérifie sur le canvas de la timeline (ADR-043).
+
+**Un bug réel trouvé, et il ne venait pas de ce chantier.** En lançant la suite
+de bout en bout sur un poste macOS, seize tests échouaient. La cause n'était pas
+l'application : les tests pressaient `Control` en dur, alors que le logiciel
+résout correctement `Mod` en **Cmd** sur macOS (ADR-019). Le conteneur de
+développement étant sous Linux, personne ne pouvait le voir. Les raccourcis des
+tests passent désormais par une constante dépendante de la plateforme, et la
+suite est verte sur les deux.
+
+**Total : 558 tests unitaires + 64 tests de bout en bout.**
+
 ## NEXT
 
 1. Graphe de rendu et composition multicouche (§23) — c'est ce qui manque pour

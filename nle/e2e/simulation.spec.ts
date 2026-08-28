@@ -17,6 +17,17 @@ import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
 /**
+ * Touche « Mod » du logiciel : Cmd sur macOS, Ctrl ailleurs (§34, ADR-019).
+ *
+ * Les raccourcis étaient écrits en dur avec `Control`. La suite ne pouvait donc
+ * PAS passer sur un Mac — seize tests y échouaient — alors que l'application y
+ * est parfaitement correcte : c'est elle qui a raison, et le test qui pressait
+ * la mauvaise touche. Le conteneur de développement étant sous Linux, personne
+ * ne pouvait le voir.
+ */
+const MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
+
+/**
  * Ligne du panneau Projet, par nom EXACT.
  *
  * Une recherche par sous-chaîne ferait correspondre « A003_large » à
@@ -241,9 +252,9 @@ test.describe('montage complet', () => {
     await test.step('10. presse-papiers : copier un plan et le coller en fin', async () => {
       await selectionner(page, 2, 0.1);
       const avant = await page.locator('.table-projet tbody tr[data-clip]').count();
-      await page.keyboard.press('Control+c');
+      await page.keyboard.press(`${MOD}+c`);
       await page.keyboard.press('End');
-      await page.keyboard.press('Control+v');
+      await page.keyboard.press(`${MOD}+v`);
       await expect(historique(page)).toContainText(['Coller']);
       await expect(page.locator('.table-projet tbody tr[data-clip]')).toHaveCount(avant + 2);
     });
@@ -251,7 +262,7 @@ test.describe('montage complet', () => {
     await test.step('11. vitesse et durée : un ralenti à 50 % sur un clip isolé', async () => {
       await selectionner(page, 4, 0.5); // ambiance de A2, non liée
       await expect(page.locator('.barre-etat')).toContainText('1 sélectionné');
-      await page.keyboard.press('Control+r');
+      await page.keyboard.press(`${MOD}+r`);
       await page.getByTestId('vitesse-pourcent').fill('50');
       await page.getByTestId('vitesse-ripple').check();
       await page.locator('.modale button.principal').click();
@@ -336,7 +347,7 @@ test.describe('montage complet', () => {
         ) {
           break;
         }
-        await page.keyboard.press('Control+z');
+        await page.keyboard.press(`${MOD}+z`);
       }
       expect(await debutDe(page, 'A001_ouverture')).toBe('01:00:00:00');
       expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
@@ -346,7 +357,7 @@ test.describe('montage complet', () => {
 
     await test.step('17. tout rétablir redonne le montage terminé', async () => {
       const etapes = await historique(page).count();
-      for (let i = 0; i < etapes; i += 1) await page.keyboard.press('Control+Shift+z');
+      for (let i = 0; i < etapes; i += 1) await page.keyboard.press(`${MOD}+Shift+z`);
       // Le montage retrouvé n'est plus celui du départ : le rétablissement a
       // rejoué toute la session, pas seulement la dernière commande.
       expect(await debutDe(page, 'A002_contrechamp')).not.toBe('01:00:04:18');
@@ -356,7 +367,7 @@ test.describe('montage complet', () => {
     await test.step('18. enregistrer, recharger, et retrouver le montage', async () => {
       const repere = await debutDe(page, 'A002_contrechamp');
       const clips = await page.locator('.table-projet tbody tr[data-clip]').count();
-      await page.keyboard.press('Control+s');
+      await page.keyboard.press(`${MOD}+s`);
       await expect(page.locator('.barre-etat')).toContainText('Enregistré');
 
       await page.reload();

@@ -34,21 +34,9 @@
   flex: 1;
 }
 
-.espace-travail {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr);
-  /* Trois rangées explicites : moniteurs, panneaux, timeline. Sans la troisième
-     déclarée, la timeline créait une rangée implicite qui écrasait les
-     panneaux du milieu. */
-  grid-template-rows: minmax(180px, 34%) minmax(120px, 22%) minmax(200px, 1fr);
-  gap: 1px;
-  background: var(--bord);
-  min-height: 0;
-}
-.espace-travail > .zone-timeline {
-  grid-column: 1 / -1;
-}
+/* La disposition de l'espace de travail est désormais un arbre de découpes
+   déplaçables : voir `espace/espace.css` et `espace/modele.ts`. La grille fixe
+   qui se trouvait ici ne pouvait exprimer qu'une seule disposition. */
 
 .panneau {
   display: flex;

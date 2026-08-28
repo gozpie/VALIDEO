@@ -82,6 +82,7 @@ ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=1" "$OUT/sequence/shot_%04d.png"
 ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=1" \
   -c:v libx264 -pix_fmt yuv420p \
   -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc \
+  -x264-params "colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc" \
   "$OUT/hdr_pq.mp4"
 
 # Fichier LONG : plus d'images que la fenêtre d'échantillonnage des horodatages.

@@ -10,6 +10,16 @@
  * formes d'onde, exporter.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EspaceTravail } from './espace/EspaceTravail.js';
+import { ACCUEIL, PANNEAUX, TITRES, dispositionParDefaut } from './espace/panneaux.js';
+import type { IdPanneau } from './espace/panneaux.js';
+import { activer, panneauxDe, reconcilier, retirer, zoneContenant } from './espace/modele.js';
+import type { Noeud } from './espace/modele.js';
+import {
+  chargerDisposition,
+  enregistrerDisposition,
+  oublierDisposition,
+} from './espace/persistance-espace.js';
 import { appError, isErr } from '@valideo/shared';
 import type { AppError } from '@valideo/shared';
 import { formatTimecode, parseTimecodeEntry, rational } from '@valideo/time-core';
@@ -332,6 +342,46 @@ export function App(): React.JSX.Element {
   /** Menu de la barre supérieure ouvert, avec sa position. */
   const [menuBarre, setMenuBarre] = useState<{ nom: string; x: number; y: number } | null>(null);
   const [raccourcisOuverts, setRaccourcisOuverts] = useState(false);
+
+  /**
+   * Disposition des panneaux (§6).
+   *
+   * Relue au démarrage, puis RÉCONCILIÉE avec les panneaux que cette version
+   * connaît : une disposition enregistrée par une version antérieure ne doit
+   * ni faire disparaître un panneau neuf, ni ressusciter un panneau supprimé.
+   * Toute disposition illisible retombe sur celle par défaut, sans message :
+   * l'utilisateur retrouve un banc de montage normal, ce qui est la seule
+   * chose qui l'intéresse.
+   */
+  const [disposition, setDisposition] = useState<Noeud>(() => {
+    const relue = chargerDisposition();
+    return (
+      (relue === null ? null : reconcilier(relue, [...PANNEAUX], ACCUEIL)) ?? dispositionParDefaut()
+    );
+  });
+
+  useEffect(() => {
+    enregistrerDisposition(disposition);
+  }, [disposition]);
+
+  const reinitialiserDisposition = useCallback(() => {
+    oublierDisposition();
+    setDisposition(dispositionParDefaut());
+  }, []);
+
+  /**
+   * Affiche ou masque un panneau. Un panneau masqué n'est nulle part dans
+   * l'arbre : le rouvrir passe donc par la réconciliation, exactement comme un
+   * panneau ajouté par une nouvelle version du logiciel. Un seul chemin de
+   * retour, donc un seul comportement à vérifier.
+   */
+  const basculerPanneau = useCallback((id: IdPanneau) => {
+    setDisposition((courante) => {
+      if (zoneContenant(courante, id) !== null) return retirer(courante, id);
+      const suivante = reconcilier(courante, [...panneauxDe(courante), id], ACCUEIL);
+      return suivante === null ? courante : activer(suivante, id);
+    });
+  }, []);
   /** Ouvre le sélecteur de fichiers du panneau Médias. Fourni par ce panneau. */
   const ouvrirImportRef = useRef<(() => void) | null>(null);
   const enregistrerCommandeImport = useCallback((ouvrir: () => void) => {
@@ -1278,6 +1328,23 @@ export function App(): React.JSX.Element {
         ],
       },
       {
+        nom: 'Fenêtre',
+        elements: [
+          ...PANNEAUX.map((id) => ({
+            id: `bm-panneau-${id}`,
+            libelle: TITRES[id],
+            cochee: zoneContenant(disposition, id) !== null,
+            onChoisir: () => basculerPanneau(id),
+          })),
+          { separateur: true as const, id: 'bfen1' },
+          {
+            id: 'bm-disposition-defaut',
+            libelle: 'Réinitialiser la disposition',
+            onChoisir: reinitialiserDisposition,
+          },
+        ],
+      },
+      {
         nom: 'Aide',
         elements: [
           {
@@ -1288,7 +1355,7 @@ export function App(): React.JSX.Element {
         ],
       },
     ];
-  }, [actions, etat, executerAction]);
+  }, [actions, basculerPanneau, disposition, etat, executerAction, reinitialiserDisposition]);
 
   useEffect(() => {
     const surTouche = (e: KeyboardEvent): void => {
@@ -1492,161 +1559,169 @@ export function App(): React.JSX.Element {
         </div>
       )}
 
-      <div className="espace-travail">
-        <Moniteur titre="Moniteur Source" />
-        <MoniteurProgramme
-          sequence={etat.sequence}
-          tete={etat.tete}
-          tempsCode={timecode(etat.tete)}
-          duree={timecode(duree)}
-          sources={etat.sourcesVideo}
-          mediaCadence={cadenceMedia}
-          enLecture={vitesse !== 0}
-        />
-
-        <section className="panneau">
-          <div className="panneau-entete">
-            <span className="titre">Projet</span>
-            <span className="espace" />
-            <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
-          </div>
-          <div className="panneau-corps">
-            <PanneauMedias
-              etat={etat}
-              actions={actions}
-              timecode={timecode}
-              surCommandeImport={enregistrerCommandeImport}
-            />
-            <div className="panneau-entete" style={{ marginTop: 8 }}>
-              <span className="titre">Clips de la séquence</span>
-            </div>
-            <PanneauProjet
+      <EspaceTravail
+        disposition={disposition}
+        definirDisposition={setDisposition}
+        titres={TITRES}
+        rendus={{
+          source: <Moniteur titre="Moniteur Source" />,
+          programme: (
+            <MoniteurProgramme
               sequence={etat.sequence}
-              selection={etat.selection}
-              timecode={timecode}
+              tete={etat.tete}
+              tempsCode={timecode(etat.tete)}
+              duree={timecode(duree)}
+              sources={etat.sourcesVideo}
+              mediaCadence={cadenceMedia}
+              enLecture={vitesse !== 0}
             />
-          </div>
-        </section>
+          ),
+          projet: (
+            <section className="panneau">
+              <div className="panneau-entete">
+                <span className="titre">Projet</span>
+                <span className="espace" />
+                <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
+              </div>
+              <div className="panneau-corps">
+                <PanneauMedias
+                  etat={etat}
+                  actions={actions}
+                  timecode={timecode}
+                  surCommandeImport={enregistrerCommandeImport}
+                />
+                <div className="panneau-entete" style={{ marginTop: 8 }}>
+                  <span className="titre">Clips de la séquence</span>
+                </div>
+                <PanneauProjet
+                  sequence={etat.sequence}
+                  selection={etat.selection}
+                  timecode={timecode}
+                />
+              </div>
+            </section>
+          ),
+          info: <PanneauInfo etat={etat} actions={actions} timecode={timecode} duree={duree} />,
+          timeline: (
+            <section className="panneau zone-timeline">
+              <div className="panneau-entete">
+                <span className="titre">Timeline · {etat.sequence.name}</span>
+                <span className="espace" />
+                <button
+                  type="button"
+                  onClick={saisirTimecode}
+                  className="mono"
+                  title="Saisir un timecode (§16)"
+                >
+                  {timecode(etat.tete)}
+                </button>
+              </div>
 
-        <PanneauInfo etat={etat} actions={actions} timecode={timecode} duree={duree} />
+              <div className="timeline-outils">
+                {OUTILS.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    className={`outil ${etat.outil === o.id ? 'actif' : ''}`}
+                    title={`${o.titre} (${o.touche})`}
+                    onClick={() => actions.definirOutil(o.id)}
+                  >
+                    {o.libelle}
+                  </button>
+                ))}
+                <span className="sep" />
+                <button
+                  type="button"
+                  className={etat.accrochage ? 'actif' : ''}
+                  onClick={actions.basculerAccrochage}
+                  title="Accrochage magnétique (S)"
+                >
+                  Accrochage
+                </button>
+                <span className="sep" />
+                <button
+                  type="button"
+                  onClick={actions.annuler}
+                  disabled={!etat.historique.canUndo}
+                  title="Annuler"
+                >
+                  ↶
+                </button>
+                <button
+                  type="button"
+                  onClick={actions.retablir}
+                  disabled={!etat.historique.canRedo}
+                  title="Rétablir"
+                >
+                  ↷
+                </button>
+                <span className="sep" />
+                <button type="button" onClick={() => zoomer(1 / 1.6)} title="Zoom arrière">
+                  −
+                </button>
+                <button type="button" onClick={() => zoomer(1.6)} title="Zoom avant">
+                  +
+                </button>
+                <button type="button" onClick={ajuster} title="Ajuster la séquence">
+                  Ajuster
+                </button>
+                <span className="sep" />
+                <button
+                  type="button"
+                  onClick={() => void persistance.enregistrer(etat.document)}
+                  disabled={persistance.etat === 'enregistrement'}
+                  title="Enregistrer le projet (Ctrl+S)"
+                >
+                  Enregistrer
+                </button>
+                <span className="sep" />
+                <button
+                  type="button"
+                  className={vitesse !== 0 ? 'actif' : ''}
+                  onClick={() => executerAction('playback.togglePlay')}
+                  title="Lecture / Pause (Espace)"
+                  data-test="lecture"
+                >
+                  {vitesse !== 0 ? '⏸' : '▶'}
+                </button>
+                <button
+                  type="button"
+                  className={boucle ? 'actif' : ''}
+                  onClick={() => executerAction('playback.loop')}
+                  title="Lecture en boucle sur la plage marquée (Ctrl+L)"
+                  aria-pressed={boucle}
+                  data-test="boucle"
+                >
+                  ⟳
+                </button>
+                <span className="espace" style={{ flex: 1 }} />
+                {boucle && (
+                  <span className="mono" data-test="etat-boucle">
+                    {workAreaRange(etat.sequence) === null ? 'boucle · séquence' : 'boucle · plage'}
+                  </span>
+                )}
+                {vitesse !== 0 && (
+                  <span className="mono" data-test="etat-lecture">
+                    {vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}
+                    {vitesse === 1 ? ' · son' : ' · sans son'}
+                  </span>
+                )}
+              </div>
 
-        <section className="panneau zone-timeline" style={{ gridColumn: '1 / -1' }}>
-          <div className="panneau-entete">
-            <span className="titre">Timeline · {etat.sequence.name}</span>
-            <span className="espace" />
-            <button
-              type="button"
-              onClick={saisirTimecode}
-              className="mono"
-              title="Saisir un timecode (§16)"
-            >
-              {timecode(etat.tete)}
-            </button>
-          </div>
-
-          <div className="timeline-outils">
-            {OUTILS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                className={`outil ${etat.outil === o.id ? 'actif' : ''}`}
-                title={`${o.titre} (${o.touche})`}
-                onClick={() => actions.definirOutil(o.id)}
-              >
-                {o.libelle}
-              </button>
-            ))}
-            <span className="sep" />
-            <button
-              type="button"
-              className={etat.accrochage ? 'actif' : ''}
-              onClick={actions.basculerAccrochage}
-              title="Accrochage magnétique (S)"
-            >
-              Accrochage
-            </button>
-            <span className="sep" />
-            <button
-              type="button"
-              onClick={actions.annuler}
-              disabled={!etat.historique.canUndo}
-              title="Annuler"
-            >
-              ↶
-            </button>
-            <button
-              type="button"
-              onClick={actions.retablir}
-              disabled={!etat.historique.canRedo}
-              title="Rétablir"
-            >
-              ↷
-            </button>
-            <span className="sep" />
-            <button type="button" onClick={() => zoomer(1 / 1.6)} title="Zoom arrière">
-              −
-            </button>
-            <button type="button" onClick={() => zoomer(1.6)} title="Zoom avant">
-              +
-            </button>
-            <button type="button" onClick={ajuster} title="Ajuster la séquence">
-              Ajuster
-            </button>
-            <span className="sep" />
-            <button
-              type="button"
-              onClick={() => void persistance.enregistrer(etat.document)}
-              disabled={persistance.etat === 'enregistrement'}
-              title="Enregistrer le projet (Ctrl+S)"
-            >
-              Enregistrer
-            </button>
-            <span className="sep" />
-            <button
-              type="button"
-              className={vitesse !== 0 ? 'actif' : ''}
-              onClick={() => executerAction('playback.togglePlay')}
-              title="Lecture / Pause (Espace)"
-              data-test="lecture"
-            >
-              {vitesse !== 0 ? '⏸' : '▶'}
-            </button>
-            <button
-              type="button"
-              className={boucle ? 'actif' : ''}
-              onClick={() => executerAction('playback.loop')}
-              title="Lecture en boucle sur la plage marquée (Ctrl+L)"
-              aria-pressed={boucle}
-              data-test="boucle"
-            >
-              ⟳
-            </button>
-            <span className="espace" style={{ flex: 1 }} />
-            {boucle && (
-              <span className="mono" data-test="etat-boucle">
-                {workAreaRange(etat.sequence) === null ? 'boucle · séquence' : 'boucle · plage'}
-              </span>
-            )}
-            {vitesse !== 0 && (
-              <span className="mono" data-test="etat-lecture">
-                {vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}
-                {vitesse === 1 ? ' · son' : ' · sans son'}
-              </span>
-            )}
-          </div>
-
-          <Timeline
-            etat={etat}
-            actions={actions}
-            surDeposeMedia={surDeposeMedia}
-            surMenuContextuel={setMenu}
-            vue={vue}
-            definirVue={definirVue}
-            defilementVertical={defilementVertical}
-            definirDefilementVertical={definirDefilementVertical}
-          />
-        </section>
-      </div>
+              <Timeline
+                etat={etat}
+                actions={actions}
+                surDeposeMedia={surDeposeMedia}
+                surMenuContextuel={setMenu}
+                vue={vue}
+                definirVue={definirVue}
+                defilementVertical={defilementVertical}
+                definirDefilementVertical={definirDefilementVertical}
+              />
+            </section>
+          ),
+        }}
+      />
 
       <footer className="barre-etat">
         <span className="mono">{timecode(etat.tete)}</span>

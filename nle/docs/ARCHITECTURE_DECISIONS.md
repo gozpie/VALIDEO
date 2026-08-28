@@ -682,3 +682,66 @@ et demie devant la tête et met en cache. L'affichage n'attend alors plus.
 **Conséquences.** Mesuré : ~24,7 images par seconde sur une séquence à 25, dans
 un navigateur sans accélération matérielle. Et surtout, l'image ne dérive pas de
 la tête de lecture, qui reste pilotée par l'horloge audio (ADR-033).
+
+## ADR-042 — La disposition des panneaux est un arbre binaire, pas une grille
+
+**Contexte.** L'espace de travail était une grille CSS à deux colonnes et trois
+rangées. Rendre les panneaux déplaçables demandait de choisir une
+représentation.
+
+**Décision.** Un arbre binaire de découpes : une feuille est un groupe
+d'onglets, un nœud interne est une division en deux, avec une fraction.
+
+**Pourquoi.** Une grille impose ses rangées et ses colonnes. Déplacer un panneau
+y oblige à recalculer toute la matrice, et certaines dispositions n'y sont pas
+exprimables du tout — une colonne étroite à gauche sur toute la hauteur, à côté
+de deux rangées à droite, n'a pas de grille naturelle. Un arbre binaire exprime
+n'importe quelle disposition rectangulaire, et chaque dépôt n'est qu'une
+insertion locale : on remplace une feuille par une division de deux feuilles.
+
+**Conséquence.** Le modèle est pur et se teste sans navigateur, comme
+`timeline-engine` (ADR-014). Il tient ses invariants par normalisation après
+chaque opération, et un geste impossible rend l'arbre inchangé (ADR-011).
+
+## ADR-043 — Un onglet inactif reste monté, un panneau déplacé est remonté
+
+**Contexte.** Les panneaux d'une zone partagent la place ; un seul est visible.
+Faut-il démonter les autres ?
+
+**Décision.** Tous les panneaux d'une zone sont rendus, l'inactif masqué en CSS.
+En revanche, déplacer un panneau vers une autre zone le remonte.
+
+**Pourquoi.** Changer d'onglet est un geste COURANT. La timeline porte un
+canvas, un décodeur vidéo et des écouteurs : la démonter à chaque aller-retour
+perdrait la position de lecture et relancerait un décodage. Déplacer un panneau
+est un geste RARE et délibéré ; le panneau change de parent dans l'arbre React,
+et seul un portail l'éviterait — au prix d'une passe de rendu supplémentaire et
+d'un couplage entre le modèle et le DOM. L'état vit dans le document, pas dans
+les composants : le panneau se redessine depuis lui.
+
+**Conséquence.** Le masquage se fait par une classe `display: none`, PAS par
+l'attribut `hidden` : un élément en `display: flex` ignore `[hidden]`, et
+l'onglet inactif resterait visible.
+
+## ADR-044 — La disposition ne voyage pas avec le projet
+
+**Contexte.** Le projet est déjà persisté par `@valideo/storage`, versionné et
+migré. Fallait-il y ranger la disposition des panneaux ?
+
+**Décision.** Non. La disposition va dans `localStorage`, sous une clé à part,
+et toute lecture ou écriture est gardée par un `try`.
+
+**Pourquoi.** Le stockage du projet garde le TRAVAIL : il suit le projet d'une
+machine à l'autre. Une disposition de panneaux est une préférence de poste,
+propre à cet écran. Les mélanger ferait voyager la disposition d'un portable 13
+pouces jusqu'à une station à deux écrans, ce qui est un défaut, pas une
+fonctionnalité. La garde sur l'accès n'est pas décorative : en navigation
+privée, ou avec les données de site bloquées, `localStorage` lève à la lecture
+même. Un espace de travail qui refuse de s'afficher faute de préférence serait
+un mauvais compromis.
+
+**Conséquence.** Une disposition relue est RÉCONCILIÉE avec les panneaux que la
+version connaît : les inconnus sont retirés, les nouveaux ajoutés. Sans cette
+étape, ajouter un panneau au logiciel le rendrait invisible pour tout
+utilisateur ayant déjà une disposition enregistrée — un défaut qu'un
+développeur, partant toujours d'un navigateur vierge, ne voit jamais.

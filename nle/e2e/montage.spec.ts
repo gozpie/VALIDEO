@@ -10,6 +10,17 @@ import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
 /**
+ * Touche « Mod » du logiciel : Cmd sur macOS, Ctrl ailleurs (§34, ADR-019).
+ *
+ * Les raccourcis étaient écrits en dur avec `Control`. La suite ne pouvait donc
+ * PAS passer sur un Mac — seize tests y échouaient — alors que l'application y
+ * est parfaitement correcte : c'est elle qui a raison, et le test qui pressait
+ * la mauvaise touche. Le conteneur de développement étant sous Linux, personne
+ * ne pouvait le voir.
+ */
+const MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
+
+/**
  * Ligne du panneau Projet correspondant à un clip, par nom EXACT.
  *
  * Deux pièges, tous deux rencontrés :
@@ -111,7 +122,7 @@ test('déplacer un clip modifie réellement le modèle et se voit dans l’histo
   await expect(historique(page)).toHaveCount(2);
 
   // Et l'annulation revient exactement au point de départ.
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   expect(await debutDe(page, 'Générique début')).toBe(avant);
 });
 
@@ -130,7 +141,7 @@ test('l’outil Lame coupe le plan ET son son lié (§80, §94)', async ({ page 
   await expect(historique(page)).toContainText(['Lame']);
 
   // Une seule annulation rend les deux coupes : c'est une seule opération.
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   await expect(clips()).toHaveCount(avant);
 });
 
@@ -172,7 +183,7 @@ test('verrouiller une piste passe par une commande annulable', async ({ page }) 
   await expect(verrou).toHaveAttribute('aria-pressed', 'true');
   await expect(historique(page)).toContainText(['Verrouiller la piste']);
 
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   await expect(verrou).toHaveAttribute('aria-pressed', 'false');
 });
 
@@ -305,7 +316,7 @@ test('un média importé peut être posé sur la timeline et devient un clip', a
   await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant + 1);
   await expect(ligne(page, 'audio_48k_stereo.wav')).toBeVisible();
 
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant);
 });
 
@@ -602,7 +613,7 @@ test('déplacer un clip lié déplace aussi son audio (§80)', async ({ page }) 
   expect(apresSon).toBe(apresImage);
 
   // Et une seule annulation suffit à revenir en arrière.
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   expect(await debutDe(page, 'A003_large')).toBe(debutImage);
   expect(await debutDe(page, 'A003_large.wav')).toBe(debutSon);
 });
@@ -627,7 +638,7 @@ test('supprimer plusieurs clips ne demande qu’une seule annulation', async ({ 
   // UNE entrée d'historique, quel que soit le nombre de clips supprimés.
   await expect(historique(page)).toHaveCount(etapesAvant + 1);
 
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant);
 });
 
@@ -665,7 +676,7 @@ test('points d’entrée et de sortie : Extract retire la plage et referme (§92
   await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 
   // Une seule annulation rend tout le montage.
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
 });
 
@@ -713,9 +724,9 @@ test('copier-coller reproduit le montage à la tête de lecture (§93)', async (
   await selectionnerClip(page, 2, 0.05);
   await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
 
-  await page.keyboard.press('Control+c');
+  await page.keyboard.press(`${MOD}+c`);
   await page.keyboard.press('End');
-  await page.keyboard.press('Control+v');
+  await page.keyboard.press(`${MOD}+v`);
   await expect(historique(page)).toContainText(['Coller']);
 
   // Deux clips de plus : l'image et le son, chacun sur sa piste.
@@ -723,7 +734,7 @@ test('copier-coller reproduit le montage à la tête de lecture (§93)', async (
   await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 
   // Une seule annulation défait tout le collage.
-  await page.keyboard.press('Control+z');
+  await page.keyboard.press(`${MOD}+z`);
   await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant);
 });
 
@@ -732,7 +743,7 @@ test('couper laisse le trou puis se colle ailleurs', async ({ page }) => {
   const avant = await page.locator('.table-projet tbody tr').count();
   await selectionnerClip(page, 2, 0.05);
 
-  await page.keyboard.press('Control+x');
+  await page.keyboard.press(`${MOD}+x`);
   await expect(historique(page)).toContainText(['Supprimer']);
   // Le reste du montage n'a pas bougé : couper n'est pas un ripple.
   expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
@@ -740,7 +751,7 @@ test('couper laisse le trou puis se colle ailleurs', async ({ page }) => {
 
   // Et ce qui a été coupé se recolle : c'est un déplacement en deux temps.
   await page.keyboard.press('End');
-  await page.keyboard.press('Control+v');
+  await page.keyboard.press(`${MOD}+v`);
   await expect(historique(page)).toContainText(['Coller']);
   await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant);
   await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
@@ -748,14 +759,14 @@ test('couper laisse le trou puis se colle ailleurs', async ({ page }) => {
 
 test('coller sans rien avoir copié le dit au lieu de ne rien faire (§1003)', async ({ page }) => {
   await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
-  await page.keyboard.press('Control+v');
+  await page.keyboard.press(`${MOD}+v`);
   await expect(page.locator('.barre-etat .alerte')).toContainText('presse-papiers est vide');
   await expect(historique(page)).toHaveCount(1);
 });
 
 test('tout sélectionner prend les clips des pistes déverrouillées', async ({ page }) => {
   await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
-  await page.keyboard.press('Control+a');
+  await page.keyboard.press(`${MOD}+a`);
   // 7 plans + 7 sons + 2 clips sur V2 + 1 ambiance = 17.
   await expect(page.locator('.barre-etat')).toContainText('17 sélectionnés');
 });
@@ -763,12 +774,12 @@ test('tout sélectionner prend les clips des pistes déverrouillées', async ({ 
 test('coller par insertion décale la suite au lieu de l’écraser (§91)', async ({ page }) => {
   await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
   await selectionnerClip(page, 2, 0.05); // A001, 118 images
-  await page.keyboard.press('Control+c');
+  await page.keyboard.press(`${MOD}+c`);
 
   // Tête au début du deuxième plan, puis collage par insertion.
   await page.keyboard.press('Home');
   await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Control+Shift+v');
+  await page.keyboard.press(`${MOD}+Shift+v`);
   await expect(historique(page)).toContainText(['Coller par insertion']);
 
   // A002 était à 118 ; il recule de la durée collée, sans être écrasé.
@@ -780,13 +791,13 @@ test('la boîte Vitesse et durée change réellement la vitesse (§38)', async (
   await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
   await selectionnerClip(page, 2, 0.05);
   // Un plan lié : deux clips sélectionnés, ce que la boîte refuse.
-  await page.keyboard.press('Control+r');
+  await page.keyboard.press(`${MOD}+r`);
   await expect(page.locator('.barre-etat .alerte')).toContainText('un seul clip');
 
   // On sélectionne l'ambiance de A2, qui n'est liée à rien.
   await selectionnerClip(page, 4, 0.4);
   await expect(page.locator('.barre-etat')).toContainText('1 sélectionné');
-  await page.keyboard.press('Control+r');
+  await page.keyboard.press(`${MOD}+r`);
 
   const boite = page.locator('.modale');
   await expect(boite).toBeVisible();
@@ -808,7 +819,7 @@ test('la boîte Vitesse et durée change réellement la vitesse (§38)', async (
 
   // Ce que la boîte ne sait pas faire est écrit, pas caché.
   await selectionnerClip(page, 4, 0.2);
-  await page.keyboard.press('Control+r');
+  await page.keyboard.press(`${MOD}+r`);
   await expect(page.locator('.modale')).toContainText('hauteur du son : indisponible');
   await page.keyboard.press('Escape');
   await expect(page.locator('.modale')).toHaveCount(0);
@@ -840,7 +851,7 @@ test('lier et délier bascule sur la sélection (§80)', async ({ page }) => {
   await selectionnerClip(page, 2, 0.05);
   await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
 
-  await page.keyboard.press('Control+Shift+l');
+  await page.keyboard.press(`${MOD}+Shift+l`);
   await expect(historique(page)).toContainText(['Délier']);
 
   // Délié : sélectionner l'image ne prend plus que l'image.
@@ -1128,7 +1139,7 @@ test('l’export annonce qu’il n’existe pas au lieu de ne rien faire (§1003
 
   // Et au clavier, la touche le dit plutôt que de sembler perdue.
   await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
-  await page.keyboard.press('Control+m');
+  await page.keyboard.press(`${MOD}+m`);
   await expect(page.locator('.barre-etat .alerte')).toContainText('n’est pas implémenté');
 });
 
