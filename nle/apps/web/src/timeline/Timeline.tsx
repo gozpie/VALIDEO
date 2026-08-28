@@ -94,6 +94,24 @@ export interface ProprietesTimeline {
   readonly definirDefilementVertical: React.Dispatch<React.SetStateAction<number>>;
   /** Dépose d'un média venu du panneau Médias. */
   readonly surDeposeMedia: (depose: DeposeMedia) => void;
+  /** Clic droit sur la timeline : la composition du menu vit dans l'App. */
+  readonly surMenuContextuel: (cible: CibleMenu) => void;
+}
+
+export interface CibleMenu {
+  /**
+   * D'où vient le clic. Deviner à partir des autres champs ne marche pas :
+   * un clic droit sur l'espace vide de la piste V1 à l'image 0 est
+   * indiscernable d'un clic sur son en-tête, et les deux menus n'ont rien à
+   * voir.
+   */
+  readonly source: 'clip' | 'piste' | 'entete' | 'regle';
+  readonly x: number;
+  readonly y: number;
+  /** Clip sous le pointeur, ou `null` sur un espace vide. */
+  readonly clipId: string | null;
+  readonly trackId: string | null;
+  readonly image: number;
 }
 
 export interface DeposeMedia {
@@ -113,6 +131,7 @@ export function Timeline({
   defilementVertical,
   definirDefilementVertical,
   surDeposeMedia,
+  surMenuContextuel,
 }: ProprietesTimeline): React.JSX.Element {
   const toileRef = useRef<HTMLCanvasElement | null>(null);
   const conteneurRef = useRef<HTMLDivElement | null>(null);
@@ -365,7 +384,7 @@ export function Timeline({
   }, [redessiner, generationVignettes]);
 
   const positionLocale = useCallback(
-    (e: React.PointerEvent | PointerEvent): { x: number; y: number } => {
+    (e: { clientX: number; clientY: number }): { x: number; y: number } => {
       const toile = toileRef.current;
       if (toile === null) return { x: 0, y: 0 };
       const rect = toile.getBoundingClientRect();
@@ -750,7 +769,12 @@ export function Timeline({
       {/* Pas de prop de defilement : `modele.tracks[].y` porte deja le
           decalage vertical, calcule une seule fois par `trackLayout`. En
           passer une seconde copie inviterait les deux a diverger. */}
-      <EntetesPistes modele={modele} etat={etat} actions={actions} />
+      <EntetesPistes
+        modele={modele}
+        etat={etat}
+        actions={actions}
+        surMenuContextuel={surMenuContextuel}
+      />
       {/* État du viewport exposé pour les tests de bout en bout : c'est la seule
           façon de vérifier le zoom et le défilement, qui vivent dans un canvas. */}
       <div
@@ -784,6 +808,41 @@ export function Timeline({
         <canvas
           ref={toileRef}
           style={{ cursor: curseur }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            const { x, y } = positionLocale(e);
+            if (y < HAUTEUR_REGLE) {
+              surMenuContextuel({
+                source: 'regle',
+                x: e.clientX,
+                y: e.clientY,
+                clipId: null,
+                trackId: null,
+                image: Math.max(0, xToTime(vueMesuree, x)),
+              });
+              return;
+            }
+            const impact = hitTest(modele, vueMesuree, x, y - HAUTEUR_REGLE);
+            // Un clic droit sur un clip NON sélectionné le sélectionne d'abord :
+            // sinon les entrées du menu s'appliqueraient à une autre sélection
+            // que celle qu'on vient de désigner du doigt.
+            if (impact.clipId !== null && !etat.selection.has(impact.clipId)) {
+              const trouve = findClip(etat.sequence, impact.clipId);
+              if (trouve !== undefined) {
+                actions.definirSelection(
+                  linkedClips(etat.sequence, trouve.clip).map((c) => c.id),
+                );
+              }
+            }
+            surMenuContextuel({
+              source: impact.clipId === null ? 'piste' : 'clip',
+              x: e.clientX,
+              y: e.clientY,
+              clipId: impact.clipId,
+              trackId: impact.trackId,
+              image: Math.max(0, xToTime(vueMesuree, x)),
+            });
+          }}
           onPointerDown={surPointerDown}
           onPointerMove={surPointerMove}
           onPointerUp={surPointerUp}
@@ -798,10 +857,12 @@ function EntetesPistes({
   modele,
   etat,
   actions,
+  surMenuContextuel,
 }: {
   modele: ReturnType<typeof buildRenderModel>;
   etat: EtatEditeur;
   actions: ActionsEditeur;
+  surMenuContextuel: (cible: CibleMenu) => void;
 }): React.JSX.Element {
   const basculer = (
     trackId: string,
@@ -819,6 +880,17 @@ function EntetesPistes({
           key={piste.trackId}
           className="entete-piste"
           style={{ top: piste.y + HAUTEUR_REGLE, height: piste.height }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            surMenuContextuel({
+              source: 'entete',
+              x: e.clientX,
+              y: e.clientY,
+              clipId: null,
+              trackId: piste.trackId,
+              image: 0,
+            });
+          }}
         >
           <span className="nom">{piste.name}</span>
           <button

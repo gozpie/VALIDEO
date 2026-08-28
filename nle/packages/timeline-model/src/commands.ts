@@ -261,3 +261,45 @@ export function replaceClipCommand(
     apply: (seq) => ops.replaceClip(seq, options, ctx),
   });
 }
+
+export function addTrackCommand(kind: 'video' | 'audio', index?: number): SequenceCommand {
+  return command({
+    label: kind === 'video' ? 'Ajouter une piste vidéo' : 'Ajouter une piste audio',
+    apply: (seq) => ops.addTrack(seq, kind, index),
+  });
+}
+
+export function removeTrackCommand(trackId: string): SequenceCommand {
+  return command({ label: 'Supprimer la piste', apply: (seq) => ops.removeTrack(seq, trackId) });
+}
+
+export function renameTrackCommand(trackId: string, name: string): SequenceCommand {
+  return command({
+    label: 'Renommer la piste',
+    apply: (seq) => ops.renameTrack(seq, trackId, name),
+  });
+}
+
+export function renameClipCommand(clipId: string, name: string): SequenceCommand {
+  return command({ label: 'Renommer le clip', apply: (seq) => ops.renameClip(seq, clipId, name) });
+}
+
+export function setClipLabelCommand(
+  clipIds: readonly string[],
+  label: string | null,
+): SequenceCommand {
+  return command({
+    label: label === null ? 'Retirer l’étiquette' : 'Étiqueter le clip',
+    apply: (seq) => ops.setClipLabel(seq, clipIds, label),
+  });
+}
+
+export function setClipEnabledCommand(
+  clipIds: readonly string[],
+  enabled: boolean,
+): SequenceCommand {
+  return command({
+    label: enabled ? 'Activer le clip' : 'Désactiver le clip',
+    apply: (seq) => ops.setClipEnabled(seq, clipIds, enabled),
+  });
+}

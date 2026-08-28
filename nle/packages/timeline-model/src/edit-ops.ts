@@ -16,6 +16,7 @@ import { appError, err, ok } from '@valideo/shared';
 import { newClipId, newLinkGroupId } from '@valideo/shared';
 import { rational } from '@valideo/time-core';
 import type { ClipDoc, SequenceDoc, TrackDoc } from '@valideo/project-model';
+import { createTrack } from '@valideo/project-model';
 import {
   clipEnd,
   clipsInRange,
@@ -835,6 +836,178 @@ export function changeSpeed(
     }
   }
 
+  return finalize({ ...sequence, tracks });
+}
+
+// ------------------------------------------------------ Gestion des pistes (§14)
+
+/**
+ * Ajoute une piste au rang `index`, en decalant celles du dessus.
+ *
+ * Le rang est celui du MODELE (V1 = 0), pas celui de l affichage. Les clips ne
+ * bougent pas : ils portent l identifiant de leur piste, pas son rang. Seuls
+ * les rangs et les noms par defaut sont renumerotes -- une piste renommee a la
+ * main garde son nom, parce que ce nom est une decision de l utilisateur.
+ */
+export function addTrack(
+  sequence: SequenceDoc,
+  kind: TrackDoc['kind'],
+  index?: number,
+): EditResult {
+  const memeType = sequence.tracks.filter((t) => t.kind === kind);
+  const rang = Math.max(0, Math.min(index ?? memeType.length, memeType.length));
+
+  const decalees = sequence.tracks.map((t) =>
+    t.kind === kind && t.index >= rang ? { ...t, index: t.index + 1 } : t,
+  );
+  const nouvelle: TrackDoc = {
+    ...createTrack(kind, rang),
+    // `createTrack` cible d office le rang 0 ; ici la piste vient s inserer
+    // dans une sequence qui a deja ses cibles, et voler le ciblage
+    // deplacerait silencieusement la destination d Insert et d Overwrite.
+    targeted: false,
+  };
+  return finalize(renommerParDefaut({ ...sequence, tracks: [...decalees, nouvelle] }, kind));
+}
+
+/**
+ * Retire une piste ET tout ce qu elle porte.
+ *
+ * Refuse la derniere piste de son type : une sequence sans aucune piste video
+ * ni aucune piste audio ne pourrait plus rien recevoir, et rien dans
+ * l interface ne permettrait d en recreer une a cet endroit.
+ */
+export function removeTrack(sequence: SequenceDoc, trackId: string): EditResult {
+  const track = findTrack(sequence, trackId);
+  if (track === undefined) {
+    return err(appError('TRACK_NOT_FOUND', "Cette piste n'existe plus.", { detail: trackId }));
+  }
+  if (track.locked) {
+    return err(
+      appError('TRACK_LOCKED', `La piste ${track.name} est verrouillée.`, {
+        action: 'Déverrouillez-la avant de la supprimer',
+      }),
+    );
+  }
+  if (sequence.tracks.filter((t) => t.kind === track.kind).length <= 1) {
+    return err(
+      rejected(
+        `Impossible de supprimer la dernière piste ${track.kind === 'video' ? 'vidéo' : 'audio'}.`,
+      ),
+    );
+  }
+
+  const restantes = sequence.tracks
+    .filter((t) => t.id !== trackId)
+    .map((t) => (t.kind === track.kind && t.index > track.index ? { ...t, index: t.index - 1 } : t));
+
+  // Les clips lies a un clip supprime perdent leur groupe : un groupe reduit a
+  // un seul membre n a plus de sens, et le laisser ferait selectionner un
+  // fantome.
+  const groupesTouches = new Set(
+    track.clips.map((c) => c.linkGroup).filter((g): g is string => g !== null),
+  );
+  const nettoyees = restantes.map((t) => ({
+    ...t,
+    clips: t.clips.map((c) =>
+      c.linkGroup !== null && groupesTouches.has(c.linkGroup) ? { ...c, linkGroup: null } : c,
+    ),
+  }));
+
+  return finalize(renommerParDefaut({ ...sequence, tracks: nettoyees }, track.kind));
+}
+
+/**
+ * Renumerote les noms PAR DEFAUT (« V1 », « A3 ») apres une insertion ou une
+ * suppression. Un nom personnalise n est jamais touche : renommer une piste
+ * « Voix off » puis en ajouter une en dessous ne doit pas la rebaptiser « A2 ».
+ */
+function renommerParDefaut(sequence: SequenceDoc, kind: TrackDoc['kind']): SequenceDoc {
+  const prefixe = kind === 'video' ? 'V' : 'A';
+  const parDefaut = /^[VA]\d+$/;
+  return {
+    ...sequence,
+    tracks: sequence.tracks.map((t) =>
+      t.kind === kind && parDefaut.test(t.name)
+        ? { ...t, name: `${prefixe}${String(t.index + 1)}` }
+        : t,
+    ),
+  };
+}
+
+/** Renomme une piste. Un nom vide revient au nom par defaut de son rang. */
+export function renameTrack(sequence: SequenceDoc, trackId: string, name: string): EditResult {
+  const track = findTrack(sequence, trackId);
+  if (track === undefined) {
+    return err(appError('TRACK_NOT_FOUND', "Cette piste n'existe plus.", { detail: trackId }));
+  }
+  const propre = name.trim();
+  const final =
+    propre === ''
+      ? `${track.kind === 'video' ? 'V' : 'A'}${String(track.index + 1)}`
+      : propre.slice(0, 64);
+  return finalize({
+    ...sequence,
+    tracks: sequence.tracks.map((t) => (t.id === trackId ? { ...t, name: final } : t)),
+  });
+}
+
+// ---------------------------------------------------- Proprietes de clip (§87)
+
+/** Renomme un clip. Le nom vide est autorise : le rendu retombe sur le type. */
+export function renameClip(sequence: SequenceDoc, clipId: string, name: string): EditResult {
+  const found = requireClip(sequence, clipId);
+  if (!found.ok) return found;
+  const { clip, track } = found.value;
+  return finalize({
+    ...sequence,
+    tracks: mapTrack(sequence.tracks, track.id, (t) =>
+      updateClip(t, clip.id, { name: name.trim().slice(0, 128) }),
+    ),
+  });
+}
+
+/**
+ * Etiquette de couleur d un clip, ou `null` pour l enlever (section 87).
+ * Aucune validation de la couleur ici : le document accepte n importe quelle
+ * chaine CSS, et l interface n en propose qu une palette fixe.
+ */
+export function setClipLabel(
+  sequence: SequenceDoc,
+  clipIds: readonly string[],
+  label: string | null,
+): EditResult {
+  let tracks = sequence.tracks;
+  for (const id of clipIds) {
+    const found = findClip(sequence, id);
+    if (found === undefined) {
+      return err(appError('CLIP_NOT_FOUND', "Ce clip n'existe plus.", { detail: id }));
+    }
+    tracks = mapTrack(tracks, found.track.id, (t) => updateClip(t, id, { label }));
+  }
+  return finalize({ ...sequence, tracks });
+}
+
+/**
+ * Active ou desactive des clips (section 71).
+ *
+ * Un clip desactive reste EN PLACE et garde sa duree : il cesse simplement
+ * d etre rendu. C est ce qui distingue « desactiver » de « supprimer », et
+ * c est pour cela que la timeline le dessine en gris plutot que de le retirer.
+ */
+export function setClipEnabled(
+  sequence: SequenceDoc,
+  clipIds: readonly string[],
+  enabled: boolean,
+): EditResult {
+  let tracks = sequence.tracks;
+  for (const id of clipIds) {
+    const found = findClip(sequence, id);
+    if (found === undefined) {
+      return err(appError('CLIP_NOT_FOUND', "Ce clip n'existe plus.", { detail: id }));
+    }
+    tracks = mapTrack(tracks, found.track.id, (t) => updateClip(t, id, { enabled }));
+  }
   return finalize({ ...sequence, tracks });
 }
 

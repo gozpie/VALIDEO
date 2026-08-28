@@ -990,3 +990,94 @@ test('relier un média compatible le remet en ligne', async ({ page }) => {
   await expect(page.getByTestId('etat-media')).toContainText('décodé');
   await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 });
+
+test('menu contextuel sur un clip : contenu, grisage motivé, action réelle', async ({ page }) => {
+  const cible = await centreClip(page, 2, 0.28); // A003_large
+  await page.mouse.click(cible.x, cible.y, { button: 'right' });
+
+  const menu = page.locator('.menu-contextuel');
+  await expect(menu).toBeVisible();
+  // Le clic droit a sélectionné le clip et son son lié.
+  await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
+
+  // Ce qui n'est pas applicable est grisé AVEC sa raison, pas masqué.
+  await expect(page.getByTestId('menu-clip-coller')).toBeDisabled();
+  await expect(page.getByTestId('menu-clip-coller')).toHaveAttribute(
+    'title',
+    'Le presse-papiers est vide.',
+  );
+  await expect(page.getByTestId('menu-clip-vitesse')).toBeDisabled();
+
+  // Une action réelle : désactiver le clip.
+  await page.getByTestId('menu-clip-actif').click();
+  await expect(menu).toHaveCount(0);
+  await expect(historique(page)).toContainText(['Désactiver le clip']);
+});
+
+test('menu contextuel sur un clip : étiquette par sous-menu', async ({ page }) => {
+  const cible = await centreClip(page, 2, 0.28);
+  await page.mouse.click(cible.x, cible.y, { button: 'right' });
+  await page.getByTestId('menu-clip-etiquette').click();
+  await expect(page.locator('.sous-menu')).toBeVisible();
+  await page.getByTestId('menu-etiquette-3f9ea0').click();
+  await expect(historique(page)).toContainText(['Étiqueter le clip']);
+  await expect(page.locator('.menu-contextuel')).toHaveCount(0);
+});
+
+test('menu contextuel sur un en-tête de piste : ajouter et supprimer', async ({ page }) => {
+  const entete = page.locator('.entete-piste').nth(2); // V1
+  await entete.click({ button: 'right' });
+  await expect(page.locator('.menu-contextuel')).toBeVisible();
+
+  await page.getByTestId('menu-piste-ajouter-dessus').click();
+  await expect(historique(page)).toContainText(['Ajouter une piste vidéo']);
+  await expect(page.locator('.entete-piste')).toHaveCount(8);
+
+  // Et la suppression, sur la piste qu'on vient d'ajouter.
+  await page.locator('.entete-piste').nth(2).click({ button: 'right' });
+  await page.getByTestId('menu-piste-supprimer').click();
+  await expect(historique(page)).toContainText(['Supprimer la piste']);
+  await expect(page.locator('.entete-piste')).toHaveCount(7);
+});
+
+test('menu contextuel sur l’espace vide propose le collage et les marques', async ({ page }) => {
+  // V3 est vide : la première piste affichée.
+  const cible = await centreClip(page, 0, 0.5);
+  await page.mouse.click(cible.x, cible.y, { button: 'right' });
+  await expect(page.getByTestId('menu-vide-marqueur')).toBeVisible();
+  await expect(page.getByTestId('menu-vide-lift')).toBeDisabled();
+
+  await page.getByTestId('menu-vide-marqueur').click();
+  // Le projet a déjà un marqueur à l'image 0, où la tête se trouve : refusé.
+  await expect(page.locator('.barre-etat .alerte')).toContainText('déjà un marqueur');
+
+  // Une image plus loin, il passe.
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('ArrowRight');
+  await page.mouse.click(cible.x, cible.y, { button: 'right' });
+  await page.getByTestId('menu-vide-marqueur').click();
+  await expect(historique(page)).toContainText(['Ajouter un marqueur']);
+});
+
+test('le menu contextuel se ferme à Échap et au clavier il navigue', async ({ page }) => {
+  const cible = await centreClip(page, 2, 0.28);
+  await page.mouse.click(cible.x, cible.y, { button: 'right' });
+  const menu = page.locator('.menu-contextuel');
+  await expect(menu).toBeVisible();
+
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('.entree-menu.survolee')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  // Échap n'a rien modifié.
+  await expect(historique(page)).toHaveCount(1);
+});
+
+test('renommer une piste depuis son menu contextuel', async ({ page }) => {
+  await page.locator('.entete-piste').nth(2).click({ button: 'right' });
+  await page.getByTestId('menu-piste-renommer').click();
+  await page.getByTestId('renommage-nom').fill('Image principale');
+  await page.locator('.modale button.principal').click();
+  await expect(historique(page)).toContainText(['Renommer la piste']);
+  await expect(page.locator('.entete-piste').nth(2)).toContainText('Image principale');
+});

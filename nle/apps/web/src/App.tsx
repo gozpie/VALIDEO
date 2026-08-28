@@ -18,6 +18,7 @@ import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
   addMarkerCommand,
+  addTrackCommand,
   changeSpeedCommand,
   copyClips,
   deleteClipsCommand,
@@ -29,7 +30,13 @@ import {
   overwriteCommand,
   pasteCommand,
   previousMarker,
+  removeTrackCommand,
+  renameClipCommand,
+  renameTrackCommand,
   replaceClipCommand,
+  setClipEnabledCommand,
+  setClipLabelCommand,
+  setTrackFlagsCommand,
   rippleTrimToPlayheadCommand,
   unlinkCommand,
   liftCommand,
@@ -51,7 +58,9 @@ import {
 } from '@valideo/timeline-engine';
 import type { Viewport } from '@valideo/timeline-engine';
 import { Timeline } from './timeline/Timeline.js';
-import type { DeposeMedia } from './timeline/Timeline.js';
+import type { CibleMenu, DeposeMedia } from './timeline/Timeline.js';
+import { MenuContextuel } from './panels/MenuContextuel.js';
+import type { ElementMenu } from './panels/MenuContextuel.js';
 import { timebaseDeSequence } from './timeline/draw.js';
 import { useEditeur } from './store.js';
 import type { Outil } from './store.js';
@@ -61,6 +70,7 @@ import { Moniteur } from './panels/Moniteur.js';
 import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { DialogueVitesse } from './panels/DialogueVitesse.js';
+import { DialogueRenommage } from './panels/DialogueRenommage.js';
 import type { ReglagesVitesse } from './panels/DialogueVitesse.js';
 import { clipDepuisMedia, pisteDAccueil, typeDeMedia } from './media/placement.js';
 import { usePersistance } from './persistance.js';
@@ -73,6 +83,16 @@ import { TransportAudio } from './playback/transport.js';
 function erreurMontage(message: string, action: string): AppError {
   return appError('EDIT_REJECTED', message, { action });
 }
+
+/** Palette d'étiquettes (§87). Fixe : ce sont des repères, pas de la décoration. */
+const ETIQUETTES_MENU: readonly { readonly nom: string; readonly couleur: string }[] = [
+  { nom: 'Violette', couleur: '#8f6fd0' },
+  { nom: 'Fer', couleur: '#5c7aa8' },
+  { nom: 'Caribéen', couleur: '#3f9ea0' },
+  { nom: 'Forêt', couleur: '#5c9070' },
+  { nom: 'Rose', couleur: '#c07090' },
+  { nom: 'Mangue', couleur: '#c08f3f' },
+];
 
 const OUTILS: readonly { id: Outil; libelle: string; touche: string; titre: string }[] = [
   { id: 'selection', libelle: 'V', touche: 'V', titre: 'Sélection' },
@@ -297,6 +317,13 @@ export function App(): React.JSX.Element {
     },
     [actions, etat.contexte, etat.document.media, etat.sequence],
   );
+
+  /** Menu contextuel ouvert, avec sa cible. `null` quand aucun n'est ouvert. */
+  const [menu, setMenu] = useState<CibleMenu | null>(null);
+  /** Élément en cours de renommage : clip ou piste. */
+  const [renommage, setRenommage] = useState<
+    { readonly type: 'clip' | 'piste'; readonly id: string; readonly nom: string } | null
+  >(null);
 
   const executerAction = useCallback(
     (actionId: string): boolean => {
@@ -643,6 +670,250 @@ export function App(): React.JSX.Element {
     ],
   );
 
+
+  /**
+   * Contenu du menu contextuel.
+   *
+   * Trois menus selon la cible — clip, espace vide, en-tête de piste — et un
+   * seul principe : ce qui n'est pas applicable est GRISÉ avec sa raison, pas
+   * masqué. Une entrée qui disparaît d'un clic à l'autre déplace toutes les
+   * autres, et on finit par cliquer à côté.
+   */
+  const elementsMenu = useMemo<readonly ElementMenu[]>(() => {
+    if (menu === null) return [];
+    const sel = [...etat.selection];
+    const clip = menu.clipId === null ? null : (findClip(etat.sequence, menu.clipId)?.clip ?? null);
+    const piste =
+      menu.trackId === null ? null : (etat.sequence.tracks.find((t) => t.id === menu.trackId) ?? null);
+    const acte = (id: string): void => {
+      executerAction(id);
+    };
+
+    // ---- En-tête de piste
+    if (menu.source === 'entete' && piste !== null) {
+      const basculer = (flags: Parameters<typeof setTrackFlagsCommand>[1], libelle: string) => () =>
+        actions.executer(setTrackFlagsCommand(piste.id, flags, libelle));
+      return [
+        {
+          id: 'piste-renommer',
+          libelle: 'Renommer la piste…',
+          onChoisir: () => setRenommage({ type: 'piste', id: piste.id, nom: piste.name }),
+        },
+        { separateur: true, id: 's1' },
+        {
+          id: 'piste-cibler',
+          libelle: 'Cibler la piste',
+          cochee: piste.targeted,
+          onChoisir: basculer({ targeted: !piste.targeted }, 'Cibler la piste'),
+        },
+        {
+          id: 'piste-verrou',
+          libelle: 'Verrouiller la piste',
+          cochee: piste.locked,
+          onChoisir: basculer({ locked: !piste.locked }, 'Verrouiller la piste'),
+        },
+        {
+          id: 'piste-sync',
+          libelle: 'Verrouillage de synchronisation',
+          cochee: piste.syncLock,
+          onChoisir: basculer({ syncLock: !piste.syncLock }, 'Synchronisation de piste'),
+        },
+        piste.kind === 'video'
+          ? {
+              id: 'piste-visible',
+              libelle: 'Afficher la piste',
+              cochee: piste.enabled,
+              onChoisir: basculer({ enabled: !piste.enabled }, 'Afficher la piste'),
+            }
+          : {
+              id: 'piste-muet',
+              libelle: 'Muet',
+              cochee: piste.muted,
+              onChoisir: basculer({ muted: !piste.muted }, 'Muet'),
+            },
+        { separateur: true, id: 's2' },
+        {
+          id: 'piste-hauteur',
+          libelle: 'Hauteur de piste',
+          sousMenu: [
+            { id: 'hauteur-petite', libelle: 'Petite', onChoisir: basculer({ height: 34 }, 'Hauteur de piste') },
+            { id: 'hauteur-moyenne', libelle: 'Moyenne', onChoisir: basculer({ height: 60 }, 'Hauteur de piste') },
+            { id: 'hauteur-grande', libelle: 'Grande', onChoisir: basculer({ height: 110 }, 'Hauteur de piste') },
+          ],
+        },
+        { separateur: true, id: 's3' },
+        {
+          id: 'piste-ajouter-dessous',
+          libelle: `Ajouter une piste ${piste.kind === 'video' ? 'vidéo' : 'audio'} en dessous`,
+          onChoisir: () => actions.executer(addTrackCommand(piste.kind, piste.index)),
+        },
+        {
+          id: 'piste-ajouter-dessus',
+          libelle: `Ajouter une piste ${piste.kind === 'video' ? 'vidéo' : 'audio'} au-dessus`,
+          onChoisir: () => actions.executer(addTrackCommand(piste.kind, piste.index + 1)),
+        },
+        {
+          id: 'piste-supprimer',
+          libelle: 'Supprimer la piste',
+          desactivee: etat.sequence.tracks.filter((t) => t.kind === piste.kind).length <= 1,
+          raison: 'C’est la dernière piste de ce type.',
+          onChoisir: () => actions.executer(removeTrackCommand(piste.id)),
+        },
+      ];
+    }
+
+    // ---- Clip
+    if (menu.source === 'clip' && clip !== null) {
+      const lie = clip.linkGroup !== null;
+      return [
+        { id: 'clip-couper', libelle: 'Couper', raccourci: 'Ctrl+X', onChoisir: () => acte('edit.cut') },
+        { id: 'clip-copier', libelle: 'Copier', raccourci: 'Ctrl+C', onChoisir: () => acte('edit.copy') },
+        {
+          id: 'clip-coller',
+          libelle: 'Coller',
+          raccourci: 'Ctrl+V',
+          desactivee: pressePapiers.current === null,
+          raison: 'Le presse-papiers est vide.',
+          onChoisir: () => acte('edit.paste'),
+        },
+        { separateur: true, id: 'c1' },
+        { id: 'clip-effacer', libelle: 'Effacer', raccourci: 'Suppr', onChoisir: () => acte('edit.delete') },
+        {
+          id: 'clip-effacer-ripple',
+          libelle: 'Supprimer et raccorder',
+          raccourci: 'Maj+Suppr',
+          onChoisir: () => acte('edit.rippleDelete'),
+        },
+        { separateur: true, id: 'c2' },
+        {
+          id: 'clip-vitesse',
+          libelle: 'Vitesse et durée…',
+          raccourci: 'Ctrl+R',
+          desactivee: etat.selection.size !== 1,
+          raison: 'La vitesse se règle sur un seul clip à la fois.',
+          onChoisir: () => acte('edit.speedDuration'),
+        },
+        {
+          id: 'clip-raccord',
+          libelle: 'Ajouter un raccord',
+          raccourci: 'Ctrl+K',
+          onChoisir: () => acte('edit.addEdit'),
+        },
+        {
+          id: 'clip-lier',
+          libelle: lie ? 'Délier' : 'Lier',
+          raccourci: 'Ctrl+Maj+L',
+          desactivee: !lie && etat.selection.size < 2,
+          raison: 'Il faut au moins deux clips pour créer une liaison.',
+          onChoisir: () => acte('edit.linkToggle'),
+        },
+        {
+          id: 'clip-actif',
+          libelle: 'Activer le clip',
+          cochee: clip.enabled,
+          onChoisir: () => actions.executer(setClipEnabledCommand(sel, !clip.enabled)),
+        },
+        { separateur: true, id: 'c3' },
+        {
+          id: 'clip-renommer',
+          libelle: 'Renommer…',
+          desactivee: etat.selection.size !== 1,
+          raison: 'Sélectionnez un seul clip pour le renommer.',
+          onChoisir: () => setRenommage({ type: 'clip', id: clip.id, nom: clip.name }),
+        },
+        {
+          id: 'clip-etiquette',
+          libelle: 'Étiquette',
+          sousMenu: [
+            ...ETIQUETTES_MENU.map((e) => ({
+              id: `etiquette-${e.couleur.slice(1)}`,
+              libelle: e.nom,
+              cochee: clip.label === e.couleur,
+              onChoisir: () => actions.executer(setClipLabelCommand(sel, e.couleur)),
+            })),
+            { separateur: true as const, id: 'e-sep' },
+            {
+              id: 'etiquette-aucune',
+              libelle: 'Aucune',
+              cochee: clip.label === null,
+              onChoisir: () => actions.executer(setClipLabelCommand(sel, null)),
+            },
+          ],
+        },
+        {
+          id: 'clip-remplacer',
+          libelle: 'Remplacer par le média sélectionné',
+          desactivee: etat.mediaSelectionne === null,
+          raison: 'Aucun média sélectionné dans le panneau Médias.',
+          onChoisir: () => {
+            const asset = etat.document.media.find((m) => m.id === etat.mediaSelectionne);
+            if (asset === undefined) return;
+            actions.executer(
+              replaceClipCommand(
+                { clipId: clip.id, mediaId: asset.id, name: asset.name, kind: typeDeMedia(asset) },
+                etat.contexte,
+              ),
+            );
+          },
+        },
+      ];
+    }
+
+    // ---- Espace vide ou règle
+    return [
+      {
+        id: 'vide-coller',
+        libelle: 'Coller',
+        raccourci: 'Ctrl+V',
+        desactivee: pressePapiers.current === null,
+        raison: 'Le presse-papiers est vide.',
+        onChoisir: () => acte('edit.paste'),
+      },
+      {
+        id: 'vide-coller-inserer',
+        libelle: 'Coller par insertion',
+        raccourci: 'Ctrl+Maj+V',
+        desactivee: pressePapiers.current === null,
+        raison: 'Le presse-papiers est vide.',
+        onChoisir: () => acte('edit.pasteInsert'),
+      },
+      { separateur: true, id: 'v1' },
+      { id: 'vide-entree', libelle: 'Marquer l’entrée', raccourci: 'I', onChoisir: () => acte('marks.markIn') },
+      { id: 'vide-sortie', libelle: 'Marquer la sortie', raccourci: 'O', onChoisir: () => acte('marks.markOut') },
+      {
+        id: 'vide-lift',
+        libelle: 'Lift',
+        raccourci: ';',
+        desactivee: workAreaRange(etat.sequence) === null,
+        raison: 'Aucune plage marquée.',
+        onChoisir: () => acte('edit.lift'),
+      },
+      {
+        id: 'vide-extract',
+        libelle: 'Extract',
+        raccourci: '’',
+        desactivee: workAreaRange(etat.sequence) === null,
+        raison: 'Aucune plage marquée.',
+        onChoisir: () => acte('edit.extract'),
+      },
+      { separateur: true, id: 'v2' },
+      { id: 'vide-marqueur', libelle: 'Ajouter un marqueur', raccourci: 'M', onChoisir: () => acte('marks.addMarker') },
+      { separateur: true, id: 'v3' },
+      {
+        id: 'vide-piste-video',
+        libelle: 'Ajouter une piste vidéo',
+        onChoisir: () => actions.executer(addTrackCommand('video')),
+      },
+      {
+        id: 'vide-piste-audio',
+        libelle: 'Ajouter une piste audio',
+        onChoisir: () => actions.executer(addTrackCommand('audio')),
+      },
+      { separateur: true, id: 'v4' },
+      { id: 'vide-ajuster', libelle: 'Ajuster la séquence', raccourci: '\\', onChoisir: () => acte('timeline.zoomToFit') },
+    ];
+  }, [actions, etat, executerAction, menu]);
+
   useEffect(() => {
     const surTouche = (e: KeyboardEvent): void => {
       const cible = e.target;
@@ -926,6 +1197,7 @@ export function App(): React.JSX.Element {
             etat={etat}
             actions={actions}
             surDeposeMedia={surDeposeMedia}
+            surMenuContextuel={setMenu}
             vue={vue}
             definirVue={definirVue}
             defilementVertical={defilementVertical}
@@ -973,6 +1245,30 @@ export function App(): React.JSX.Element {
                 : 'Enregistré'}
         </span>
       </footer>
+
+      {menu !== null && (
+        <MenuContextuel
+          position={{ x: menu.x, y: menu.y }}
+          elements={elementsMenu}
+          onFermer={() => setMenu(null)}
+        />
+      )}
+
+      {renommage !== null && (
+        <DialogueRenommage
+          initial={renommage.nom}
+          titre={renommage.type === 'clip' ? 'Renommer le clip' : 'Renommer la piste'}
+          onFermer={() => setRenommage(null)}
+          onValider={(nom) => {
+            actions.executer(
+              renommage.type === 'clip'
+                ? renameClipCommand(renommage.id, nom)
+                : renameTrackCommand(renommage.id, nom),
+            );
+            setRenommage(null);
+          }}
+        />
+      )}
 
       {clipSelectionneVitesse !== null && (
         <DialogueVitesse
