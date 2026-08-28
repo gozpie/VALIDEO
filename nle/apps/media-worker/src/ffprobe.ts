@@ -120,7 +120,9 @@ export async function probeTimestamps(
       const value = Number(text);
       if (Number.isFinite(value)) times.push(value);
     }
-    return ok(analyzeTimestamps(times, timeBase));
+    // Si l on a lu exactement la limite, c est que le fichier en contient
+    // probablement davantage : l echantillon n est pas complet.
+    return ok(analyzeTimestamps(times, timeBase, times.length < limit));
   } catch (cause) {
     if (
       cause !== null &&

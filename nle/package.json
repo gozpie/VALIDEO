@@ -2,7 +2,7 @@
   "name": "@valideo/nle",
   "version": "0.0.1",
   "private": true,
-  "description": "VALIDEO NLE — moteur de montage vidéo non lineaire professionnel",
+  "description": "VALIDEO NLE \u2014 moteur de montage vid\u00e9o non lineaire professionnel",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "engines": {
@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "vitest bench --run",
-    "typecheck": "tsc -b --pretty",
+    "typecheck": "tsc -b --pretty && tsc -p tsconfig.tests.json --pretty",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

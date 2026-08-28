@@ -122,7 +122,7 @@ describe('tables de raccourcis', () => {
     });
     const conflicts = findConflicts(bancal);
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.actionIds.sort()).toEqual(['edit.insert', 'edit.overwrite']);
+    expect([...(conflicts[0]?.actionIds ?? [])].sort()).toEqual(['edit.insert', 'edit.overwrite']);
     expect(isErr(validateKeymap(bancal))).toBe(true);
   });
 

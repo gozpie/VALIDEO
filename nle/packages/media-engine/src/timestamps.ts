@@ -27,7 +27,14 @@ import type { Rational } from '@valideo/time-core';
 import { approximate, rational, toNumber } from '@valideo/time-core';
 
 export interface TimestampAnalysis {
+  /**
+   * Nombre d horodatages EXAMINES. Ce n est le nombre total d images du fichier
+   * que si `complet` vaut vrai : l analyse ne lit qu une fenetre de tete, ce qui
+   * suffit a detecter une cadence variable mais pas a mesurer une duree.
+   */
   readonly frameCount: number;
+  /** Vrai si la fenetre couvrait tout le fichier. */
+  readonly complet: boolean;
   /** Vrai si les durees d image varient au-dela de la quantification du conteneur. */
   readonly variable: boolean;
   /** Cadence deduite de la mediane des ecarts. */
@@ -54,15 +61,18 @@ function median(sorted: readonly number[]): number {
 /**
  * @param ptsSeconds horodatages de presentation, en secondes, dans l ordre du fichier
  * @param timeBase base de temps du flux : la quantification des horodatages
+ * @param complet vrai si la fenetre lue couvrait la totalite du fichier
  */
 export function analyzeTimestamps(
   ptsSeconds: readonly number[],
   timeBase: Rational,
+  complet = true,
 ): TimestampAnalysis {
   const count = ptsSeconds.length;
   if (count < 2) {
     return {
       frameCount: count,
+      complet,
       variable: false,
       measuredRate: rational(0),
       averageRate: rational(0),
@@ -98,6 +108,7 @@ export function analyzeTimestamps(
 
   return {
     frameCount: count,
+    complet,
     variable,
     // Denominateur volontairement borne : une cadence reconstruite depuis des
     // horodatages quantifies doit rester lisible et proche d une cadence

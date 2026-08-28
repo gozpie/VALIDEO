@@ -243,4 +243,3 @@ export function cadenceAffichee(sequence: SequenceDoc): number {
   return sequence.timebase.rate.n / sequence.timebase.rate.d;
 }
 
-export const UNE = rational(1);

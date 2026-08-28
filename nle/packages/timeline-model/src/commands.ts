@@ -164,3 +164,29 @@ export function setTrackFlagsCommand(
 ): SequenceCommand {
   return command({ label: libelle, apply: (seq) => ops.setTrackFlags(seq, trackId, flags) });
 }
+
+/** Déplacement groupé : une seule entrée d'historique pour tout le geste. */
+export function moveClipsCommand(
+  deplacements: readonly ops.DeplacementClip[],
+  ctx: TimelineContext,
+  mergeKey: string | null = null,
+): SequenceCommand {
+  return command({
+    label: deplacements.length > 1 ? `Déplacer ${deplacements.length} clips` : 'Déplacer le clip',
+    mergeKey,
+    apply: (seq) => ops.moveClips(seq, deplacements, ctx),
+  });
+}
+
+/** Suppression groupée : une seule annulation pour toute la sélection. */
+export function deleteClipsCommand(
+  clipIds: readonly string[],
+  ctx: TimelineContext,
+  ripple = false,
+): SequenceCommand {
+  const quoi = clipIds.length > 1 ? `${clipIds.length} clips` : 'le clip';
+  return command({
+    label: ripple ? `Supprimer ${quoi} avec ripple` : `Supprimer ${quoi}`,
+    apply: (seq) => ops.deleteClips(seq, clipIds, ctx, ripple),
+  });
+}

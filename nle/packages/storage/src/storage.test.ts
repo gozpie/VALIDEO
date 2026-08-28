@@ -58,6 +58,30 @@ describe('enregistrement et rechargement (§45, §46)', () => {
     expect(relu?.id).toBe(p.id);
   });
 
+  it('conserve les caractères non ASCII : accents, emoji, idéogrammes', async () => {
+    const store = new ProjectStore(new MemoryProvider());
+    const nom = 'Élégie — prise n°3 🎬 東京';
+    const p = { ...projet(nom), sequences: [createSequence('Séquence « à revoir »')] };
+    unwrap(await store.enregistrer(p));
+    const relu = unwrap(await store.charger(p.id));
+    expect(relu?.name).toBe(nom);
+    expect(relu?.sequences[0]?.name).toBe('Séquence « à revoir »');
+  });
+
+  it('signale un projet corrompu au lieu de lever', async () => {
+    // Des octets qui ne sont pas de l'UTF-8 valide : un stockage tronqué au
+    // milieu d'un caractère multi-octets. Le chargement doit remonter une
+    // erreur exploitable, pas une exception qui traverse l'application.
+    const fournisseur = new MemoryProvider();
+    const store = new ProjectStore(fournisseur);
+    const p = projet();
+    unwrap(await store.enregistrer(p));
+    unwrap(await fournisseur.ecrire(`projets/${p.id}/projet.json`, new Uint8Array([0xff, 0xfe, 0x41])));
+    const relu = await store.charger(p.id);
+    expect(isErr(relu)).toBe(true);
+    if (isErr(relu)) expect(relu.error.code).toBe('PROJECT_CORRUPT');
+  });
+
   it('retourne null pour un projet inconnu', async () => {
     const store = new ProjectStore(new MemoryProvider());
     expect(unwrap(await store.charger('inexistant'))).toBeNull();

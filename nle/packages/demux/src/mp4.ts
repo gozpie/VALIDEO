@@ -344,11 +344,7 @@ function construireIndex(
 
 // ------------------------------------------------------------------- codecs
 
-function chaineCodec(
-  format: string,
-  config: Uint8Array | null,
-  sampleEntry: Uint8Array | null,
-): string {
+function chaineCodec(format: string, config: Uint8Array | null): string {
   switch (format) {
     case 'avc1':
     case 'avc3': {
@@ -378,7 +374,7 @@ function chaineCodec(
     case 'av01':
       return 'av01.0.04M.08';
     case 'mp4a':
-      return 'mp4a.40.2';
+      return chaineMp4a(config);
     case 'Opus':
     case 'opus':
       return 'opus';
@@ -391,9 +387,82 @@ function chaineCodec(
       // proposer un proxy plutot qu un message obscur (section 60).
       return format;
     default:
-      void sampleEntry;
       return format;
   }
+}
+
+/**
+ * Parcourt les descripteurs MPEG-4 d un esds et renvoie la charge utile du
+ * premier descripteur portant `tag`.
+ *
+ * Encodage des longueurs : de un a quatre octets, le bit de poids fort servant
+ * de continuation. Le lire de travers decale tout le reste du descripteur, d ou
+ * la boucle explicite plutot qu un decalage fixe.
+ */
+function descripteur(donnees: Uint8Array, debut: number, tag: number): Uint8Array | null {
+  let i = debut;
+  while (i < donnees.length) {
+    const balise = donnees[i] ?? 0;
+    i += 1;
+    let taille = 0;
+    for (let n = 0; n < 4 && i < donnees.length; n += 1) {
+      const octet = donnees[i] ?? 0;
+      i += 1;
+      taille = (taille << 7) | (octet & 0x7f);
+      if ((octet & 0x80) === 0) break;
+    }
+    if (i + taille > donnees.length) return null;
+    if (balise === tag) return donnees.subarray(i, i + taille);
+    i += taille;
+  }
+  return null;
+}
+
+/**
+ * Chaine de codec d une piste `mp4a`, LUE dans le descripteur esds.
+ *
+ * La « sample entry » mp4a ne dit pas quel codec elle contient : de l AAC, du
+ * MP3 et quelques autres partagent la meme. C est l objectTypeIndication du
+ * DecoderConfigDescriptor qui tranche, et pour l AAC (0x40) c est ensuite l
+ * audioObjectType du DecoderSpecificInfo qui distingue AAC-LC de HE-AAC.
+ *
+ * Sans esds lisible on renvoie `mp4a` NU, jamais un profil suppose : une chaine
+ * inventee ferait accepter la configuration par le navigateur, qui echouerait
+ * au premier paquet avec un message sans rapport.
+ */
+function chaineMp4a(config: Uint8Array | null): string {
+  // esds est une « full box » : 4 octets de version et drapeaux avant les
+  // descripteurs.
+  if (config === null || config.length < 5) return 'mp4a';
+  const es = descripteur(config, 4, 0x03);
+  if (es === null) return 'mp4a';
+
+  // ES_Descriptor : ES_ID (2 octets) puis un octet de drapeaux dont trois bits
+  // commandent des champs optionnels de longueur variable.
+  let i = 3;
+  const drapeaux = es[2] ?? 0;
+  if ((drapeaux & 0x80) !== 0) i += 2; // dependsOn_ES_ID
+  if ((drapeaux & 0x40) !== 0) i += 1 + (es[i] ?? 0); // URL, precedee de sa longueur
+  if ((drapeaux & 0x20) !== 0) i += 2; // OCR_ES_Id
+
+  const dcd = descripteur(es, i, 0x04);
+  if (dcd === null || dcd.length < 1) return 'mp4a';
+  const oti = dcd[0] ?? 0;
+  if (oti === 0) return 'mp4a';
+  const suffixe = oti.toString(16).padStart(2, '0');
+  if (oti !== 0x40) return `mp4a.${suffixe}`;
+
+  // Pour l AAC, DecoderSpecificInfo suit les 13 octets d en-tete du DCD.
+  const dsi = descripteur(dcd, 13, 0x05);
+  if (dsi === null || dsi.length < 1) return `mp4a.${suffixe}`;
+  let aot = (dsi[0] ?? 0) >> 3;
+  // 31 est une echappee : le vrai type tient sur six bits supplementaires.
+  if (aot === 31) {
+    if (dsi.length < 2) return `mp4a.${suffixe}`;
+    aot = 32 + ((((dsi[0] ?? 0) & 0x07) << 3) | ((dsi[1] ?? 0) >> 5));
+  }
+  if (aot === 0) return `mp4a.${suffixe}`;
+  return `mp4a.${suffixe}.${aot}`;
 }
 
 // -------------------------------------------------------------------- pistes
@@ -592,7 +661,7 @@ function analyserTrak(
     id,
     type,
     format: infos.format,
-    codec: chaineCodec(infos.format, infos.description, null),
+    codec: chaineCodec(infos.format, infos.description),
     timescale: timescale === 0 ? 1 : timescale,
     duree,
     largeur: infos.largeur,

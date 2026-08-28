@@ -194,4 +194,20 @@ suite('analyse de fichiers réels', () => {
       if (isOk(r)) expect(r.value.asset.videoStreams[0]?.frameRate).toEqual(rate);
     }
   });
+
+  it('ne confond pas la durée avec la fenêtre d’échantillonnage des horodatages', async () => {
+    // 30 s à 25 i/s = 750 images, soit plus que les 600 images lues pour
+    // détecter une cadence variable. La durée annoncée doit rester la vraie.
+    const { asset } = unwrap(await analyzeFile(fixture('long_750.mp4')));
+    expect(asset.duration.frames).toBe(750);
+    expect(asset.videoStreams[0]?.frameRate).toEqual({ n: 25, d: 1 });
+    expect(asset.videoStreams[0]?.variableFrameRate).toBe(false);
+  });
+
+  it('détecte quand même la cadence variable sur un fichier long', async () => {
+    // La détection se fait sur l'échantillon de tête : elle reste valide même
+    // si le fichier dépasse la fenêtre.
+    const { asset } = unwrap(await analyzeFile(fixture('vfr.mkv')));
+    expect(asset.videoStreams[0]?.variableFrameRate).toBe(true);
+  });
 });

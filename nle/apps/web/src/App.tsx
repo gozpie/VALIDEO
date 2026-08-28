@@ -15,7 +15,7 @@ import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboar
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
-  deleteClipCommand,
+  deleteClipsCommand,
   nextEditPoint,
   previousEditPoint,
   sequenceDuration,
@@ -229,11 +229,14 @@ export function App(): React.JSX.Element {
           return true;
         case 'edit.delete':
         case 'edit.rippleDelete': {
-          const ripple = actionId === 'edit.rippleDelete';
-          for (const id of etat.selection) {
-            actions.executer(deleteClipCommand(id, etat.contexte, ripple));
-          }
-          actions.definirSelection([]);
+          if (etat.selection.size === 0) return true;
+          // Une seule commande pour toute la sélection : sinon supprimer cinq
+          // clips demanderait cinq annulations, et un ripple appliqué clip par
+          // clip retirerait les mauvaises plages.
+          const supprime = actions.executer(
+            deleteClipsCommand([...etat.selection], etat.contexte, actionId === 'edit.rippleDelete'),
+          );
+          if (supprime) actions.definirSelection([]);
           return true;
         }
         case 'playback.shuttleForward':

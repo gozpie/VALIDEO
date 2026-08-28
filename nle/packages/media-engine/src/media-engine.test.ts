@@ -243,6 +243,7 @@ describe('mise en modèle', () => {
       uri: '/x.mov',
       timestamps: {
         frameCount: 100,
+        complet: true,
         variable: true,
         measuredRate: rational(30),
         averageRate: rational(24),

@@ -19,7 +19,7 @@
  * (les commandes sont des fonctions). C est signale ici plutot que sous-entendu.
  */
 import type { AppError, Result } from '@valideo/shared';
-import { appError, ok, utf8 } from '@valideo/shared';
+import { appError, depuisUtf8, err, ok, utf8 } from '@valideo/shared';
 import type { ProjectDoc } from '@valideo/project-model';
 import { deserializeProject, serializeProject } from '@valideo/project-model';
 import type { StorageProvider } from './provider.js';
@@ -64,10 +64,22 @@ export interface OptionsProjectStore {
   readonly maintenant?: () => number;
 }
 
-function decoder(donnees: Uint8Array): string {
-  let texte = '';
-  for (let i = 0; i < donnees.length; i += 1) texte += String.fromCharCode(donnees[i] ?? 0);
-  return decodeURIComponent(escape(texte));
+/**
+ * Decode des octets stockes. Un stockage tronque ou ecrase produit des octets
+ * qui ne sont pas de l UTF-8 : on le remonte comme une corruption de projet,
+ * plutot que de laisser une exception traverser l application.
+ */
+function decoder(donnees: Uint8Array): Result<string, AppError> {
+  try {
+    return ok(depuisUtf8(donnees));
+  } catch (cause) {
+    return err(
+      appError('PROJECT_CORRUPT', 'Le fichier de projet est illisible.', {
+        action: 'Ouvrir un instantane precedent',
+        detail: cause instanceof Error ? cause.message : String(cause),
+      }),
+    );
+  }
 }
 
 export class ProjectStore {
@@ -90,7 +102,9 @@ export class ProjectStore {
     const brut = await this.stockage.lire(cle);
     if (!brut.ok) return brut;
     if (brut.value === null) return ok(null);
-    const lu = deserializeProject(decoder(brut.value));
+    const texte = decoder(brut.value);
+    if (!texte.ok) return texte;
+    const lu = deserializeProject(texte.value);
     if (!lu.ok) return lu;
     return ok(lu.value.document);
   }
@@ -98,8 +112,10 @@ export class ProjectStore {
   private async lireMeta(id: string): Promise<MetaProjet | null> {
     const brut = await this.stockage.lire(cleMeta(id));
     if (!brut.ok || brut.value === null) return null;
+    const texte = decoder(brut.value);
+    if (!texte.ok) return null;
     try {
-      return JSON.parse(decoder(brut.value)) as MetaProjet;
+      return JSON.parse(texte.value) as MetaProjet;
     } catch {
       return null;
     }

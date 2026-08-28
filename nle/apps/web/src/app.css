@@ -158,6 +158,11 @@
   height: 24px;
   background: var(--fond-panneau-haut);
   border-bottom: 1px solid var(--bord);
+  /* Les en-tetes de piste sont poses apres dans le DOM et defilent
+     verticalement : sans cet empilement, celui du haut passerait PAR-DESSUS la
+     regle des que l on remonte la vue. La regle est fixe, les pistes glissent
+     dessous. */
+  z-index: 1;
 }
 
 .entete-piste {

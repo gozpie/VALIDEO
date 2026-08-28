@@ -520,3 +520,61 @@ test('les vignettes de timeline sont de vraies images décodées (§18)', async 
   // Les vignettes arrivent de façon asynchrone : on attend qu'elles soient là.
   await expect.poll(richesse, { timeout: 10_000 }).toBeGreaterThan(avant + 15);
 });
+
+test('déplacer un clip lié déplace aussi son audio (§80)', async ({ page }) => {
+  // Dans le projet de démonstration, chaque plan de V1 est lié à son son sur A1.
+  const debutImage = await debutDe(page, 'A003_large');
+  const debutSon = await debutDe(page, 'A003_large.wav');
+  expect(debutSon).toBe(debutImage);
+
+  // V1 est la troisième piste affichée (V3, V2, V1, ...).
+  const cible = await centreClip(page, 2, 0.28);
+  await page.mouse.move(cible.x, cible.y);
+  await page.mouse.down();
+  await page.mouse.move(cible.x, cible.y + 2, { steps: 3 });
+  await page.mouse.up();
+
+  // La sélection doit avoir pris les deux clips liés.
+  await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
+
+  const depart = await centreClip(page, 2, 0.28);
+  await page.mouse.move(depart.x, depart.y);
+  await page.mouse.down();
+  await page.mouse.move(depart.x + 220, depart.y, { steps: 20 });
+  await page.mouse.up();
+
+  const apresImage = await debutDe(page, 'A003_large');
+  const apresSon = await debutDe(page, 'A003_large.wav');
+  expect(apresImage).not.toBe(debutImage);
+  // L'image et le son restent alignés : c'est tout l'intérêt de la liaison.
+  expect(apresSon).toBe(apresImage);
+
+  // Et une seule annulation suffit à revenir en arrière.
+  await page.keyboard.press('Control+z');
+  expect(await debutDe(page, 'A003_large')).toBe(debutImage);
+  expect(await debutDe(page, 'A003_large.wav')).toBe(debutSon);
+});
+
+test('supprimer plusieurs clips ne demande qu’une seule annulation', async ({ page }) => {
+  const avant = await page.locator('.table-projet').last().locator('tbody tr').count();
+
+  // Sélection au rectangle sur les premières secondes de la timeline.
+  const boite = await page.locator('.timeline-toile canvas').boundingBox();
+  if (boite === null) throw new Error('canvas introuvable');
+  await page.mouse.move(boite.x + 5, boite.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(boite.x + 150, boite.y + boite.height - 20, { steps: 15 });
+  await page.mouse.up();
+  await expect(page.locator('.barre-etat')).not.toContainText('0 sélectionné');
+
+  const etapesAvant = await historique(page).count();
+  await page.keyboard.press('Delete');
+
+  const apres = await page.locator('.table-projet').last().locator('tbody tr').count();
+  expect(apres).toBeLessThan(avant);
+  // UNE entrée d'historique, quel que soit le nombre de clips supprimés.
+  await expect(historique(page)).toHaveCount(etapesAvant + 1);
+
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant);
+});

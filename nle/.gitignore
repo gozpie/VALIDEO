@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Sortie de `tsc -b` pour l'application web : regeneree a chaque build.
+dist-types/
 coverage/
 *.tsbuildinfo
 .turbo/

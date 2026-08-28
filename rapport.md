@@ -590,3 +590,53 @@ vivantes.
 462 tests unitaires et 21 tests de bout en bout. Le test des vignettes compte les
 couleurs distinctes de la piste avant et après le zoom qui les déclenche : c'est
 la preuve que ce sont de vraies images décodées et non un décor.
+
+---
+
+## 2026-08-28 — Passe d'audit : quatre défauts, deux classes fermées
+
+### Objectif
+
+Reprendre tout ce qui a été construit et chercher ce qui est faux, plutôt que
+ce qui manque. Un test d'abord pour chaque suspect : c'est le test qui décide
+s'il y a un défaut, pas l'intuition.
+
+### Modifications
+
+**`nle/packages/shared/src/platform.ts`** — `depuisUtf8`, décodage UTF-8 strict
+par `TextDecoder`. Remplace `decodeURIComponent(escape(...))`, déprécié.
+
+**`nle/packages/storage/src/project-store.ts`** — le décodage retourne
+désormais un `Result`. Des octets corrompus dans le stockage levaient une
+`URIError` qui traversait toute l'application ; ils remontent maintenant comme
+`PROJECT_CORRUPT`, avec l'action « ouvrir un instantané précédent ». Le test
+tronque un projet enregistré au milieu d'un caractère multi-octets.
+
+**`nle/packages/demux/src/mp4.ts`** — la chaîne de codec audio est LUE dans le
+descripteur esds au lieu d'être supposée. Le code répondait `mp4a.40.2` pour
+toute piste `mp4a`, alors que cette « sample entry » couvre aussi le MP3 et
+d'autres codecs. Conséquence concrète : `AudioDecoder.isConfigSupported`
+acceptait la configuration, puis le décodage échouait au premier paquet avec un
+message sans rapport. Le nouveau code parcourt les descripteurs MPEG-4 —
+longueurs à bit de continuation comprises — et distingue AAC-LC de HE-AAC par
+l'audioObjectType. Sans esds lisible, il renvoie `mp4a` nu : jamais un profil
+inventé. Nouvelle fixture `mp3_in_mp4.mp4`, qui échouait avant le correctif.
+
+**`nle/apps/web/src/app.css`** — la règle temporelle reçoit un `z-index`. Les
+en-têtes de piste sont posés après elle dans le DOM ; dès qu'on remontait la
+vue, le premier en-tête passait par-dessus la règle.
+
+**`nle/apps/web/src/timeline/Timeline.tsx`** — suppression de la prop
+`defilement` d'`EntetesPistes` : `trackLayout` porte déjà le décalage vertical
+dans `y`, et une seconde copie ne pouvait que diverger.
+
+**`nle/apps/web/src/media/video-source.ts`, `nle/apps/web/src/store.ts`** —
+retrait d'un champ et d'un export vestigiaux.
+
+**`nle/.gitignore`** — `dist-types/` n'était pas ignoré : la sortie de `tsc -b`
+était versionnée, et chaque build salissait l'arbre de trente-quatre fichiers.
+
+### Vérifications
+
+478 tests unitaires, typage strict des sources ET des tests, ESLint sans
+avertissement.

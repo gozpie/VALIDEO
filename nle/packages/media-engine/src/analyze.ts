@@ -232,10 +232,19 @@ export function analyzeMedia(probe: Probe, options: AnalyzeOptions): MediaAnalys
     floatOf(audioProbes[0]?.duration) ??
     0;
   const declaredFrames = intOf(videoProbes[0]?.nb_frames);
-  const frames =
-    options.timestamps !== undefined && options.timestamps.frameCount > 0
+  // Ordre de confiance pour la duree :
+  //   1. le nombre d images annonce par le conteneur, quand il existe ;
+  //   2. la duree en secondes convertie a la cadence ;
+  //   3. le comptage d horodatages, et SEULEMENT s il a couvert tout le
+  //      fichier -- l analyse de cadence variable ne lit qu une fenetre de
+  //      tete, prendre son comptage pour une duree tronquerait tout media plus
+  //      long que cette fenetre.
+  const parHorodatages =
+    options.timestamps !== undefined && options.timestamps.complet && options.timestamps.frameCount > 0
       ? options.timestamps.frameCount
-      : (declaredFrames ?? framesFromSeconds(durationSeconds, rate));
+      : null;
+  const parDuree = framesFromSeconds(durationSeconds, rate);
+  const frames = declaredFrames ?? (parDuree > 0 ? parDuree : (parHorodatages ?? 0));
 
   if (primaryVideo?.variableFrameRate === true) {
     warnings.push(

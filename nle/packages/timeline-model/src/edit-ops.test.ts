@@ -13,6 +13,8 @@ import {
   razor,
   selectTrackForward,
   setTrackFlags,
+  moveClips,
+  deleteClips,
 } from './edit-ops.js';
 
 const ctx = makeContext();
@@ -417,5 +419,99 @@ describe('Propriétés de piste', () => {
     expect(selectTrackForward(seq, 'v1', 999)).toEqual([]);
     // Avec le modificateur, toutes les pistes suivent.
     expect(selectTrackForward(seq, 'v1', 150, true).sort()).toEqual(['b', 'c', 'd']);
+  });
+});
+
+// ============================================ DÉPLACEMENT ET SUPPRESSION GROUPÉS
+
+describe('Déplacement groupé', () => {
+  it('déplace deux clips voisins sans qu ils s écrasent mutuellement', () => {
+    const seq = threeInARow();
+    // a[0,100) et b[100,200) décalés tous deux de +50. Les déplacer l un après
+    // l autre ferait écraser le début de b par a.
+    const next = unwrap(
+      moveClips(seq, [{ clipId: 'a', toStart: 50 }, { clipId: 'b', toStart: 150 }], ctx),
+    );
+    expect(layout(next, 'v1')).toBe('a[50,150) b[150,250) c[250,300)');
+    expect(findClip(next, 'a')?.clip.duration).toBe(100);
+    expect(findClip(next, 'b')?.clip.duration).toBe(100);
+    expect(checkSequence(next)).toEqual([]);
+  });
+
+  it('déplace une paire audio/vidéo liée de la même quantité', () => {
+    const seq = makeSequence([
+      { id: 'v1', clips: [{ id: 'img', start: 0, duration: 100, linkGroup: 'g' }] },
+      { id: 'a1', kind: 'audio', clips: [{ id: 'son', start: 0, duration: 100, linkGroup: 'g' }] },
+    ]);
+    const next = unwrap(
+      moveClips(seq, [{ clipId: 'img', toStart: 200 }, { clipId: 'son', toStart: 200 }], ctx),
+    );
+    expect(layout(next, 'v1')).toBe('img[200,300)');
+    expect(layout(next, 'a1')).toBe('son[200,300)');
+  });
+
+  it('change de piste pour un seul clip du groupe', () => {
+    const seq = makeSequence([
+      { id: 'v1', clips: [{ id: 'a', start: 0, duration: 50 }, { id: 'b', start: 50, duration: 50 }] },
+      { id: 'v2', index: 1 },
+    ]);
+    const next = unwrap(
+      moveClips(seq, [{ clipId: 'a', toStart: 0, toTrackId: 'v2' }, { clipId: 'b', toStart: 50 }], ctx),
+    );
+    expect(layout(next, 'v1')).toBe('b[50,100)');
+    expect(layout(next, 'v2')).toBe('a[0,50)');
+  });
+
+  it('est ATOMIQUE : si un clip ne peut pas bouger, aucun ne bouge', () => {
+    const seq = makeSequence([
+      { id: 'v1', clips: [{ id: 'a', start: 0, duration: 50 }] },
+      { id: 'v2', index: 1, locked: true, clips: [{ id: 'b', start: 0, duration: 50 }] },
+    ]);
+    const r = moveClips(seq, [{ clipId: 'a', toStart: 100 }, { clipId: 'b', toStart: 100 }], ctx);
+    expect(isErr(r)).toBe(true);
+    // Et la séquence d'origine est intacte.
+    expect(layout(seq, 'v1')).toBe('a[0,50)');
+  });
+
+  it('refuse un déplacement vers une piste de type incompatible', () => {
+    const seq = makeSequence([
+      { id: 'v1', clips: [{ id: 'a', start: 0, duration: 50 }] },
+      { id: 'a1', kind: 'audio' },
+    ]);
+    expect(isErr(moveClips(seq, [{ clipId: 'a', toStart: 0, toTrackId: 'a1' }], ctx))).toBe(true);
+  });
+
+  it('ne fait rien sur une liste vide', () => {
+    const seq = threeInARow();
+    expect(unwrap(moveClips(seq, [], ctx))).toBe(seq);
+  });
+});
+
+describe('Suppression groupée', () => {
+  it('supprime plusieurs clips sans ripple', () => {
+    const next = unwrap(deleteClips(threeInARow(), ['a', 'c'], ctx, false));
+    expect(layout(next, 'v1')).toBe('b[100,200)');
+  });
+
+  it('supprime plusieurs clips AVEC ripple, dans le bon ordre', () => {
+    // Supprimer du début vers la fin décalerait les suivants et on retirerait
+    // la mauvaise plage. L'opération part donc de la fin.
+    const next = unwrap(deleteClips(threeInARow(), ['a', 'b'], ctx, true));
+    expect(layout(next, 'v1')).toBe('c[0,100)');
+  });
+
+  it('donne le même résultat quel que soit l ordre des identifiants', () => {
+    const avant = unwrap(deleteClips(threeInARow(), ['a', 'b'], ctx, true));
+    const apres = unwrap(deleteClips(threeInARow(), ['b', 'a'], ctx, true));
+    expect(layout(apres, 'v1')).toBe(layout(avant, 'v1'));
+  });
+
+  it('échoue en bloc si un clip est introuvable', () => {
+    expect(isErr(deleteClips(threeInARow(), ['a', 'fantome'], ctx))).toBe(true);
+  });
+
+  it('ne fait rien sur une liste vide', () => {
+    const seq = threeInARow();
+    expect(unwrap(deleteClips(seq, [], ctx))).toBe(seq);
   });
 });

@@ -91,7 +91,6 @@ export class VideoSource {
   private pixelsEnCache = 0;
   /** Budget du cache, en pixels. 64 Mpx : environ 250 Mo en RGBA. */
   private budgetPixels = 64_000_000;
-  private derniereImage: VideoFrame | null = null;
   private derniereCle = -1;
   /**
    * File d attente d une seule voie.
@@ -467,8 +466,6 @@ export class VideoSource {
   }
 
   fermer(): void {
-    this.derniereImage?.close();
-    this.derniereImage = null;
     this.viderCache();
     this.reinitialiser();
   }

@@ -153,6 +153,16 @@ suite('démultiplexeur MP4', () => {
     expect(imageCleAvant(video, 0)).toBe(0);
   });
 
+  it('lit la chaîne de codec audio dans esds au lieu de la supposer', async () => {
+    // MP3 dans un MP4 : la « sample entry » est `mp4a`, exactement comme pour
+    // l'AAC. Seul le descripteur esds distingue les deux. Répondre « mp4a.40.2 »
+    // ferait accepter la configuration par `AudioDecoder`, qui échouerait
+    // ensuite sur le premier paquet.
+    const fichier = unwrap(await demultiplexerMp4(lecteur('mp3_in_mp4.mp4')));
+    const audio = premierePiste(fichier, 'audio');
+    expect(audio?.codec).toBe('mp4a.6b');
+  });
+
   it('lit un VP9 encapsulé en MP4, avec sa chaîne de codec WebCodecs', async () => {
     const f = unwrap(await demultiplexerMp4(lecteur('vp9_25.mp4')));
     const video = premierePiste(f, 'video');

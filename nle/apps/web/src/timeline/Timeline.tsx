@@ -33,7 +33,7 @@ import {
   clipEnd,
   findClip,
   linkedClips,
-  moveClipCommand,
+  moveClipsCommand,
   razorCommand,
   rateStretchCommand,
   rollCommand,
@@ -85,7 +85,7 @@ export interface ProprietesTimeline {
   readonly vue: Viewport;
   readonly definirVue: (v: Viewport | ((v: Viewport) => Viewport)) => void;
   readonly defilementVertical: number;
-  readonly definirDefilementVertical: (v: number) => void;
+  readonly definirDefilementVertical: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export function Timeline({
@@ -152,6 +152,10 @@ export function Timeline({
   );
 
   const graduations = useMemo(() => ticks(vueMesuree, base, 90), [vueMesuree, base]);
+
+  /** Hauteur totale des pistes, lue par l'écouteur de molette sans le recréer. */
+  const hauteurContenuRef = useRef(0);
+  hauteurContenuRef.current = modele.contentHeight;
 
   const mediasParId = useMemo(
     () => new Map(etat.document.media.map((m) => [m.id, m])),
@@ -507,6 +511,7 @@ export function Timeline({
         case 'deplacement': {
           const image = geste.imageDepart + Math.round(geste.dx / vueMesuree.pixelsPerFrame);
           if (image !== geste.imageDepart) {
+            const decalage = image - geste.imageDepart;
             // Une piste d arrivée différente serait un changement de piste : on
             // le déduit du calque survolé au relâchement.
             const pisteArrivee = modele.tracks.find(
@@ -517,18 +522,23 @@ export function Timeline({
               pisteArrivee !== undefined &&
               trouve !== undefined &&
               pisteArrivee.kind === trouve.track.kind;
-            actions.executer(
-              moveClipCommand(
-                {
-                  clipId: geste.clipId,
-                  toStart: Math.max(0, image),
-                  ...(memeType && pisteArrivee !== undefined
-                    ? { toTrackId: pisteArrivee.trackId }
-                    : {}),
-                },
-                etat.contexte,
-              ),
-            );
+            // TOUS les clips du geste bougent, pas seulement celui qu'on tire :
+            // l'aperçu les montrait déjà se déplacer ensemble. L'opération est
+            // atomique et détache avant de reposer, sinon deux clips voisins
+            // s'écraseraient mutuellement.
+            const deplacements = [...geste.ids].flatMap((id) => {
+              const cible = findClip(etat.sequence, id);
+              if (cible === undefined) return [];
+              const depart = Math.max(0, cible.clip.start + decalage);
+              // Seul le clip tiré peut changer de piste ; les autres gardent la
+              // leur, ce qui préserve une paire audio/vidéo.
+              return [
+                id === geste.clipId && memeType && pisteArrivee !== undefined
+                  ? { clipId: id, toStart: depart, toTrackId: pisteArrivee.trackId }
+                  : { clipId: id, toStart: depart },
+              ];
+            });
+            actions.executer(moveClipsCommand(deplacements, etat.contexte, `move:${geste.clipId}`));
           }
           break;
         }
@@ -584,44 +594,44 @@ export function Timeline({
     if (toile === null) return undefined;
     const surMolette = (e: WheelEvent): void => {
       e.preventDefault();
-      const rect = toile.getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      const vue = (v: Viewport): Viewport => creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur);
+
+      // Conventions des NLE :
+      //   molette seule   -> défilement VERTICAL des pistes ;
+      //   Maj + molette   -> défilement horizontal dans le temps ;
+      //   Ctrl/Cmd + molette -> zoom autour du pointeur ;
+      //   geste horizontal d'un pavé tactile -> défilement horizontal.
       if (e.ctrlKey || e.metaKey) {
-        definirVue((v) =>
-          clampScroll(
-            zoomAt(
-              creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur),
-              x,
-              Math.pow(1.0025, -e.deltaY),
-            ),
-            duree,
-          ),
-        );
-      } else if (e.shiftKey) {
-        definirVue((v) =>
-          clampScroll(
-            scrollBy(creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur), e.deltaY),
-            duree,
-          ),
-        );
-      } else {
-        definirVue((v) =>
-          clampScroll(
-            scrollBy(
-              creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur),
-              e.deltaX || e.deltaY,
-            ),
-            duree,
-          ),
-        );
-        definirDefilementVertical(
-          Math.max(0, defilementVertical + (e.deltaX === 0 ? 0 : e.deltaY)),
+        const x = e.clientX - toile.getBoundingClientRect().left;
+        definirVue((v) => clampScroll(zoomAt(vue(v), x, Math.pow(1.0025, -e.deltaY)), duree));
+        return;
+      }
+
+      if (e.shiftKey) {
+        definirVue((v) => clampScroll(scrollBy(vue(v), e.deltaY), duree));
+        return;
+      }
+
+      if (e.deltaX !== 0) {
+        definirVue((v) => clampScroll(scrollBy(vue(v), e.deltaX), duree));
+      }
+
+      if (e.deltaY !== 0) {
+        // Borné au contenu : sans cela on défile dans le vide sous la dernière
+        // piste, et l'on ne retrouve plus le montage.
+        const visible = Math.max(0, taille.hauteur - HAUTEUR_REGLE);
+        const maximum = Math.max(0, hauteurContenuRef.current - visible);
+        definirDefilementVertical((precedent) =>
+          Math.min(maximum, Math.max(0, precedent + e.deltaY)),
         );
       }
     };
     toile.addEventListener('wheel', surMolette, { passive: false });
     return () => toile.removeEventListener('wheel', surMolette);
-  }, [definirVue, definirDefilementVertical, defilementVertical, duree, taille.largeur]);
+    // `defilementVertical` n'est volontairement pas une dépendance : on passe
+    // par un modificateur fonctionnel, ce qui évite de réinstaller l'écouteur
+    // à chaque cran de molette.
+  }, [definirVue, definirDefilementVertical, duree, taille.largeur, taille.hauteur]);
 
   // La tête de lecture reste visible quand on navigue au clavier.
   useEffect(() => {
@@ -632,12 +642,10 @@ export function Timeline({
 
   return (
     <div className="timeline-corps">
-      <EntetesPistes
-        modele={modele}
-        defilement={defilementVertical}
-        etat={etat}
-        actions={actions}
-      />
+      {/* Pas de prop de defilement : `modele.tracks[].y` porte deja le
+          decalage vertical, calcule une seule fois par `trackLayout`. En
+          passer une seconde copie inviterait les deux a diverger. */}
+      <EntetesPistes modele={modele} etat={etat} actions={actions} />
       {/* État du viewport exposé pour les tests de bout en bout : c'est la seule
           façon de vérifier le zoom et le défilement, qui vivent dans un canvas. */}
       <div
@@ -666,7 +674,6 @@ function EntetesPistes({
   actions,
 }: {
   modele: ReturnType<typeof buildRenderModel>;
-  defilement: number;
   etat: EtatEditeur;
   actions: ActionsEditeur;
 }): React.JSX.Element {

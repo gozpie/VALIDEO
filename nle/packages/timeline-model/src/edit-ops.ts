@@ -344,6 +344,96 @@ export function moveClip(
   return overwrite(detached, { clip, trackId: targetId, at: options.toStart }, ctx);
 }
 
+export interface DeplacementClip {
+  readonly clipId: string;
+  readonly toStart: number;
+  readonly toTrackId?: string;
+}
+
+/**
+ * Deplace PLUSIEURS clips en une seule operation atomique.
+ *
+ * Pourquoi une operation dediee plutot qu une boucle sur `moveClip` : deplacer
+ * deux clips voisins l un apres l autre les fait s ecraser mutuellement. Si A
+ * occupe [0,100[ et B [100,200[ et qu on les decale tous deux de +50, deplacer
+ * A d abord ecrase le debut de B, qui est ensuite deplace ampute.
+ *
+ * On DETACHE donc tous les clips concernes, puis on les repose. C est aussi ce
+ * qui rend le deplacement d une paire audio/video correct (section 80).
+ */
+export function moveClips(sequence: SequenceDoc, deplacements: readonly DeplacementClip[], ctx: TimelineContext): EditResult {
+  if (deplacements.length === 0) return ok(sequence);
+
+  // 1. Determiner : tous les clips doivent exister et etre deplacables.
+  const resolus: { clip: ClipDoc; source: TrackDoc; cible: TrackDoc; debut: number }[] = [];
+  for (const d of deplacements) {
+    const found = requireClip(sequence, d.clipId);
+    if (!found.ok) return found;
+    const cibleId = d.toTrackId ?? found.value.track.id;
+    const cible = requireTrack(sequence, cibleId);
+    if (!cible.ok) return cible;
+    if (cible.value.kind !== found.value.track.kind) {
+      return err(
+        rejected(
+          `Un clip ${found.value.track.kind === 'video' ? 'vidéo' : 'audio'} ne peut pas aller sur une piste ${
+            cible.value.kind === 'video' ? 'vidéo' : 'audio'
+          }.`,
+        ),
+      );
+    }
+    if (d.toStart < 0) return err(rejected('Un clip ne peut pas commencer avant le début de la séquence.'));
+    resolus.push({ clip: found.value.clip, source: found.value.track, cible: cible.value, debut: d.toStart });
+  }
+
+  // 2. Detacher TOUS les clips avant d en reposer un seul.
+  let tracks = sequence.tracks;
+  for (const r of resolus) {
+    tracks = mapTrack(tracks, r.source.id, (t) => removeClip(t, r.clip.id));
+  }
+
+  // 3. Reposer, chacun effacant ce qu il recouvre.
+  for (const r of resolus) {
+    const place: ClipDoc = { ...r.clip, start: r.debut, trackId: r.cible.id };
+    tracks = mapTrack(tracks, r.cible.id, (t) =>
+      placeClip(clearRange(t, place.start, clipEnd(place), ctx), place),
+    );
+  }
+
+  return finalize({ ...sequence, tracks });
+}
+
+/**
+ * Supprime PLUSIEURS clips en une seule operation.
+ *
+ * En mode ripple, l ordre compte : on retire de la fin vers le debut, sinon la
+ * fermeture du premier trou decale les suivants et on supprime la mauvaise
+ * plage.
+ */
+export function deleteClips(
+  sequence: SequenceDoc,
+  clipIds: readonly string[],
+  ctx: TimelineContext,
+  ripple = false,
+): EditResult {
+  if (clipIds.length === 0) return ok(sequence);
+
+  const cibles: ClipDoc[] = [];
+  for (const id of clipIds) {
+    const found = requireClip(sequence, id);
+    if (!found.ok) return found;
+    cibles.push(found.value.clip);
+  }
+  cibles.sort((a, b) => b.start - a.start);
+
+  let courante = sequence;
+  for (const clip of cibles) {
+    const resultat = deleteClip(courante, clip.id, ctx, ripple);
+    if (!resultat.ok) return resultat;
+    courante = resultat.value;
+  }
+  return ok(courante);
+}
+
 // ------------------------------------------------------------------- Trim
 
 export type TrimEdge = 'in' | 'out';

@@ -87,10 +87,26 @@ describe('fabriques', () => {
 });
 
 describe('serialisation', () => {
-  it('est deterministe malgre l ordre des cles', () => {
-    const p = createProject('Projet');
-    const shuffled = JSON.parse(JSON.stringify({ name: p.name, ...p })) as typeof p;
-    expect(serializeProject(shuffled)).toBe(serializeProject(p));
+  it('est déterministe malgré l ordre des clés', () => {
+    const p = { ...createProject('Projet'), sequences: [createSequence('S1')] };
+    // On reconstruit le MÊME document avec ses clés dans l'ordre inverse : c'est
+    // ce que produirait un autre sérialiseur, ou une autre version du logiciel.
+    const inverser = (valeur: unknown): unknown => {
+      if (Array.isArray(valeur)) return valeur.map(inverser);
+      if (valeur !== null && typeof valeur === 'object') {
+        const source = valeur as Record<string, unknown>;
+        const sortie: Record<string, unknown> = {};
+        for (const cle of Object.keys(source).reverse()) sortie[cle] = inverser(source[cle]);
+        return sortie;
+      }
+      return valeur;
+    };
+    const desordonne = inverser(p) as typeof p;
+
+    // L'ordre des clés diffère réellement...
+    expect(JSON.stringify(desordonne)).not.toBe(JSON.stringify(p));
+    // ...mais la sérialisation déterministe produit les mêmes octets.
+    expect(serializeProject(desordonne)).toBe(serializeProject(p));
   });
 
   it('fait l aller-retour sans perte', () => {
