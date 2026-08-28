@@ -165,7 +165,6 @@ export function MoniteurProgramme({
   return (
     <section className="panneau">
       <div className="panneau-entete">
-        <span className="titre">Moniteur Programme</span>
         <span className="espace" />
         <span className="etiquette-etat partiel">Une seule couche · pas de composition</span>
       </div>

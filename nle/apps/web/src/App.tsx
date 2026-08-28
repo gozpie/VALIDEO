@@ -1579,7 +1579,6 @@ export function App(): React.JSX.Element {
           projet: (
             <section className="panneau">
               <div className="panneau-entete">
-                <span className="titre">Projet</span>
                 <span className="espace" />
                 <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
               </div>
@@ -1605,7 +1604,7 @@ export function App(): React.JSX.Element {
           timeline: (
             <section className="panneau zone-timeline">
               <div className="panneau-entete">
-                <span className="titre">Timeline · {etat.sequence.name}</span>
+                <span className="titre">{etat.sequence.name}</span>
                 <span className="espace" />
                 <button
                   type="button"

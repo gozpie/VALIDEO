@@ -40,7 +40,6 @@ export function PanneauInfo({ etat, actions, timecode, duree }: ProprietesInfo):
   return (
     <section className="panneau">
       <div className="panneau-entete">
-        <span className="titre">Historique</span>
         <span className="espace" />
         <span>
           {etat.historique.labels.length} étape{etat.historique.labels.length > 1 ? 's' : ''}

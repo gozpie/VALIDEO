@@ -18,9 +18,8 @@ export interface ProprietesMoniteur {
 
 export function Moniteur({ titre, tete, duree }: ProprietesMoniteur): React.JSX.Element {
   return (
-    <section className="panneau">
+    <section className="panneau" aria-label={titre}>
       <div className="panneau-entete">
-        <span className="titre">{titre}</span>
         <span className="espace" />
         <span className="etiquette-etat indisponible">Moniteur source non implémenté</span>
       </div>
