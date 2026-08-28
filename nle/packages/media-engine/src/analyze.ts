@@ -240,7 +240,9 @@ export function analyzeMedia(probe: Probe, options: AnalyzeOptions): MediaAnalys
   //      tete, prendre son comptage pour une duree tronquerait tout media plus
   //      long que cette fenetre.
   const parHorodatages =
-    options.timestamps !== undefined && options.timestamps.complet && options.timestamps.frameCount > 0
+    options.timestamps !== undefined &&
+    options.timestamps.complet &&
+    options.timestamps.frameCount > 0
       ? options.timestamps.frameCount
       : null;
   const parDuree = framesFromSeconds(durationSeconds, rate);

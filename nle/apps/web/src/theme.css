@@ -47,9 +47,13 @@
   --t-lg: 14px;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body, #racine {
+html,
+body,
+#racine {
   height: 100%;
   margin: 0;
   overflow: hidden;
@@ -72,10 +76,29 @@ button {
   padding: 3px 8px;
   cursor: pointer;
 }
-button:hover:not(:disabled) { background: var(--fond-survol); border-color: var(--bord-fort); }
-button:active:not(:disabled) { background: var(--fond-actif); }
-button:disabled { opacity: 0.4; cursor: default; }
-button.actif { background: var(--accent-doux); border-color: var(--accent); color: var(--texte-fort); }
-button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:hover:not(:disabled) {
+  background: var(--fond-survol);
+  border-color: var(--bord-fort);
+}
+button:active:not(:disabled) {
+  background: var(--fond-actif);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.actif {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--texte-fort);
+}
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 
-.mono { font-family: var(--police-mono); font-variant-numeric: tabular-nums; }
+.mono {
+  font-family: var(--police-mono);
+  font-variant-numeric: tabular-nums;
+}

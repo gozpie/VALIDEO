@@ -41,18 +41,19 @@ export function dureeSurTimeline(asset: MediaAssetDoc, sequence: SequenceDoc): n
  * déverrouillée. Le repli est délibéré — poser un média sans avoir rien ciblé
  * est le geste d'un débutant, et refuser ne lui apprendrait rien.
  */
-export function pisteDAccueil(
-  sequence: SequenceDoc,
-  type: TypePiste,
-): Result<TrackDoc, AppError> {
+export function pisteDAccueil(sequence: SequenceDoc, type: TypePiste): Result<TrackDoc, AppError> {
   const piste =
     sequence.tracks.find((t) => t.kind === type && t.targeted && !t.locked) ??
     sequence.tracks.find((t) => t.kind === type && !t.locked);
   if (piste === undefined) {
     return err(
-      appError('EDIT_REJECTED', `Aucune piste ${type === 'video' ? 'vidéo' : 'audio'} disponible.`, {
-        action: 'Déverrouillez ou ciblez une piste',
-      }),
+      appError(
+        'EDIT_REJECTED',
+        `Aucune piste ${type === 'video' ? 'vidéo' : 'audio'} disponible.`,
+        {
+          action: 'Déverrouillez ou ciblez une piste',
+        },
+      ),
     );
   }
   return ok(piste);

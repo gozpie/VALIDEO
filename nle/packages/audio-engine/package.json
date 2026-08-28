@@ -6,7 +6,17 @@
   "description": "Pyramide de pics audio, mesures de niveau et utilitaires audio.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "scripts": { "build": "tsc -b" },
-  "dependencies": { "@valideo/shared": "workspace:*", "@valideo/time-core": "workspace:*" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@valideo/shared": "workspace:*",
+    "@valideo/time-core": "workspace:*"
+  }
 }

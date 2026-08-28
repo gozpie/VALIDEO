@@ -88,10 +88,10 @@ entière, image par image**, en 23.976, 24, 25, 29.97 NDF, 29.97 DF, 50 et
 
 ### Étape 5 — `@valideo/command-system` (§43, §70)
 
-- **Command pattern** où une commande est une fonction *pure* de l'état vers un
+- **Command pattern** où une commande est une fonction _pure_ de l'état vers un
   nouvel état. Conséquence : l'annulation n'a besoin d'aucune logique inverse
   écrite à la main — il suffit de reprendre l'état précédent. C'est ce qui rend
-  l'undo fiable sur une opération composée comme le *ripple delete*, où une
+  l'undo fiable sur une opération composée comme le _ripple delete_, où une
   inverse manuelle serait presque impossible à garder juste.
 - **Transactions atomiques** : si une étape échoue, l'ensemble échoue et l'état
   d'origine ressort intact. Aucune modification partielle n'atteint le projet —
@@ -114,22 +114,22 @@ produirait un chevauchement est refusée, jamais appliquée à moitié.
 
 Opérations implémentées et testées :
 
-| Opération | Comportement vérifié |
-|---|---|
-| Overwrite | efface ce qu'il recouvre, coupe un clip traversé en deux, n'allonge la séquence que s'il la dépasse |
-| Insert | ouvre un trou, coupe le clip traversé, décale les pistes en *sync lock*, épargne les pistes verrouillées |
-| Lift | retire et laisse le trou |
-| Extract | retire et referme ; **refuse** de refermer par-dessus du contenu encore présent sur une piste synchronisée |
-| Razor / Add Edit | coupe continue en source, identifiant neuf pour la seconde moitié, sans effet sur une coupe existante |
-| Déplacement | recouvre à l'arrivée, libère l'origine, refuse vidéo → piste audio |
-| Trim simple | raccourcit en laissant un trou, rallonge en recouvrant le voisin |
-| Ripple trim | sur le point d'entrée, le clip **garde sa place** et la suite remonte |
-| Q / W (§93) | *ripple trim* jusqu'à la tête de lecture |
-| Roll | déplace la coupe, durée totale constante, borné par les deux clips **et** par les poignées |
-| Slip | fait défiler la source sous le clip sans le bouger |
-| Slide | déplace le clip en ajustant ses deux voisins, portée totale constante |
-| Rate stretch | change la durée en conservant la portion de source utilisée |
-| Link / Unlink | groupes audio/vidéo (§80) |
+| Opération        | Comportement vérifié                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| Overwrite        | efface ce qu'il recouvre, coupe un clip traversé en deux, n'allonge la séquence que s'il la dépasse        |
+| Insert           | ouvre un trou, coupe le clip traversé, décale les pistes en _sync lock_, épargne les pistes verrouillées   |
+| Lift             | retire et laisse le trou                                                                                   |
+| Extract          | retire et referme ; **refuse** de refermer par-dessus du contenu encore présent sur une piste synchronisée |
+| Razor / Add Edit | coupe continue en source, identifiant neuf pour la seconde moitié, sans effet sur une coupe existante      |
+| Déplacement      | recouvre à l'arrivée, libère l'origine, refuse vidéo → piste audio                                         |
+| Trim simple      | raccourcit en laissant un trou, rallonge en recouvrant le voisin                                           |
+| Ripple trim      | sur le point d'entrée, le clip **garde sa place** et la suite remonte                                      |
+| Q / W (§93)      | _ripple trim_ jusqu'à la tête de lecture                                                                   |
+| Roll             | déplace la coupe, durée totale constante, borné par les deux clips **et** par les poignées                 |
+| Slip             | fait défiler la source sous le clip sans le bouger                                                         |
+| Slide            | déplace le clip en ajustant ses deux voisins, portée totale constante                                      |
+| Rate stretch     | change la durée en conservant la portion de source utilisée                                                |
+| Link / Unlink    | groupes audio/vidéo (§80)                                                                                  |
 
 **Correspondance timeline ↔ source exacte.** Un clip vit dans deux référentiels :
 position et durée en images de la séquence, point d'entrée en images de la
@@ -143,12 +143,12 @@ dernière image réellement disponible dans la source. Quand la source est
 inconnue (média hors ligne), rien n'est contraint plutôt que d'inventer.
 
 **112 tests**, dont un **fuzz déterministe** : 5 600 opérations de montage
-aléatoires enchaînées sur 7 graines, en vérifiant après *chaque* opération
+aléatoires enchaînées sur 7 graines, en vérifiant après _chaque_ opération
 qu'aucun chevauchement, aucune durée nulle, aucun ordre cassé n'apparaît — et
 qu'aucun refus ne passe par une exception. Une graine qui échouerait est
 rejouable à l'identique.
 
-Un bug réel attrapé et corrigé : le *ripple trim* sur le point d'entrée décalait
+Un bug réel attrapé et corrigé : le _ripple trim_ sur le point d'entrée décalait
 le clip vers la droite en laissant un trou, au lieu de le laisser en place et de
 faire remonter la suite. Il produisait un chevauchement.
 
@@ -162,7 +162,7 @@ d'interface.
 
 - **Viewport immuable** — correspondance temps ↔ pixels, zoom autour du
   pointeur (l'image sous le curseur reste fixe, vérifié au 10⁻⁹ près), zoom
-  clavier, *fit*, défilement, `scrollIntoView`, bornage du défilement.
+  clavier, _fit_, défilement, `scrollIntoView`, bornage du défilement.
   Une image occupe jusqu'à 64 px au zoom maximal ; au zoom minimal, **plus de
   20 heures** tiennent dans 1000 px (§17).
 - **Niveaux de détail** — vignettes, formes d'onde, étiquettes et grille image
@@ -185,12 +185,12 @@ d'interface.
 **Performances mesurées, pas affirmées** (§103), sur une séquence de
 **10 000 clips répartis sur 100 pistes** :
 
-| Opération | Mesure |
-|---|---|
-| Modèle de rendu d'une vue | **0,11 – 0,28 ms** |
-| Zoom | < 0,001 ms |
-| Requête sur une piste de **100 000 clips** | **0,001 ms** |
-| Accrochage complet | 0,44 ms |
+| Opération                                  | Mesure             |
+| ------------------------------------------ | ------------------ |
+| Modèle de rendu d'une vue                  | **0,11 – 0,28 ms** |
+| Zoom                                       | < 0,001 ms         |
+| Requête sur une piste de **100 000 clips** | **0,001 ms**       |
+| Accrochage complet                         | 0,44 ms            |
 
 Pour référence, une image à 60 FPS dispose de 16,6 ms. Les tests vérifient aussi
 qu'interroger la **fin** d'une piste de 100 000 clips ne coûte pas plus cher que
@@ -230,7 +230,7 @@ taille et date de modification.
 
 1. **La cadence mesurée écrasait la cadence déclarée.** Reconstruire 23.976
    depuis des horodatages quantifiés donnait `12250000/10427` au lieu de
-   `24000/1001`. La déclaration fait foi ; la mesure ne sert qu'à *détecter* la
+   `24000/1001`. La déclaration fait foi ; la mesure ne sert qu'à _détecter_ la
    variabilité et à fournir une moyenne quand le média est réellement VFR.
 2. **ffprobe liste les images en ordre de décodage, pas de présentation.** Dès
    qu'il y a des images B, la suite des horodatages saute (…0,40 puis 0,48, le
@@ -375,7 +375,7 @@ maintenant vrai, et vérifié dans un navigateur.
 - **Interface de stockage** volontairement minuscule (lire, écrire, supprimer,
   lister) : tout fournisseur imaginable sait faire ces quatre choses. Trois
   implémentations : **OPFS**, **localStorage** (repli) et mémoire.
-- **Choix automatique** avec vérification *réelle* : un navigateur en navigation
+- **Choix automatique** avec vérification _réelle_ : un navigateur en navigation
   privée expose `localStorage` tout en refusant l'écriture, on teste donc
   vraiment. Si aucun stockage persistant n'existe, l'interface **prévient en
   bandeau** que le travail sera perdu (§1003).
@@ -445,7 +445,7 @@ des **vrais échantillons**, et la timeline la dessine.
    mentait. Corrigé dans le script de génération, pas dans le test.
 
 **Vérification au pixel près** : un test de bout en bout compte les pixels
-clairs de la piste avant et après l'import, et vérifie qu'une piste audio *sans*
+clairs de la piste avant et après l'import, et vérifie qu'une piste audio _sans_
 média décodé n'en reçoit aucun. C'est la preuve que la courbe vient des
 échantillons et non d'un décor.
 
@@ -478,14 +478,14 @@ l'écran, pas le son, et les deux horloges ne sont jamais au même rythme.
 
 **Ce que le moteur REFUSE de jouer, et le dit** (§1003) :
 
-| Cas | Comportement |
-|---|---|
-| Clip sans média | ignoré, signalé |
-| **Lecture inversée** | ignorée — Web Audio ne sait pas lire un tampon à l'envers, et le jouer à l'endroit serait faux et inaudible comme erreur |
-| Cadence source inconnue | ignoré, signalé |
-| Volume automatisé par keyframes | **joué** au gain de départ, avec un avertissement |
-| Segment déjà passé | non rattrapé — le jouer en retard s'entendrait |
-| Fichier trop gros pour tenir en mémoire | forme d'onde conservée, lecture directe refusée et signalée |
+| Cas                                     | Comportement                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Clip sans média                         | ignoré, signalé                                                                                                          |
+| **Lecture inversée**                    | ignorée — Web Audio ne sait pas lire un tampon à l'envers, et le jouer à l'endroit serait faux et inaudible comme erreur |
+| Cadence source inconnue                 | ignoré, signalé                                                                                                          |
+| Volume automatisé par keyframes         | **joué** au gain de départ, avec un avertissement                                                                        |
+| Segment déjà passé                      | non rattrapé — le jouer en retard s'entendrait                                                                           |
+| Fichier trop gros pour tenir en mémoire | forme d'onde conservée, lecture directe refusée et signalée                                                              |
 
 **Les moniteurs disent maintenant la vérité** : « Son lu · image non décodée ».
 Le son est réel ; l'image demande un démultiplexeur et un décodeur qui n'existent
@@ -513,7 +513,7 @@ signale explicitement comme manquante dans les approches naïves.
   lus.
 - **Index d'échantillons complet** : `stts`, `ctts`, `stsc`, `stsz`/`stz2`,
   `stco`/`co64`, `stss`. Les tables MP4 sont compressées par répétition et
-  regroupées en *chunks* ; il faut les déplier pour savoir où commence chaque
+  regroupées en _chunks_ ; il faut les déplier pour savoir où commence chaque
   image.
 - **Chaînes de codec WebCodecs** construites depuis `avcC`, `hvcC` et `vpcC` :
   `avc1.640028`, `vp09.00.20.08`.
@@ -539,8 +539,8 @@ La chaîne est complète : **fichier → démultiplexeur → `EncodedVideoChunk`
   24000/1001), le **codec réel** et la définition codée — là où un élément vidéo
   ne donnait qu'une durée approchée et aucune cadence fiable.
 - Le Moniteur Programme affiche l'image **exacte** de la tête de lecture. Un test
-  de bout en bout le vérifie image par image : à la position *n*, l'horodatage
-  de l'image décodée vaut exactement *n* × 40 000 µs.
+  de bout en bout le vérifie image par image : à la position _n_, l'horodatage
+  de l'image décodée vaut exactement _n_ × 40 000 µs.
 - Un codec que le navigateur ne décode pas est **annoncé** — « démuxé · proxy
   requis » — et non affiché comme une erreur (§60).
 

@@ -160,7 +160,9 @@ export function MenuContextuel({
               disabled={element.desactivee === true}
               title={element.desactivee === true ? (element.raison ?? '') : ''}
               aria-haspopup={element.sousMenu !== undefined}
-              aria-expanded={element.sousMenu === undefined ? undefined : sousMenuOuvert === element.id}
+              aria-expanded={
+                element.sousMenu === undefined ? undefined : sousMenuOuvert === element.id
+              }
               onPointerEnter={() => setSurvol(i)}
               onClick={() => choisir(element)}
             >

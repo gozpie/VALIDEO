@@ -6,8 +6,15 @@
   "description": "Fournisseurs de stockage, autosave, instantanes et reprise apres incident.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "scripts": { "build": "tsc -b" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
   "dependencies": {
     "@valideo/shared": "workspace:*",
     "@valideo/project-model": "workspace:*"

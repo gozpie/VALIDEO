@@ -140,23 +140,20 @@ export function DialogueVitesse({
       </div>
 
       {!valide && (
-        <p className="note-modale alerte">
-          La vitesse doit être un nombre strictement positif.
-        </p>
+        <p className="note-modale alerte">La vitesse doit être un nombre strictement positif.</p>
       )}
 
       {/* §1003 : ce qui n'existe pas est ANNONCÉ, jamais présenté comme une
           case à cocher inerte. */}
       <p className="note-modale">
-        <strong>Conservation de la hauteur du son : indisponible.</strong> Elle
-        demanderait un étirement temporel du son à hauteur constante, qui n’est
-        pas implémenté. À vitesse modifiée, le son du clip suit la vidéo et sa
-        hauteur change.
+        <strong>Conservation de la hauteur du son : indisponible.</strong> Elle demanderait un
+        étirement temporel du son à hauteur constante, qui n’est pas implémenté. À vitesse modifiée,
+        le son du clip suit la vidéo et sa hauteur change.
       </p>
       <p className="note-modale">
-        L’interpolation <em>Flux optique</em> et le <em>Fondu d’images</em> sont
-        enregistrés dans le document mais le rendu utilise l’image la plus
-        proche : les deux autres modes ne sont pas implémentés.
+        L’interpolation <em>Flux optique</em> et le <em>Fondu d’images</em> sont enregistrés dans le
+        document mais le rendu utilise l’image la plus proche : les deux autres modes ne sont pas
+        implémentés.
       </p>
     </Modale>
   );

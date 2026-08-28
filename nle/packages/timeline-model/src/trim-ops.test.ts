@@ -463,7 +463,9 @@ describe('vitesse et durée (§38)', () => {
   it('inverser la lecture rejoue exactement le même matériau', () => {
     const seq = threeInARow();
     const avant = findClip(seq, 'b')!.clip;
-    const next = unwrap(changeSpeed(seq, { clipId: 'b', speed: { n: 1, d: 1 }, reverse: true }, ctx));
+    const next = unwrap(
+      changeSpeed(seq, { clipId: 'b', speed: { n: 1, d: 1 }, reverse: true }, ctx),
+    );
     const b = findClip(next, 'b')!.clip;
     expect(b.reverse).toBe(true);
     // Le clip couvrait [2000,2100) ; à l'envers il doit couvrir la même plage.

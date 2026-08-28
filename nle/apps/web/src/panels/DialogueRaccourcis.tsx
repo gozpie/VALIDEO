@@ -81,9 +81,8 @@ export function DialogueRaccourcis({
       </table>
       {lignes.length === 0 && <p className="note-modale">Aucun raccourci ne correspond.</p>}
       <p className="note-modale">
-        Les raccourcis suivent la POSITION physique des touches, pas la lettre
-        imprimée : sur un clavier AZERTY, la touche à la place du Q américain
-        déclenche l’action de « Q ».
+        Les raccourcis suivent la POSITION physique des touches, pas la lettre imprimée : sur un
+        clavier AZERTY, la touche à la place du Q américain déclenche l’action de « Q ».
       </p>
     </Modale>
   );

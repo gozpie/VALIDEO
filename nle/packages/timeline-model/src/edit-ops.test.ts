@@ -430,7 +430,14 @@ describe('Déplacement groupé', () => {
     // a[0,100) et b[100,200) décalés tous deux de +50. Les déplacer l un après
     // l autre ferait écraser le début de b par a.
     const next = unwrap(
-      moveClips(seq, [{ clipId: 'a', toStart: 50 }, { clipId: 'b', toStart: 150 }], ctx),
+      moveClips(
+        seq,
+        [
+          { clipId: 'a', toStart: 50 },
+          { clipId: 'b', toStart: 150 },
+        ],
+        ctx,
+      ),
     );
     expect(layout(next, 'v1')).toBe('a[50,150) b[150,250) c[250,300)');
     expect(findClip(next, 'a')?.clip.duration).toBe(100);
@@ -444,7 +451,14 @@ describe('Déplacement groupé', () => {
       { id: 'a1', kind: 'audio', clips: [{ id: 'son', start: 0, duration: 100, linkGroup: 'g' }] },
     ]);
     const next = unwrap(
-      moveClips(seq, [{ clipId: 'img', toStart: 200 }, { clipId: 'son', toStart: 200 }], ctx),
+      moveClips(
+        seq,
+        [
+          { clipId: 'img', toStart: 200 },
+          { clipId: 'son', toStart: 200 },
+        ],
+        ctx,
+      ),
     );
     expect(layout(next, 'v1')).toBe('img[200,300)');
     expect(layout(next, 'a1')).toBe('son[200,300)');
@@ -452,11 +466,24 @@ describe('Déplacement groupé', () => {
 
   it('change de piste pour un seul clip du groupe', () => {
     const seq = makeSequence([
-      { id: 'v1', clips: [{ id: 'a', start: 0, duration: 50 }, { id: 'b', start: 50, duration: 50 }] },
+      {
+        id: 'v1',
+        clips: [
+          { id: 'a', start: 0, duration: 50 },
+          { id: 'b', start: 50, duration: 50 },
+        ],
+      },
       { id: 'v2', index: 1 },
     ]);
     const next = unwrap(
-      moveClips(seq, [{ clipId: 'a', toStart: 0, toTrackId: 'v2' }, { clipId: 'b', toStart: 50 }], ctx),
+      moveClips(
+        seq,
+        [
+          { clipId: 'a', toStart: 0, toTrackId: 'v2' },
+          { clipId: 'b', toStart: 50 },
+        ],
+        ctx,
+      ),
     );
     expect(layout(next, 'v1')).toBe('b[50,100)');
     expect(layout(next, 'v2')).toBe('a[0,50)');
@@ -467,7 +494,14 @@ describe('Déplacement groupé', () => {
       { id: 'v1', clips: [{ id: 'a', start: 0, duration: 50 }] },
       { id: 'v2', index: 1, locked: true, clips: [{ id: 'b', start: 0, duration: 50 }] },
     ]);
-    const r = moveClips(seq, [{ clipId: 'a', toStart: 100 }, { clipId: 'b', toStart: 100 }], ctx);
+    const r = moveClips(
+      seq,
+      [
+        { clipId: 'a', toStart: 100 },
+        { clipId: 'b', toStart: 100 },
+      ],
+      ctx,
+    );
     expect(isErr(r)).toBe(true);
     // Et la séquence d'origine est intacte.
     expect(layout(seq, 'v1')).toBe('a[0,50)');

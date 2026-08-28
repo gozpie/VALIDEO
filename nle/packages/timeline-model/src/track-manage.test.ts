@@ -78,7 +78,11 @@ describe('suppression de piste', () => {
 
   it('délie les clips restants dont le partenaire disparaît', () => {
     const base = makeSequence([
-      { id: 'v1', index: 0, clips: [{ id: 'img', start: 0, duration: 50, sourceIn: 0, linkGroup: 'g' }] },
+      {
+        id: 'v1',
+        index: 0,
+        clips: [{ id: 'img', start: 0, duration: 50, sourceIn: 0, linkGroup: 'g' }],
+      },
       { id: 'v2', index: 1 },
       {
         id: 'a1',

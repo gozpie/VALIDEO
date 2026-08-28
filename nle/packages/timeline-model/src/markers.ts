@@ -73,7 +73,10 @@ export function updateMarker(
   }
   const fusionne: MarkerDoc = { ...existant, ...modifs, id: existant.id };
   const time = Math.max(0, Math.trunc(fusionne.time));
-  if (time !== existant.time && sequence.markers.some((m) => m.id !== markerId && m.time === time)) {
+  if (
+    time !== existant.time &&
+    sequence.markers.some((m) => m.id !== markerId && m.time === time)
+  ) {
     return err(appError('EDIT_REJECTED', 'Il y a déjà un marqueur à cette image.'));
   }
   return ok({

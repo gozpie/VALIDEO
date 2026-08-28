@@ -331,7 +331,9 @@ test.describe('montage complet', () => {
     await test.step('16. tout annuler ramène exactement au projet de départ', async () => {
       // On annule jusqu'à ce que l'historique redevienne inerte.
       for (let i = 0; i < 60; i += 1) {
-        if ((await page.locator('.liste-historique li.courant').innerText()).includes('Ouverture')) {
+        if (
+          (await page.locator('.liste-historique li.courant').innerText()).includes('Ouverture')
+        ) {
           break;
         }
         await page.keyboard.press('Control+z');

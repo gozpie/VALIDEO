@@ -459,7 +459,11 @@ export interface DeplacementClip {
  * On DETACHE donc tous les clips concernes, puis on les repose. C est aussi ce
  * qui rend le deplacement d une paire audio/video correct (section 80).
  */
-export function moveClips(sequence: SequenceDoc, deplacements: readonly DeplacementClip[], ctx: TimelineContext): EditResult {
+export function moveClips(
+  sequence: SequenceDoc,
+  deplacements: readonly DeplacementClip[],
+  ctx: TimelineContext,
+): EditResult {
   if (deplacements.length === 0) return ok(sequence);
 
   // 1. Determiner : tous les clips doivent exister et etre deplacables.
@@ -479,8 +483,14 @@ export function moveClips(sequence: SequenceDoc, deplacements: readonly Deplacem
         ),
       );
     }
-    if (d.toStart < 0) return err(rejected('Un clip ne peut pas commencer avant le début de la séquence.'));
-    resolus.push({ clip: found.value.clip, source: found.value.track, cible: cible.value, debut: d.toStart });
+    if (d.toStart < 0)
+      return err(rejected('Un clip ne peut pas commencer avant le début de la séquence.'));
+    resolus.push({
+      clip: found.value.clip,
+      source: found.value.track,
+      cible: cible.value,
+      debut: d.toStart,
+    });
   }
 
   // 2. Detacher TOUS les clips avant d en reposer un seul.
@@ -968,7 +978,9 @@ export function removeTrack(sequence: SequenceDoc, trackId: string): EditResult 
 
   const restantes = sequence.tracks
     .filter((t) => t.id !== trackId)
-    .map((t) => (t.kind === track.kind && t.index > track.index ? { ...t, index: t.index - 1 } : t));
+    .map((t) =>
+      t.kind === track.kind && t.index > track.index ? { ...t, index: t.index - 1 } : t,
+    );
 
   // Les clips lies a un clip supprime perdent leur groupe : un groupe reduit a
   // un seul membre n a plus de sens, et le laisser ferait selectionner un
@@ -1142,7 +1154,9 @@ export function replaceClip(
 
   return finalize({
     ...sequence,
-    tracks: mapTrack(sequence.tracks, track.id, (t) => placeClip(removeClip(t, clip.id), remplacant)),
+    tracks: mapTrack(sequence.tracks, track.id, (t) =>
+      placeClip(removeClip(t, clip.id), remplacant),
+    ),
   });
 }
 

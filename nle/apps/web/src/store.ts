@@ -321,4 +321,3 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
 export function cadenceAffichee(sequence: SequenceDoc): number {
   return sequence.timebase.rate.n / sequence.timebase.rate.d;
 }
-

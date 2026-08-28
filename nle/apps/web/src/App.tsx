@@ -338,9 +338,11 @@ export function App(): React.JSX.Element {
     ouvrirImportRef.current = ouvrir;
   }, []);
   /** Élément en cours de renommage : clip ou piste. */
-  const [renommage, setRenommage] = useState<
-    { readonly type: 'clip' | 'piste'; readonly id: string; readonly nom: string } | null
-  >(null);
+  const [renommage, setRenommage] = useState<{
+    readonly type: 'clip' | 'piste';
+    readonly id: string;
+    readonly nom: string;
+  } | null>(null);
 
   const executerAction = useCallback(
     (actionId: string): boolean => {
@@ -401,9 +403,7 @@ export function App(): React.JSX.Element {
           return true;
         }
         case 'marks.markIn':
-          actions.executer(
-            setWorkAreaCommand({ in: etat.tete, out: etat.sequence.workAreaOut }),
-          );
+          actions.executer(setWorkAreaCommand({ in: etat.tete, out: etat.sequence.workAreaOut }));
           return true;
         case 'marks.markOut':
           // La sortie est EXCLUSIVE : marquer sur l'image courante doit inclure
@@ -608,10 +608,7 @@ export function App(): React.JSX.Element {
           const asset = etat.document.media.find((m) => m.id === etat.mediaSelectionne);
           if (asset === undefined) {
             actions.signalerErreur(
-              erreurMontage(
-                'Aucun média sélectionné.',
-                'Cliquez un média dans le panneau Médias',
-              ),
+              erreurMontage('Aucun média sélectionné.', 'Cliquez un média dans le panneau Médias'),
             );
             return true;
           }
@@ -647,7 +644,11 @@ export function App(): React.JSX.Element {
           // clips demanderait cinq annulations, et un ripple appliqué clip par
           // clip retirerait les mauvaises plages.
           const supprime = actions.executer(
-            deleteClipsCommand([...etat.selection], etat.contexte, actionId === 'edit.rippleDelete'),
+            deleteClipsCommand(
+              [...etat.selection],
+              etat.contexte,
+              actionId === 'edit.rippleDelete',
+            ),
           );
           if (supprime) actions.definirSelection([]);
           return true;
@@ -683,7 +684,8 @@ export function App(): React.JSX.Element {
           return true;
         }
         case 'timeline.toggleFullscreen':
-          if (document.fullscreenElement === null) void document.documentElement.requestFullscreen();
+          if (document.fullscreenElement === null)
+            void document.documentElement.requestFullscreen();
           else void document.exitFullscreen();
           return true;
         case 'playback.loop':
@@ -737,7 +739,6 @@ export function App(): React.JSX.Element {
     ],
   );
 
-
   /**
    * Contenu du menu contextuel.
    *
@@ -751,7 +752,9 @@ export function App(): React.JSX.Element {
     const sel = [...etat.selection];
     const clip = menu.clipId === null ? null : (findClip(etat.sequence, menu.clipId)?.clip ?? null);
     const piste =
-      menu.trackId === null ? null : (etat.sequence.tracks.find((t) => t.id === menu.trackId) ?? null);
+      menu.trackId === null
+        ? null
+        : (etat.sequence.tracks.find((t) => t.id === menu.trackId) ?? null);
     const acte = (id: string): void => {
       executerAction(id);
     };
@@ -803,9 +806,21 @@ export function App(): React.JSX.Element {
           id: 'piste-hauteur',
           libelle: 'Hauteur de piste',
           sousMenu: [
-            { id: 'hauteur-petite', libelle: 'Petite', onChoisir: basculer({ height: 34 }, 'Hauteur de piste') },
-            { id: 'hauteur-moyenne', libelle: 'Moyenne', onChoisir: basculer({ height: 60 }, 'Hauteur de piste') },
-            { id: 'hauteur-grande', libelle: 'Grande', onChoisir: basculer({ height: 110 }, 'Hauteur de piste') },
+            {
+              id: 'hauteur-petite',
+              libelle: 'Petite',
+              onChoisir: basculer({ height: 34 }, 'Hauteur de piste'),
+            },
+            {
+              id: 'hauteur-moyenne',
+              libelle: 'Moyenne',
+              onChoisir: basculer({ height: 60 }, 'Hauteur de piste'),
+            },
+            {
+              id: 'hauteur-grande',
+              libelle: 'Grande',
+              onChoisir: basculer({ height: 110 }, 'Hauteur de piste'),
+            },
           ],
         },
         { separateur: true, id: 's3' },
@@ -833,8 +848,18 @@ export function App(): React.JSX.Element {
     if (menu.source === 'clip' && clip !== null) {
       const lie = clip.linkGroup !== null;
       return [
-        { id: 'clip-couper', libelle: 'Couper', raccourci: 'Ctrl+X', onChoisir: () => acte('edit.cut') },
-        { id: 'clip-copier', libelle: 'Copier', raccourci: 'Ctrl+C', onChoisir: () => acte('edit.copy') },
+        {
+          id: 'clip-couper',
+          libelle: 'Couper',
+          raccourci: 'Ctrl+X',
+          onChoisir: () => acte('edit.cut'),
+        },
+        {
+          id: 'clip-copier',
+          libelle: 'Copier',
+          raccourci: 'Ctrl+C',
+          onChoisir: () => acte('edit.copy'),
+        },
         {
           id: 'clip-coller',
           libelle: 'Coller',
@@ -844,7 +869,12 @@ export function App(): React.JSX.Element {
           onChoisir: () => acte('edit.paste'),
         },
         { separateur: true, id: 'c1' },
-        { id: 'clip-effacer', libelle: 'Effacer', raccourci: 'Suppr', onChoisir: () => acte('edit.delete') },
+        {
+          id: 'clip-effacer',
+          libelle: 'Effacer',
+          raccourci: 'Suppr',
+          onChoisir: () => acte('edit.delete'),
+        },
         {
           id: 'clip-effacer-ripple',
           libelle: 'Supprimer et raccorder',
@@ -945,8 +975,18 @@ export function App(): React.JSX.Element {
         onChoisir: () => acte('edit.pasteInsert'),
       },
       { separateur: true, id: 'v1' },
-      { id: 'vide-entree', libelle: 'Marquer l’entrée', raccourci: 'I', onChoisir: () => acte('marks.markIn') },
-      { id: 'vide-sortie', libelle: 'Marquer la sortie', raccourci: 'O', onChoisir: () => acte('marks.markOut') },
+      {
+        id: 'vide-entree',
+        libelle: 'Marquer l’entrée',
+        raccourci: 'I',
+        onChoisir: () => acte('marks.markIn'),
+      },
+      {
+        id: 'vide-sortie',
+        libelle: 'Marquer la sortie',
+        raccourci: 'O',
+        onChoisir: () => acte('marks.markOut'),
+      },
       {
         id: 'vide-lift',
         libelle: 'Lift',
@@ -964,7 +1004,12 @@ export function App(): React.JSX.Element {
         onChoisir: () => acte('edit.extract'),
       },
       { separateur: true, id: 'v2' },
-      { id: 'vide-marqueur', libelle: 'Ajouter un marqueur', raccourci: 'M', onChoisir: () => acte('marks.addMarker') },
+      {
+        id: 'vide-marqueur',
+        libelle: 'Ajouter un marqueur',
+        raccourci: 'M',
+        onChoisir: () => acte('marks.addMarker'),
+      },
       { separateur: true, id: 'v3' },
       {
         id: 'vide-piste-video',
@@ -977,10 +1022,14 @@ export function App(): React.JSX.Element {
         onChoisir: () => actions.executer(addTrackCommand('audio')),
       },
       { separateur: true, id: 'v4' },
-      { id: 'vide-ajuster', libelle: 'Ajuster la séquence', raccourci: '\\', onChoisir: () => acte('timeline.zoomToFit') },
+      {
+        id: 'vide-ajuster',
+        libelle: 'Ajuster la séquence',
+        raccourci: '\\',
+        onChoisir: () => acte('timeline.zoomToFit'),
+      },
     ];
   }, [actions, etat, executerAction, menu]);
-
 
   /**
    * Menus de la barre supérieure.
@@ -999,20 +1048,33 @@ export function App(): React.JSX.Element {
     const rienACopier = etat.selection.size === 0;
     const pressePapiersVide = pressePapiers.current === null;
     const clipUnique = etat.selection.size === 1;
-    const clipCourant = clipUnique ? (findClip(etat.sequence, [...etat.selection][0] ?? '')?.clip ?? null) : null;
+    const clipCourant = clipUnique
+      ? (findClip(etat.sequence, [...etat.selection][0] ?? '')?.clip ?? null)
+      : null;
 
     return [
       {
         nom: 'Fichier',
         elements: [
-          { id: 'bm-importer', libelle: 'Importer des médias…', raccourci: 'Ctrl+I', onChoisir: acte('file.import') },
+          {
+            id: 'bm-importer',
+            libelle: 'Importer des médias…',
+            raccourci: 'Ctrl+I',
+            onChoisir: acte('file.import'),
+          },
           { separateur: true, id: 'bf1' },
-          { id: 'bm-enregistrer', libelle: 'Enregistrer', raccourci: 'Ctrl+S', onChoisir: acte('file.save') },
+          {
+            id: 'bm-enregistrer',
+            libelle: 'Enregistrer',
+            raccourci: 'Ctrl+S',
+            onChoisir: acte('file.save'),
+          },
           {
             id: 'bm-exporter',
             libelle: 'Exporter…',
             desactivee: true,
-            raison: 'L’export n’est pas implémenté : il demande un encodeur, qui n’existe pas encore dans ce socle.',
+            raison:
+              'L’export n’est pas implémenté : il demande un encodeur, qui n’existe pas encore dans ce socle.',
           },
         ],
       },
@@ -1036,22 +1098,88 @@ export function App(): React.JSX.Element {
             onChoisir: acte('edit.redo'),
           },
           { separateur: true, id: 'be1' },
-          { id: 'bm-couper', libelle: 'Couper', raccourci: 'Ctrl+X', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.cut') },
-          { id: 'bm-copier', libelle: 'Copier', raccourci: 'Ctrl+C', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.copy') },
-          { id: 'bm-coller', libelle: 'Coller', raccourci: 'Ctrl+V', desactivee: pressePapiersVide, raison: 'Le presse-papiers est vide.', onChoisir: acte('edit.paste') },
-          { id: 'bm-coller-inserer', libelle: 'Coller par insertion', raccourci: 'Ctrl+Maj+V', desactivee: pressePapiersVide, raison: 'Le presse-papiers est vide.', onChoisir: acte('edit.pasteInsert') },
+          {
+            id: 'bm-couper',
+            libelle: 'Couper',
+            raccourci: 'Ctrl+X',
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: acte('edit.cut'),
+          },
+          {
+            id: 'bm-copier',
+            libelle: 'Copier',
+            raccourci: 'Ctrl+C',
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: acte('edit.copy'),
+          },
+          {
+            id: 'bm-coller',
+            libelle: 'Coller',
+            raccourci: 'Ctrl+V',
+            desactivee: pressePapiersVide,
+            raison: 'Le presse-papiers est vide.',
+            onChoisir: acte('edit.paste'),
+          },
+          {
+            id: 'bm-coller-inserer',
+            libelle: 'Coller par insertion',
+            raccourci: 'Ctrl+Maj+V',
+            desactivee: pressePapiersVide,
+            raison: 'Le presse-papiers est vide.',
+            onChoisir: acte('edit.pasteInsert'),
+          },
           { separateur: true, id: 'be2' },
-          { id: 'bm-tout', libelle: 'Tout sélectionner', raccourci: 'Ctrl+A', onChoisir: acte('edit.selectAll') },
-          { id: 'bm-effacer', libelle: 'Effacer', raccourci: 'Suppr', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.delete') },
-          { id: 'bm-effacer-ripple', libelle: 'Supprimer et raccorder', raccourci: 'Maj+Suppr', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.rippleDelete') },
+          {
+            id: 'bm-tout',
+            libelle: 'Tout sélectionner',
+            raccourci: 'Ctrl+A',
+            onChoisir: acte('edit.selectAll'),
+          },
+          {
+            id: 'bm-effacer',
+            libelle: 'Effacer',
+            raccourci: 'Suppr',
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: acte('edit.delete'),
+          },
+          {
+            id: 'bm-effacer-ripple',
+            libelle: 'Supprimer et raccorder',
+            raccourci: 'Maj+Suppr',
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: acte('edit.rippleDelete'),
+          },
         ],
       },
       {
         nom: 'Clip',
         elements: [
-          { id: 'bm-vitesse', libelle: 'Vitesse et durée…', raccourci: 'Ctrl+R', desactivee: !clipUnique, raison: 'Sélectionnez un seul clip.', onChoisir: acte('edit.speedDuration') },
-          { id: 'bm-raccord', libelle: 'Ajouter un raccord', raccourci: 'Ctrl+K', onChoisir: acte('edit.addEdit') },
-          { id: 'bm-lier', libelle: 'Lier / Délier', raccourci: 'Ctrl+Maj+L', desactivee: rienACopier, raison: 'Aucun clip sélectionné.', onChoisir: acte('edit.linkToggle') },
+          {
+            id: 'bm-vitesse',
+            libelle: 'Vitesse et durée…',
+            raccourci: 'Ctrl+R',
+            desactivee: !clipUnique,
+            raison: 'Sélectionnez un seul clip.',
+            onChoisir: acte('edit.speedDuration'),
+          },
+          {
+            id: 'bm-raccord',
+            libelle: 'Ajouter un raccord',
+            raccourci: 'Ctrl+K',
+            onChoisir: acte('edit.addEdit'),
+          },
+          {
+            id: 'bm-lier',
+            libelle: 'Lier / Délier',
+            raccourci: 'Ctrl+Maj+L',
+            desactivee: rienACopier,
+            raison: 'Aucun clip sélectionné.',
+            onChoisir: acte('edit.linkToggle'),
+          },
           {
             id: 'bm-actif',
             libelle: 'Activer le clip',
@@ -1059,7 +1187,9 @@ export function App(): React.JSX.Element {
             desactivee: rienACopier,
             raison: 'Aucun clip sélectionné.',
             onChoisir: () =>
-              actions.executer(setClipEnabledCommand([...etat.selection], clipCourant?.enabled !== true)),
+              actions.executer(
+                setClipEnabledCommand([...etat.selection], clipCourant?.enabled !== true),
+              ),
           },
           {
             id: 'bm-renommer',
@@ -1077,11 +1207,29 @@ export function App(): React.JSX.Element {
       {
         nom: 'Séquence',
         elements: [
-          { id: 'bm-piste-video', libelle: 'Ajouter une piste vidéo', onChoisir: () => actions.executer(addTrackCommand('video')) },
-          { id: 'bm-piste-audio', libelle: 'Ajouter une piste audio', onChoisir: () => actions.executer(addTrackCommand('audio')) },
+          {
+            id: 'bm-piste-video',
+            libelle: 'Ajouter une piste vidéo',
+            onChoisir: () => actions.executer(addTrackCommand('video')),
+          },
+          {
+            id: 'bm-piste-audio',
+            libelle: 'Ajouter une piste audio',
+            onChoisir: () => actions.executer(addTrackCommand('audio')),
+          },
           { separateur: true, id: 'bs1' },
-          { id: 'bm-entree', libelle: 'Marquer l’entrée', raccourci: 'I', onChoisir: acte('marks.markIn') },
-          { id: 'bm-sortie', libelle: 'Marquer la sortie', raccourci: 'O', onChoisir: acte('marks.markOut') },
+          {
+            id: 'bm-entree',
+            libelle: 'Marquer l’entrée',
+            raccourci: 'I',
+            onChoisir: acte('marks.markIn'),
+          },
+          {
+            id: 'bm-sortie',
+            libelle: 'Marquer la sortie',
+            raccourci: 'O',
+            onChoisir: acte('marks.markOut'),
+          },
           {
             id: 'bm-lift',
             libelle: 'Lift',
@@ -1099,15 +1247,34 @@ export function App(): React.JSX.Element {
             onChoisir: acte('edit.extract'),
           },
           { separateur: true, id: 'bs2' },
-          { id: 'bm-ajuster', libelle: 'Ajuster la séquence', onChoisir: acte('timeline.zoomToFit') },
+          {
+            id: 'bm-ajuster',
+            libelle: 'Ajuster la séquence',
+            onChoisir: acte('timeline.zoomToFit'),
+          },
         ],
       },
       {
         nom: 'Marqueur',
         elements: [
-          { id: 'bm-marqueur', libelle: 'Ajouter un marqueur', raccourci: 'M', onChoisir: acte('marks.addMarker') },
-          { id: 'bm-marqueur-suivant', libelle: 'Marqueur suivant', raccourci: 'Maj+M', onChoisir: acte('nav.nextMarker') },
-          { id: 'bm-marqueur-precedent', libelle: 'Marqueur précédent', raccourci: 'Ctrl+Maj+M', onChoisir: acte('nav.previousMarker') },
+          {
+            id: 'bm-marqueur',
+            libelle: 'Ajouter un marqueur',
+            raccourci: 'M',
+            onChoisir: acte('marks.addMarker'),
+          },
+          {
+            id: 'bm-marqueur-suivant',
+            libelle: 'Marqueur suivant',
+            raccourci: 'Maj+M',
+            onChoisir: acte('nav.nextMarker'),
+          },
+          {
+            id: 'bm-marqueur-precedent',
+            libelle: 'Marqueur précédent',
+            raccourci: 'Ctrl+Maj+M',
+            onChoisir: acte('nav.previousMarker'),
+          },
         ],
       },
       {
@@ -1177,7 +1344,7 @@ export function App(): React.JSX.Element {
     const cadence = Math.max(1, Math.round(base.rate.n / base.rate.d));
     const retour = retourApresEcouteRef.current;
     const plage = workAreaRange(etat.sequence);
-    const debutLecture = retour !== null ? etat.tete : (boucle && plage !== null ? plage.start : 0);
+    const debutLecture = retour !== null ? etat.tete : boucle && plage !== null ? plage.start : 0;
     const finLecture =
       retour !== null
         ? Math.min(duree, retour + cadence * 2)
@@ -1564,10 +1731,7 @@ export function App(): React.JSX.Element {
           onFermer={() => setClipVitesse(null)}
           onAppliquer={(reglages: ReglagesVitesse) => {
             actions.executer(
-              changeSpeedCommand(
-                { clipId: clipSelectionneVitesse.id, ...reglages },
-                etat.contexte,
-              ),
+              changeSpeedCommand({ clipId: clipSelectionneVitesse.id, ...reglages }, etat.contexte),
             );
             setClipVitesse(null);
           }}

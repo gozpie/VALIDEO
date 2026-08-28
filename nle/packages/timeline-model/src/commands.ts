@@ -244,7 +244,10 @@ export function addMarkerCommand(options: mark.AddMarkerOptions): SequenceComman
 }
 
 export function removeMarkerCommand(markerId: string): SequenceCommand {
-  return command({ label: 'Supprimer le marqueur', apply: (seq) => mark.removeMarker(seq, markerId) });
+  return command({
+    label: 'Supprimer le marqueur',
+    apply: (seq) => mark.removeMarker(seq, markerId),
+  });
 }
 
 export function updateMarkerCommand(

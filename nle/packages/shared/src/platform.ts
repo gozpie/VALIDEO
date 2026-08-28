@@ -15,10 +15,7 @@ declare const crypto: {
 declare const TextEncoder: { new (): { encode(input: string): Uint8Array } };
 
 declare const TextDecoder: {
-  new (
-    label?: string,
-    options?: { fatal?: boolean },
-  ): { decode(input: Uint8Array): string };
+  new (label?: string, options?: { fatal?: boolean }): { decode(input: Uint8Array): string };
 };
 
 /** UUID v4. */

@@ -108,7 +108,7 @@ de cadence près).
 `sourceOut` est **dérivé**, jamais stocké.
 
 **Conséquences.** Une redondance dans un modèle de données est une source de
-bugs : au premier *trim* ou changement de vitesse qui oublie de mettre à jour
+bugs : au premier _trim_ ou changement de vitesse qui oublie de mettre à jour
 l'une des deux valeurs, le clip devient incohérent d'une manière que rien ne
 détecte. En dérivant, l'incohérence est structurellement impossible.
 
@@ -150,7 +150,7 @@ structurellement sain : le moteur ne revalide pas à chaque image.
 ## ADR-009 — Une commande est une fonction pure, l'annulation reprend l'état précédent
 
 **Contexte.** Le command pattern classique demande d'écrire, pour chaque
-opération, sa fonction inverse. Pour un *ripple delete* qui touche plusieurs
+opération, sa fonction inverse. Pour un _ripple delete_ qui touche plusieurs
 pistes, découpe des clips et décale le reste du montage, cette inverse est
 presque impossible à garder juste dans le temps.
 
@@ -193,7 +193,7 @@ et l'état d'origine est conservé.
 
 **Conséquences.** Coût O(n) par opération de montage — négligeable, ces
 opérations ne sont pas dans un chemin par image. En échange, un état incohérent
-est structurellement impossible. Un *fuzz* de 5 600 opérations aléatoires le
+est structurellement impossible. Un _fuzz_ de 5 600 opérations aléatoires le
 confirme.
 
 ---
@@ -217,16 +217,16 @@ la commande reste stricte.
 
 ---
 
-## ADR-013 — Les clips utilisent une dichotomie, pas un *interval tree*
+## ADR-013 — Les clips utilisent une dichotomie, pas un _interval tree_
 
-**Contexte.** §55 suggère un *interval tree* pour l'index spatial de la timeline.
+**Contexte.** §55 suggère un _interval tree_ pour l'index spatial de la timeline.
 
 **Décision.** Les clips d'une piste sont **triés et sans chevauchement** — c'est
 un invariant garanti par `timeline-model`. Sur des intervalles disjoints triés,
-une recherche dichotomique est déjà optimale : O(log n + k). Un *interval tree*
+une recherche dichotomique est déjà optimale : O(log n + k). Un _interval tree_
 n'apporterait rien et coûterait une structure à maintenir à chaque montage.
 
-Un *interval tree* reste pertinent pour les ensembles réellement chevauchants
+Un _interval tree_ reste pertinent pour les ensembles réellement chevauchants
 (marqueurs à durée, transitions superposées) ; il sera introduit là, quand ces
 objets existeront, et pas avant.
 
@@ -266,8 +266,8 @@ aucune imprécision de sous-pixel ne peut contaminer une position de montage.
 
 ## ADR-016 — La cadence déclarée fait foi ; la mesure sert à détecter la variabilité
 
-**Contexte.** §13 exige de ne pas supposer que l'image *n* est à l'instant
-*n*/cadence. Première tentative : reconstruire la cadence depuis les
+**Contexte.** §13 exige de ne pas supposer que l'image _n_ est à l'instant
+_n_/cadence. Première tentative : reconstruire la cadence depuis les
 horodatages mesurés.
 
 **Décision.** La cadence **déclarée** par le conteneur est retenue quand le
@@ -278,7 +278,7 @@ effectivement variable.
 **Pourquoi.** Les horodatages sont quantifiés sur la base de temps du
 conteneur. Reconstruire 23.976 depuis ces valeurs donne `12250000/10427` — une
 fraction absurde — alors que le conteneur déclare exactement `24000/1001`.
-Mesurer est indispensable pour *détecter*, désastreux pour *remplacer*.
+Mesurer est indispensable pour _détecter_, désastreux pour _remplacer_.
 
 ---
 
@@ -348,7 +348,7 @@ que fait un NLE professionnel, obtenu gratuitement.
 
 **Contexte.** §19 demande plusieurs niveaux de pics et interdit tout recalcul
 pendant le zoom. Construire chaque niveau depuis les échantillons d'origine
-coûterait *n* × nombre de niveaux.
+coûterait _n_ × nombre de niveaux.
 
 **Décision.** Seul le niveau le plus fin parcourt les échantillons ; chaque
 niveau suivant est construit depuis le précédent. Chaque case retient min, max
@@ -534,7 +534,7 @@ le viewport partagé.
 **Conséquences.** Tout ce qui dépend de la largeur — ajustement de séquence,
 ancrage du zoom, bornage du défilement — se calcule enfin sur la vue réelle.
 Le bug était invisible tant qu'on ne regardait que le rendu, qui utilisait la
-bonne largeur : seuls les calculs *dérivés* étaient faux.
+bonne largeur : seuls les calculs _dérivés_ étaient faux.
 
 ---
 

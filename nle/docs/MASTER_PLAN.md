@@ -25,37 +25,37 @@ régression de performance, preview et export cohérents, documentation à jour.
 
 ### Socle — le cœur non négociable
 
-| # | Brique | Paquet | État |
-|---|---|---|---|
-| 1 | Monorepo, TS strict, lint, tests | racine | **DONE** |
-| 2 | Temps rationnel, timebase, timecode DF/NDF, ticks | `time-core` | **DONE** |
-| 3 | Types partagés | `shared` | À faire |
-| 4 | Schéma de projet v1 + migrations | `project-model` | À faire |
-| 5 | Command pattern, undo/redo transactionnel | `command-system` | À faire |
-| 6 | Modèle timeline + opérations de montage | `timeline-model` | À faire |
-| 7 | Moteur de requête (interval tree, index spatial) | `timeline-engine` | À faire |
-| 8 | Rendu timeline Canvas virtualisé | `timeline-engine` | À faire |
+| #   | Brique                                            | Paquet            | État     |
+| --- | ------------------------------------------------- | ----------------- | -------- |
+| 1   | Monorepo, TS strict, lint, tests                  | racine            | **DONE** |
+| 2   | Temps rationnel, timebase, timecode DF/NDF, ticks | `time-core`       | **DONE** |
+| 3   | Types partagés                                    | `shared`          | À faire  |
+| 4   | Schéma de projet v1 + migrations                  | `project-model`   | À faire  |
+| 5   | Command pattern, undo/redo transactionnel         | `command-system`  | À faire  |
+| 6   | Modèle timeline + opérations de montage           | `timeline-model`  | À faire  |
+| 7   | Moteur de requête (interval tree, index spatial)  | `timeline-engine` | À faire  |
+| 8   | Rendu timeline Canvas virtualisé                  | `timeline-engine` | À faire  |
 
 ### Média
 
-| # | Brique | État |
-|---|---|---|
-| 9 | `MediaAsset`, import local | À faire |
-| 10 | Backend FFprobe (analyse §9) | À faire |
-| 11 | Détection de capacités navigateur (§59, §118) | À faire |
-| 12 | Démuxeur + `RangeReader` (§901-1000) | À faire |
-| 13 | Proxies (§11) | À faire |
+| #   | Brique                                        | État    |
+| --- | --------------------------------------------- | ------- |
+| 9   | `MediaAsset`, import local                    | À faire |
+| 10  | Backend FFprobe (analyse §9)                  | À faire |
+| 11  | Détection de capacités navigateur (§59, §118) | À faire |
+| 12  | Démuxeur + `RangeReader` (§901-1000)          | À faire |
+| 13  | Proxies (§11)                                 | À faire |
 
 ### Lecture
 
-| # | Brique | État |
-|---|---|---|
-| 14 | Premier codec WebCodecs | À faire |
-| 15 | Horloge audio maître (§22) | À faire |
-| 16 | Source Monitor, Program Monitor | À faire |
-| 17 | Drag / trim | À faire |
-| 18 | Save / reload | À faire |
-| 19 | Export backend | À faire |
+| #   | Brique                          | État    |
+| --- | ------------------------------- | ------- |
+| 14  | Premier codec WebCodecs         | À faire |
+| 15  | Horloge audio maître (§22)      | À faire |
+| 16  | Source Monitor, Program Monitor | À faire |
+| 17  | Drag / trim                     | À faire |
+| 18  | Save / reload                   | À faire |
+| 19  | Export backend                  | À faire |
 
 ### Seulement ensuite
 

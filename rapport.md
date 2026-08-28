@@ -116,7 +116,7 @@ du logiciel — les opérations de montage professionnelles.
 **`nle/packages/command-system`** — command pattern, transactions atomiques et
 historique undo/redo.
 
-Le choix structurant est qu'une commande est une fonction *pure* de l'état vers
+Le choix structurant est qu'une commande est une fonction _pure_ de l'état vers
 un nouvel état. L'annulation n'a donc besoin d'aucune fonction inverse écrite à
 la main : il suffit de reprendre l'état précédent. C'est ce qui rend
 l'annulation d'un ripple delete fiable, là où une inverse manuelle serait presque

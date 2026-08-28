@@ -254,12 +254,7 @@ function dessinerApercuDepose(ctx: CanvasRenderingContext2D, o: OptionsRendu): v
     ctx.fillRect(x1, piste.y + 1, x2 - x1, piste.height - 2);
     ctx.globalAlpha = 1;
     ctx.setLineDash(d.mode === 'replace' ? [] : [5, 3]);
-    ctx.strokeRect(
-      Math.round(x1) + 0.5,
-      piste.y + 1.5,
-      Math.round(x2 - x1) - 1,
-      piste.height - 3,
-    );
+    ctx.strokeRect(Math.round(x1) + 0.5, piste.y + 1.5, Math.round(x2 - x1) - 1, piste.height - 3);
   }
   ctx.restore();
 }

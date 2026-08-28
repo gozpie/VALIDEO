@@ -142,8 +142,7 @@ export function pasteClips(
   // par clip en insertion decalerait la copie par ses propres morceaux.
   if (options.insert === true) {
     const espace = makeSpacer(contenu.duration);
-    const ancre =
-      options.videoTrackId ?? options.audioTrackId ?? sequence.tracks[0]?.id ?? null;
+    const ancre = options.videoTrackId ?? options.audioTrackId ?? sequence.tracks[0]?.id ?? null;
     if (ancre === null) return err(appError('TRACK_NOT_FOUND', 'Aucune piste où coller.'));
     const ouvert = insert(
       courante,
@@ -151,9 +150,7 @@ export function pasteClips(
         clip: espace,
         trackId: ancre,
         at: options.at,
-        ...(options.rippleTrackIds === undefined
-          ? {}
-          : { rippleTrackIds: options.rippleTrackIds }),
+        ...(options.rippleTrackIds === undefined ? {} : { rippleTrackIds: options.rippleTrackIds }),
       },
       ctx,
     );
@@ -230,7 +227,11 @@ function makeSpacer(duration: number): ClipDoc {
     },
     opacity: { value: 100, keyframes: [] },
     blendMode: 'normal',
-    audio: { gainDb: { value: 0, keyframes: [] }, pan: { value: 0, keyframes: [] }, channelMap: [] },
+    audio: {
+      gainDb: { value: 0, keyframes: [] },
+      pan: { value: 0, keyframes: [] },
+      channelMap: [],
+    },
     label: null,
     markers: [],
   };

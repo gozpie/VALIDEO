@@ -76,7 +76,9 @@ describe('enregistrement et rechargement (§45, §46)', () => {
     const store = new ProjectStore(fournisseur);
     const p = projet();
     unwrap(await store.enregistrer(p));
-    unwrap(await fournisseur.ecrire(`projets/${p.id}/projet.json`, new Uint8Array([0xff, 0xfe, 0x41])));
+    unwrap(
+      await fournisseur.ecrire(`projets/${p.id}/projet.json`, new Uint8Array([0xff, 0xfe, 0x41])),
+    );
     const relu = await store.charger(p.id);
     expect(isErr(relu)).toBe(true);
     if (isErr(relu)) expect(relu.error.code).toBe('PROJECT_CORRUPT');

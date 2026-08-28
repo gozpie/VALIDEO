@@ -691,7 +691,8 @@ export function Timeline({
     if (toile === null) return undefined;
     const surMolette = (e: WheelEvent): void => {
       e.preventDefault();
-      const vue = (v: Viewport): Viewport => creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur);
+      const vue = (v: Viewport): Viewport =>
+        creerViewport(v.scroll, v.pixelsPerFrame, taille.largeur);
 
       // Conventions des NLE :
       //   molette seule   -> défilement VERTICAL des pistes ;
@@ -836,9 +837,7 @@ export function Timeline({
             if (impact.clipId !== null && !etat.selection.has(impact.clipId)) {
               const trouve = findClip(etat.sequence, impact.clipId);
               if (trouve !== undefined) {
-                actions.definirSelection(
-                  linkedClips(etat.sequence, trouve.clip).map((c) => c.id),
-                );
+                actions.definirSelection(linkedClips(etat.sequence, trouve.clip).map((c) => c.id));
               }
             }
             surMenuContextuel({
