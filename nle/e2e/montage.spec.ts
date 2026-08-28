@@ -37,6 +37,15 @@ async function centreClip(
   return { x: boite.x + boite.width * fraction, y: entete.y + entete.height / 2 };
 }
 
+/** Sélectionne un clip par un appui-relâché sur place, comme le ferait un monteur. */
+async function selectionnerClip(page: Page, indexPiste: number, fraction: number): Promise<void> {
+  const c = await centreClip(page, indexPiste, fraction);
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x, c.y + 2, { steps: 3 });
+  await page.mouse.up();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   // L'éditeur n'apparaît qu'une fois le stockage interrogé.
@@ -650,4 +659,76 @@ test('poser une entrée après la sortie efface la sortie plutôt que de refuser
   await page.keyboard.press('KeyI');
   await page.keyboard.press('Semicolon');
   await expect(page.locator('.barre-etat .alerte')).toContainText('Aucune plage marquée');
+});
+
+test('copier-coller reproduit le montage à la tête de lecture (§93)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  const avant = await page.locator('.table-projet tbody tr').count();
+
+  // On sélectionne le premier plan, image et son liés. Un clic simple ne suffit
+  // pas : la timeline sélectionne au pointeur, comme pour amorcer un geste.
+  await selectionnerClip(page, 2, 0.05);
+  await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
+
+  await page.keyboard.press('Control+c');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Control+v');
+  await expect(historique(page)).toContainText(['Coller']);
+
+  // Deux clips de plus : l'image et le son, chacun sur sa piste.
+  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant + 2);
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
+
+  // Une seule annulation défait tout le collage.
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant);
+});
+
+test('couper laisse le trou puis se colle ailleurs', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  const avant = await page.locator('.table-projet tbody tr').count();
+  await selectionnerClip(page, 2, 0.05);
+
+  await page.keyboard.press('Control+x');
+  await expect(historique(page)).toContainText(['Supprimer']);
+  // Le reste du montage n'a pas bougé : couper n'est pas un ripple.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
+  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant - 2);
+
+  // Et ce qui a été coupé se recolle : c'est un déplacement en deux temps.
+  await page.keyboard.press('End');
+  await page.keyboard.press('Control+v');
+  await expect(historique(page)).toContainText(['Coller']);
+  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant);
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
+});
+
+test('coller sans rien avoir copié le dit au lieu de ne rien faire (§1003)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Control+v');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('presse-papiers est vide');
+  await expect(historique(page)).toHaveCount(1);
+});
+
+test('tout sélectionner prend les clips des pistes déverrouillées', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Control+a');
+  // 7 plans + 7 sons + 2 clips sur V2 + 1 ambiance = 17.
+  await expect(page.locator('.barre-etat')).toContainText('17 sélectionnés');
+});
+
+test('coller par insertion décale la suite au lieu de l’écraser (§91)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await selectionnerClip(page, 2, 0.05); // A001, 118 images
+  await page.keyboard.press('Control+c');
+
+  // Tête au début du deuxième plan, puis collage par insertion.
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Control+Shift+v');
+  await expect(historique(page)).toContainText(['Coller par insertion']);
+
+  // A002 était à 118 ; il recule de la durée collée, sans être écrasé.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:09:11');
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 });

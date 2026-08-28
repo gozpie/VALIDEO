@@ -13,6 +13,7 @@ import { command } from '@valideo/command-system';
 import type { SequenceDoc } from '@valideo/project-model';
 import type { TimelineContext } from './source.js';
 import * as ops from './edit-ops.js';
+import * as clip from './clipboard.js';
 
 export type SequenceCommand = Command<SequenceDoc>;
 
@@ -204,5 +205,22 @@ export function deleteClipsCommand(
   return command({
     label: ripple ? `Supprimer ${quoi} avec ripple` : `Supprimer ${quoi}`,
     apply: (seq) => ops.deleteClips(seq, clipIds, ctx, ripple),
+  });
+}
+
+/**
+ * Colle le presse-papiers. Le clip du presse-papiers n est PAS capture dans la
+ * commande par reference mutable : `ClipboardContent` est une valeur immuable,
+ * donc refaire un collage annule redonne exactement le meme resultat, meme si
+ * l utilisateur a copie autre chose entre-temps.
+ */
+export function pasteCommand(
+  contenu: clip.ClipboardContent,
+  options: clip.PasteOptions,
+  ctx: TimelineContext,
+): SequenceCommand {
+  return command({
+    label: options.insert === true ? 'Coller par insertion' : 'Coller',
+    apply: (seq) => clip.pasteClips(seq, contenu, options, ctx),
   });
 }

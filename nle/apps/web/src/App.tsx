@@ -10,15 +10,17 @@
  * formes d'onde, exporter.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { appError } from '@valideo/shared';
+import { appError, isErr } from '@valideo/shared';
 import type { AppError } from '@valideo/shared';
 import { formatTimecode, parseTimecodeEntry, rational } from '@valideo/time-core';
 import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
+  copyClips,
   deleteClipsCommand,
   extractCommand,
+  pasteCommand,
   liftCommand,
   nextEditPoint,
   previousEditPoint,
@@ -26,6 +28,7 @@ import {
   setWorkAreaCommand,
   workAreaRange,
 } from '@valideo/timeline-model';
+import type { ClipboardContent } from '@valideo/timeline-model';
 import {
   clampScroll,
   fit,
@@ -181,6 +184,14 @@ export function App(): React.JSX.Element {
    * toutes les pistes : retirer une plage partout parce que l'utilisateur a
    * oublie de cibler serait destructeur. On refuse et on le dit.
    */
+  /**
+   * Presse-papiers de montage. Volontairement HORS de l'historique : copier
+   * n'est pas une modification du document, et une annulation ne doit pas
+   * ressusciter un presse-papiers precedent. C'est aussi pourquoi il vit dans
+   * une ref et non un etat -- rien a l'ecran n'en depend.
+   */
+  const pressePapiers = useRef<ClipboardContent | null>(null);
+
   const pistesAffectees = useMemo(
     () => etat.sequence.tracks.filter((t) => t.targeted && !t.locked).map((t) => t.id),
     [etat.sequence.tracks],
@@ -316,6 +327,74 @@ export function App(): React.JSX.Element {
             actionId === 'edit.lift'
               ? liftCommand({ ...plage, trackIds: pistesAffectees }, etat.contexte)
               : extractCommand({ ...plage, trackIds: pistesExtract }, etat.contexte),
+          );
+          return true;
+        }
+        case 'edit.selectAll':
+          actions.definirSelection(
+            etat.sequence.tracks.filter((t) => !t.locked).flatMap((t) => t.clips.map((c) => c.id)),
+          );
+          return true;
+        case 'edit.cut':
+        case 'edit.copy': {
+          if (etat.selection.size === 0) {
+            actions.signalerErreur(
+              erreurMontage('Rien à copier.', 'Sélectionnez au moins un clip'),
+            );
+            return true;
+          }
+          const copie = copyClips(etat.sequence, [...etat.selection]);
+          if (isErr(copie)) {
+            actions.signalerErreur(copie.error);
+            return true;
+          }
+          pressePapiers.current = copie.value;
+          if (actionId === 'edit.cut') {
+            // Couper LAISSE le trou. C'est la convention de Premiere, et elle
+            // est cohérente avec le reste de ce clavier : la variante qui
+            // referme est Maj+Suppr, explicitement nommée « avec ripple ».
+            // Refermer d'office ferait glisser tout le montage sous les pieds
+            // de quelqu'un qui voulait seulement déplacer un plan ailleurs.
+            const coupe = actions.executer(
+              deleteClipsCommand([...etat.selection], etat.contexte, false),
+            );
+            if (coupe) actions.definirSelection([]);
+          }
+          return true;
+        }
+        case 'edit.paste':
+        case 'edit.pasteInsert': {
+          const contenu = pressePapiers.current;
+          if (contenu === null) {
+            actions.signalerErreur(
+              erreurMontage('Le presse-papiers est vide.', 'Copiez d’abord un clip (Ctrl+C)'),
+            );
+            return true;
+          }
+          // Le collage atterrit sur les pistes CIBLÉES, jamais sur celles d'où
+          // vient la copie : c'est ce qui permet de coller d'une séquence à
+          // l'autre, ou de rebasculer une copie sur une autre piste.
+          const cibleVideo =
+            etat.sequence.tracks.find((t) => t.kind === 'video' && t.targeted && !t.locked) ?? null;
+          const cibleAudio =
+            etat.sequence.tracks.find((t) => t.kind === 'audio' && t.targeted && !t.locked) ?? null;
+          if (cibleVideo === null && cibleAudio === null) {
+            actions.signalerErreur(
+              erreurMontage('Aucune piste ciblée.', 'Ciblez la piste où coller'),
+            );
+            return true;
+          }
+          actions.executer(
+            pasteCommand(
+              contenu,
+              {
+                at: etat.tete,
+                videoTrackId: cibleVideo?.id ?? null,
+                audioTrackId: cibleAudio?.id ?? null,
+                insert: actionId === 'edit.pasteInsert',
+              },
+              etat.contexte,
+            ),
           );
           return true;
         }
