@@ -4,11 +4,16 @@
  * Chaine complete : fichier -> demultiplexeur -> `EncodedVideoChunk` ->
  * `VideoDecoder` -> `VideoFrame` -> canvas.
  *
- * PORTEE, dite clairement (section 1003). Ce module fournit l affichage d une
- * IMAGE FIXE a une position donnee -- ce qui suffit au scrub et aux moniteurs.
- * Ce n est PAS encore une lecture temps reel : il n y a ni file de decodage
- * anticipe, ni cache de textures GPU, ni synchronisation sur l horloge audio
- * pour l image. Ces trois pieces manquent, et le nom des choses le reflete.
+ * Deux modes, et ils different par leur cout :
+ *
+ *   SCRUB   -- `imageA` decode a la demande depuis l image cle qui precede.
+ *              Un saut long coute donc le decodage d un groupe d images.
+ *   LECTURE -- `precharger` decode EN AVANT et garde les images dans un cache
+ *              borne. La demande suivante est alors servie sans decoder, ce qui
+ *              rend possible une lecture a la cadence de la sequence.
+ *
+ * Le cache est borne en PIXELS et non en nombre d images : vingt-quatre images
+ * de 320x240 coutent 7 Mo, les memes en 4K en couteraient 800 (section 57).
  */
 import type { AppError, Result } from '@valideo/shared';
 import { appError, err, ok } from '@valideo/shared';
@@ -81,6 +86,11 @@ export class VideoSource {
   private decodeur: VideoDecoder | null = null;
   /** Images emises par le decodeur pendant la demande en cours. */
   private collecte: VideoFrame[] | null = null;
+  /** Cache d images decodees, par index d echantillon. `Map` conserve l ordre. */
+  private readonly cache = new Map<number, VideoFrame>();
+  private pixelsEnCache = 0;
+  /** Budget du cache, en pixels. 64 Mpx : environ 250 Mo en RGBA. */
+  private budgetPixels = 64_000_000;
   private derniereImage: VideoFrame | null = null;
   private derniereCle = -1;
   /**
@@ -193,6 +203,12 @@ export class VideoSource {
    * corrompraient.
    */
   imageA(secondes: number): Promise<VideoFrame | null> {
+    // Chemin rapide : l image est deja decodee. On en rend un clone, pour que
+    // l appelant puisse la fermer sans vider le cache.
+    if (this.infos.decodable) {
+      const enCache = this.cache.get(this.indexA(secondes));
+      if (enCache !== undefined) return Promise.resolve(enCache.clone());
+    }
     const suivante = this.file.then(
       () => this.decoderImage(secondes),
       () => this.decoderImage(secondes),
@@ -287,13 +303,173 @@ export class VideoSource {
     if (retenue === null && restantes.length > 0) {
       retenue = restantes.shift() ?? null;
     }
-    for (const image of restantes) image.close();
+    // Les images voisines sont conservees : un scrub image par image les
+    // redemanderait aussitot.
+    for (const image of restantes) {
+      const index = this.indexParHorodatage(image.timestamp);
+      if (index === null) image.close();
+      else this.mettreEnCache(index, image);
+    }
+    if (retenue !== null) {
+      const index = this.indexParHorodatage(retenue.timestamp);
+      if (index !== null) {
+        const clone = retenue.clone();
+        this.mettreEnCache(index, retenue);
+        return clone;
+      }
+    }
     return retenue;
+  }
+
+  // ------------------------------------------------------------------ cache
+
+  /** Ajuste le budget du cache selon le profil de la machine (section 58). */
+  definirBudgetPixels(pixels: number): void {
+    this.budgetPixels = Math.max(1_000_000, pixels);
+    this.elaguer();
+  }
+
+  private coutImage(image: VideoFrame): number {
+    return image.displayWidth * image.displayHeight;
+  }
+
+  private mettreEnCache(index: number, image: VideoFrame): void {
+    const existante = this.cache.get(index);
+    if (existante !== undefined) {
+      image.close();
+      return;
+    }
+    this.cache.set(index, image);
+    this.pixelsEnCache += this.coutImage(image);
+    this.elaguer();
+  }
+
+  /** Evince les plus anciennes jusqu a rentrer dans le budget. */
+  private elaguer(): void {
+    for (const [index, image] of this.cache) {
+      if (this.pixelsEnCache <= this.budgetPixels) break;
+      this.pixelsEnCache -= this.coutImage(image);
+      image.close();
+      this.cache.delete(index);
+    }
+  }
+
+  private viderCache(): void {
+    for (const image of this.cache.values()) image.close();
+    this.cache.clear();
+    this.pixelsEnCache = 0;
+  }
+
+  /** Etat du cache, pour le panneau de performance (section 104). */
+  etatCache(): { images: number; pixels: number; budget: number } {
+    return { images: this.cache.size, pixels: this.pixelsEnCache, budget: this.budgetPixels };
+  }
+
+  /** Index d echantillon correspondant a un instant. */
+  private indexA(secondes: number): number {
+    const cible = this.versTimescale(secondes);
+    let vise = 0;
+    for (const e of this.piste.echantillons) {
+      if (e.pts <= cible) vise = e.index;
+      else break;
+    }
+    return vise;
+  }
+
+  /**
+   * Decode en avant et met en cache, pour que la lecture n ait plus a attendre.
+   *
+   * C est la difference entre « afficher une image » et « lire » : sans avance,
+   * chaque image coute un aller-retour de decodage et la cadence s effondre.
+   */
+  precharger(secondes: number, nombreImages: number): Promise<void> {
+    const suivante = this.file.then(
+      () => this.precargerInterne(secondes, nombreImages),
+      () => this.precargerInterne(secondes, nombreImages),
+    );
+    this.file = suivante.catch(() => undefined);
+    return suivante;
+  }
+
+  private async precargerInterne(secondes: number, nombreImages: number): Promise<void> {
+    if (!this.infos.decodable) return;
+    const echantillons = this.piste.echantillons;
+    if (echantillons.length === 0) return;
+
+    const depart = this.indexA(secondes);
+    const fin = Math.min(echantillons.length - 1, depart + nombreImages);
+    // Tout est deja en cache : rien a faire, et surtout rien a decoder.
+    let manquant = false;
+    for (let i = depart; i <= fin; i += 1) {
+      if (!this.cache.has(i)) {
+        manquant = true;
+        break;
+      }
+    }
+    if (!manquant) return;
+
+    await this.decoderPlage(imageCleAvant(this.piste, echantillons[depart]?.pts ?? 0), fin);
+  }
+
+  /**
+   * Decode les echantillons de `depart` a `fin` et met TOUT en cache.
+   * Les images intermediaires ne sont pas jetees : elles seront demandees juste
+   * apres par la lecture.
+   */
+  private async decoderPlage(depart: number, fin: number): Promise<void> {
+    let decodeur: VideoDecoder;
+    try {
+      decodeur = this.configurer();
+    } catch {
+      return;
+    }
+
+    const collecte: VideoFrame[] = [];
+    this.collecte = collecte;
+    try {
+      for (let i = depart; i <= fin; i += 1) {
+        const echantillon = this.piste.echantillons[i];
+        if (echantillon === undefined) continue;
+        const octets = await this.reader.lire(echantillon.offset, echantillon.taille);
+        decodeur.decode(
+          new EncodedVideoChunk({
+            type: echantillon.cle ? 'key' : 'delta',
+            timestamp: (echantillon.pts / this.piste.timescale) * 1_000_000,
+            duration: (echantillon.duree / this.piste.timescale) * 1_000_000,
+            data: octets,
+          }),
+        );
+      }
+      await decodeur.flush();
+    } catch {
+      this.collecte = null;
+      for (const image of collecte) image.close();
+      this.reinitialiser();
+      return;
+    }
+    this.collecte = null;
+
+    // On retrouve l index de chaque image par son horodatage : le decodeur
+    // restitue en ordre d AFFICHAGE, pas dans l ordre ou on l a alimente.
+    for (const image of collecte) {
+      const index = this.indexParHorodatage(image.timestamp);
+      if (index === null) image.close();
+      else this.mettreEnCache(index, image);
+    }
+  }
+
+  private indexParHorodatage(microsecondes: number): number | null {
+    const pts = Math.round((microsecondes / 1_000_000) * this.piste.timescale);
+    for (const e of this.piste.echantillons) {
+      if (Math.abs(e.pts - pts) <= 1) return e.index;
+    }
+    return null;
   }
 
   fermer(): void {
     this.derniereImage?.close();
     this.derniereImage = null;
+    this.viderCache();
     this.reinitialiser();
   }
 }

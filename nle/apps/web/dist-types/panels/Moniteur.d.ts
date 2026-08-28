@@ -13,7 +13,6 @@ export interface ProprietesMoniteur {
     readonly titre: string;
     readonly tete?: string | undefined;
     readonly duree?: string | undefined;
-    readonly enLecture?: boolean | undefined;
 }
-export declare function Moniteur({ titre, tete, duree, enLecture, }: ProprietesMoniteur): React.JSX.Element;
+export declare function Moniteur({ titre, tete, duree }: ProprietesMoniteur): React.JSX.Element;
 //# sourceMappingURL=Moniteur.d.ts.map

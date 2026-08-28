@@ -4,11 +4,16 @@
  * Chaine complete : fichier -> demultiplexeur -> `EncodedVideoChunk` ->
  * `VideoDecoder` -> `VideoFrame` -> canvas.
  *
- * PORTEE, dite clairement (section 1003). Ce module fournit l affichage d une
- * IMAGE FIXE a une position donnee -- ce qui suffit au scrub et aux moniteurs.
- * Ce n est PAS encore une lecture temps reel : il n y a ni file de decodage
- * anticipe, ni cache de textures GPU, ni synchronisation sur l horloge audio
- * pour l image. Ces trois pieces manquent, et le nom des choses le reflete.
+ * Deux modes, et ils different par leur cout :
+ *
+ *   SCRUB   -- `imageA` decode a la demande depuis l image cle qui precede.
+ *              Un saut long coute donc le decodage d un groupe d images.
+ *   LECTURE -- `precharger` decode EN AVANT et garde les images dans un cache
+ *              borne. La demande suivante est alors servie sans decoder, ce qui
+ *              rend possible une lecture a la cadence de la sequence.
+ *
+ * Le cache est borne en PIXELS et non en nombre d images : vingt-quatre images
+ * de 320x240 coutent 7 Mo, les memes en 4K en couteraient 800 (section 57).
  */
 import type { AppError, Result } from '@valideo/shared';
 import type { FichierMp4, PisteMp4, RangeReader } from '@valideo/demux';
@@ -63,6 +68,11 @@ export declare class VideoSource {
     private decodeur;
     /** Images emises par le decodeur pendant la demande en cours. */
     private collecte;
+    /** Cache d images decodees, par index d echantillon. `Map` conserve l ordre. */
+    private readonly cache;
+    private pixelsEnCache;
+    /** Budget du cache, en pixels. 64 Mpx : environ 250 Mo en RGBA. */
+    private budgetPixels;
     private derniereImage;
     private derniereCle;
     /**
@@ -92,6 +102,36 @@ export declare class VideoSource {
      * c est la seule facon correcte de decoder un format inter-images.
      */
     private decoderImage;
+    /** Ajuste le budget du cache selon le profil de la machine (section 58). */
+    definirBudgetPixels(pixels: number): void;
+    private coutImage;
+    private mettreEnCache;
+    /** Evince les plus anciennes jusqu a rentrer dans le budget. */
+    private elaguer;
+    private viderCache;
+    /** Etat du cache, pour le panneau de performance (section 104). */
+    etatCache(): {
+        images: number;
+        pixels: number;
+        budget: number;
+    };
+    /** Index d echantillon correspondant a un instant. */
+    private indexA;
+    /**
+     * Decode en avant et met en cache, pour que la lecture n ait plus a attendre.
+     *
+     * C est la difference entre « afficher une image » et « lire » : sans avance,
+     * chaque image coute un aller-retour de decodage et la cadence s effondre.
+     */
+    precharger(secondes: number, nombreImages: number): Promise<void>;
+    private precargerInterne;
+    /**
+     * Decode les echantillons de `depart` a `fin` et met TOUT en cache.
+     * Les images intermediaires ne sont pas jetees : elles seront demandees juste
+     * apres par la lecture.
+     */
+    private decoderPlage;
+    private indexParHorodatage;
     fermer(): void;
 }
 //# sourceMappingURL=video-source.d.ts.map

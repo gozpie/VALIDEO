@@ -654,3 +654,31 @@ défaut.
 groupe. C'est acceptable pour un affichage d'image fixe, et ce sera résolu par
 le cache d'images du moteur temps réel — pas par une astuce sur l'état du
 décodeur.
+
+---
+
+## ADR-040 — Le cache d'images se borne en pixels, pas en nombre d'images
+
+**Contexte.** Un cache « de 24 images » semble raisonnable — jusqu'à ce qu'on
+passe de 320×240 à de la 4K. Le même compte passe alors de 7 Mo à 800 Mo.
+
+**Décision.** Le budget est exprimé en **pixels**, et ajustable selon le profil
+de machine détecté (§58, §59).
+
+**Conséquences.** Le cache s'adapte de lui-même à la définition du média. Un
+montage 4K garde moins d'images qu'un montage HD, ce qui est exactement le
+comportement voulu.
+
+---
+
+## ADR-041 — Le décodage anticipé est ce qui distingue « afficher » de « lire »
+
+**Contexte.** Avec un décodage à la demande, chaque image coûte un aller-retour
+et la cadence s'effondre.
+
+**Décision.** Pendant la lecture, un remplissage périodique décode une seconde
+et demie devant la tête et met en cache. L'affichage n'attend alors plus.
+
+**Conséquences.** Mesuré : ~24,7 images par seconde sur une séquence à 25, dans
+un navigateur sans accélération matérielle. Et surtout, l'image ne dérive pas de
+la tête de lecture, qui reste pilotée par l'horloge audio (ADR-033).

@@ -7,9 +7,11 @@
  * demandent le graphe de rendu, qui n existe pas. Un seul clip est donc
  * affiche, et le panneau le dit.
  *
- * PORTEE (section 1003) : affichage d une image FIXE a la position courante.
- * Ce n est pas une lecture temps reel -- il manque le decodage anticipe, le
- * cache de textures et la synchronisation de l image sur l horloge audio.
+ * PORTEE (section 1003). L image suit reellement la lecture : le decodage
+ * anticipe remplit un cache devant la tete, et l affichage se cale sur la
+ * position que dicte l horloge audio. Ce qui manque encore : la COMPOSITION --
+ * superposition des pistes, opacite, fondus, effets -- qui demande le graphe de
+ * rendu. Une seule couche est donc affichee, et le panneau le dit.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { SequenceDoc } from '@valideo/project-model';
@@ -72,6 +74,8 @@ export function MoniteurProgramme({
   /** Horodatage de l'image affichée, en microsecondes. Exposé pour les tests. */
   const [ptsAffiche, definirPtsAffiche] = useState<number | null>(null);
   const demandeRef = useRef(0);
+  const teteRef = useRef(tete);
+  teteRef.current = tete;
 
   useEffect(() => {
     const visible = clipVisible(sequence, tete, mediaCadence);
@@ -135,12 +139,35 @@ export function MoniteurProgramme({
     };
   }, [sequence, tete, sources, mediaCadence]);
 
+  /**
+   * Décodage anticipé pendant la lecture.
+   *
+   * C'est ce qui sépare « afficher une image » de « lire » : sans avance, chaque
+   * image coûterait un aller-retour de décodage et la cadence s'effondrerait.
+   * On remplit le cache une seconde et demie devant la tête, quatre fois par
+   * seconde (§121).
+   */
+  useEffect(() => {
+    if (!enLecture) return undefined;
+    const avancer = (): void => {
+      const visible = clipVisible(sequence, teteRef.current, mediaCadence);
+      if (visible === null) return;
+      const source = sources.get(visible.mediaId);
+      if (source === undefined || !source.infos.decodable) return;
+      const cadence = source.infos.cadence.n / source.infos.cadence.d;
+      void source.precharger(visible.secondesSource, Math.ceil(cadence * 1.5));
+    };
+    avancer();
+    const id = setInterval(avancer, 250);
+    return () => clearInterval(id);
+  }, [enLecture, sequence, sources, mediaCadence]);
+
   return (
     <section className="panneau">
       <div className="panneau-entete">
         <span className="titre">Moniteur Programme</span>
         <span className="espace" />
-        <span className="etiquette-etat partiel">Image fixe · pas de composition</span>
+        <span className="etiquette-etat partiel">Une seule couche · pas de composition</span>
       </div>
       <div className="panneau-corps">
         <div className="moniteur">
@@ -155,9 +182,10 @@ export function MoniteurProgramme({
               <div className="moniteur-vide">
                 <h3>{enLecture ? 'Lecture du son en cours' : message}</h3>
                 <p>
-                  L’image affichée est décodée par WebCodecs à partir du fichier réel. La
-                  composition — superposition des pistes, opacité, fondus — demande le graphe de
-                  rendu, qui n’existe pas encore : une seule couche est affichée.
+                  L’image affichée est décodée par WebCodecs à partir du fichier réel, et suit la
+                  lecture. La composition — superposition des pistes, opacité, fondus, effets —
+                  demande le graphe de rendu, qui n’existe pas encore : une seule couche est
+                  affichée.
                 </p>
               </div>
             )}

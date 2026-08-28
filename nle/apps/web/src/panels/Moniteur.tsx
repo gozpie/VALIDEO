@@ -14,32 +14,26 @@ export interface ProprietesMoniteur {
   readonly titre: string;
   readonly tete?: string | undefined;
   readonly duree?: string | undefined;
-  readonly enLecture?: boolean | undefined;
 }
 
-export function Moniteur({
-  titre,
-  tete,
-  duree,
-  enLecture = false,
-}: ProprietesMoniteur): React.JSX.Element {
+export function Moniteur({ titre, tete, duree }: ProprietesMoniteur): React.JSX.Element {
   return (
     <section className="panneau">
       <div className="panneau-entete">
         <span className="titre">{titre}</span>
         <span className="espace" />
-        <span className="etiquette-etat partiel">Son lu · image non décodée</span>
+        <span className="etiquette-etat indisponible">Moniteur source non implémenté</span>
       </div>
       <div className="panneau-corps">
         <div className="moniteur">
           <div className="moniteur-image">
             <div className="moniteur-vide">
-              <h3>{enLecture ? 'Lecture du son en cours' : 'Aucune image à afficher'}</h3>
+              <h3>Moniteur source non implémenté</h3>
               <p>
-                Le <strong>son</strong> est réellement décodé et joué, et c’est l’horloge audio qui
-                commande la tête de lecture. L’<strong>image</strong>, elle, demande un
-                démultiplexeur et un décodeur qui n’existent pas encore : ce panneau reste vide
-                plutôt que d’afficher une image simulée.
+                Le moniteur source affichera le média sélectionné dans le panneau Projet, avec ses
+                propres points d’entrée et de sortie. Il n’est pas encore construit : ce panneau
+                reste vide plutôt que d’afficher un contenu simulé. Le Moniteur Programme, lui,
+                affiche l’image réelle du montage.
               </p>
             </div>
           </div>

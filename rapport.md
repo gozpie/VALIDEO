@@ -524,3 +524,39 @@ l'horloge audio. Un saut long coûte le décodage d'un groupe d'images complet.
 462 tests unitaires et 19 tests de bout en bout. L'un d'eux vérifie image par
 image que l'horodatage de l'image affichée correspond exactement à la position de
 la tête de lecture.
+
+---
+
+## 2026-08-28 — Cache d'images et lecture vidéo temps réel
+
+### Objectif
+
+Passer de l'affichage d'une image fixe à une véritable lecture vidéo, calée sur
+l'horloge audio.
+
+### Modifications
+
+**`nle/apps/web/src/media/video-source.ts`** — cache d'images décodées et
+décodage anticipé.
+
+Le cache est borné en pixels et non en nombre d'images : vingt-quatre images en
+320 sur 240 coûtent 7 Mo, les mêmes en 4K en coûteraient 800. Le budget est
+ajustable selon le profil de la machine.
+
+Pendant la lecture, le cache est rempli une seconde et demie devant la tête,
+quatre fois par seconde. C'est ce qui sépare afficher une image de lire : sans
+cette avance, chaque image coûterait un aller-retour de décodage.
+
+Les moniteurs annoncent désormais exactement ce qu'ils font. Le Moniteur
+Programme affiche une seule couche, sans composition, ce qui est le cas. Le
+Moniteur Source est annoncé comme non implémenté, ce qu'il est.
+
+### Vérifications
+
+462 tests unitaires et 20 tests de bout en bout.
+
+Mesure dans un vrai navigateur : en 1,78 seconde d'horloge murale, l'affichage
+progresse de l'image 0 à l'image 44 d'une séquence à 25 images par seconde, soit
+la cadence nominale. Un test vérifie surtout que l'image affichée et la tête de
+lecture ne dérivent pas l'une de l'autre, la tête étant pilotée par l'horloge
+audio.

@@ -564,12 +564,46 @@ c'est inhérent, et c'est ce que le cache résoudra.
 
 **Total : 462 tests unitaires + 19 tests de bout en bout.**
 
+### Étape 18 — Cache d'images et lecture vidéo temps réel (§22, §57, §120, §121)
+
+**Ça lit.** L'image suit la lecture, calée sur l'horloge audio.
+
+- **Cache d'images décodées**, borné en **pixels** et non en nombre d'images :
+  vingt-quatre images en 320×240 coûtent 7 Mo, les mêmes en 4K en coûteraient
+  800 (§57). Le budget est ajustable selon le profil de la machine (§58).
+- **Décodage anticipé** : pendant la lecture, le cache est rempli une seconde et
+  demie devant la tête, quatre fois par seconde. C'est exactement ce qui sépare
+  « afficher une image » de « lire » — sans avance, chaque image coûterait un
+  aller-retour de décodage et la cadence s'effondrerait.
+- Les images voisines d'un scrub sont **conservées** : avancer d'une image ne
+  redécode plus le groupe entier.
+- Les images sont rendues par **clone**, pour que l'appelant puisse les fermer
+  sans vider le cache.
+
+**Mesuré dans un vrai navigateur** : en 1,78 s d'horloge murale, l'affichage
+progresse de l'image 0 à l'image **44** d'une séquence à 25 i/s — soit ~24,7 i/s,
+la cadence nominale. 27 images distinctes sur 27 échantillons : l'image change
+réellement à chaque relevé.
+
+Un test de bout en bout vérifie surtout que l'image affichée et la tête de
+lecture **ne dérivent pas l'une de l'autre** : la tête est pilotée par l'horloge
+audio, et l'image la suit à moins de six images près.
+
+**Les moniteurs disent maintenant exactement ce qu'ils font** : le Moniteur
+Programme affiche « une seule couche · pas de composition » — l'image est réelle
+et suit la lecture, mais superposition, opacité, fondus et effets demandent le
+graphe de rendu, qui n'existe pas. Le Moniteur Source, lui, est annoncé comme
+non implémenté, ce qu'il est.
+
+**Total : 462 tests unitaires + 20 tests de bout en bout.**
+
 ## NEXT
 
-1. Cache d'images décodées et décodage anticipé, pour passer de l'image fixe à
-   la lecture temps réel (§22, §120, §121).
-2. Graphe de rendu et composition multicouche (§23).
+1. Graphe de rendu et composition multicouche (§23) — la suite logique : c'est
+   ce qui manque pour afficher plus d'une piste à la fois.
+2. Vignettes de timeline (§18), qui réutiliseront le cache d'images.
 3. Branchement du service d'analyse ffprobe sur l'import (§9).
+4. Export (§48) — il demande le graphe de rendu et un encodeur.
 
 ## BLOCKED
 

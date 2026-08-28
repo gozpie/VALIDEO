@@ -440,3 +440,38 @@ test('un média vidéo non décodable est annoncé, pas affiché en erreur', asy
   // Démultiplexé sans problème ; c'est le DÉCODAGE que ce navigateur refuse.
   await expect(media).toContainText('démuxé');
 });
+
+test('la vidéo est lue en temps réel et suit l’horloge audio (§22, §121)', async ({ page }) => {
+  const dossier = new URL('../fixtures/generated/', import.meta.url).pathname;
+  await page
+    .locator('input[data-test="import-medias"]')
+    .setInputFiles([`${dossier}vp9_25.mp4`, `${dossier}audio_enveloppe.wav`]);
+  await expect(page.locator('tr[data-test="ligne-media"]')).toHaveCount(2);
+
+  const poser = page.getByTitle('Poser à la tête de lecture (overwrite)');
+  await poser.nth(0).click(); // vidéo sur V1
+  await page.locator('.entete-piste').nth(5).locator('button').first().click(); // cibler A3
+  await poser.nth(1).click(); // audio sur A3
+
+  const toile = page.getByTestId('image-programme');
+  await expect(toile).toHaveAttribute('data-pts', '0');
+
+  await page.getByTestId('lecture').click();
+  await page.waitForTimeout(1500);
+
+  const ptsPendant = Number(await toile.getAttribute('data-pts'));
+  const tc = await page.locator('.barre-etat .mono').first().innerText();
+  await page.getByTestId('lecture').click();
+
+  // En 1,5 s, une séquence à 25 i/s doit avoir avancé de l'ordre de 37 images.
+  // On accepte largement, la machine de test n'étant pas une station de montage.
+  const imageAffichee = ptsPendant / 40000;
+  expect(imageAffichee).toBeGreaterThan(12);
+  expect(imageAffichee).toBeLessThan(50);
+
+  // Et surtout : l'image affichée correspond à la tête de lecture, qui est
+  // pilotée par l'horloge audio. Les deux ne dérivent pas l'une de l'autre.
+  const m = /^01:00:(\d\d):(\d\d)$/.exec(tc.trim());
+  const imageTete = Number(m?.[1] ?? 0) * 25 + Number(m?.[2] ?? 0);
+  expect(Math.abs(imageTete - imageAffichee)).toBeLessThanOrEqual(6);
+});
