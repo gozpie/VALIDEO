@@ -10,15 +10,21 @@
  * formes d'onde, exporter.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { appError } from '@valideo/shared';
+import type { AppError } from '@valideo/shared';
 import { formatTimecode, parseTimecodeEntry, rational } from '@valideo/time-core';
 import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
   deleteClipsCommand,
+  extractCommand,
+  liftCommand,
   nextEditPoint,
   previousEditPoint,
   sequenceDuration,
+  setWorkAreaCommand,
+  workAreaRange,
 } from '@valideo/timeline-model';
 import {
   clampScroll,
@@ -40,6 +46,14 @@ import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { usePersistance } from './persistance.js';
 import { TransportAudio } from './playback/transport.js';
+
+/**
+ * Refus explicite d'une action de montage. §106 : dire ce qui s'est passe ET ce
+ * que l'utilisateur peut faire -- jamais « une erreur est survenue ».
+ */
+function erreurMontage(message: string, action: string): AppError {
+  return appError('EDIT_REJECTED', message, { action });
+}
 
 const OUTILS: readonly { id: Outil; libelle: string; touche: string; titre: string }[] = [
   { id: 'selection', libelle: 'V', touche: 'V', titre: 'Sélection' },
@@ -161,6 +175,32 @@ export function App(): React.JSX.Element {
    * raccord d'une piste de titrage qu'on ne regarde pas.
    * Si aucune piste n'est ciblée, on retombe sur l'ensemble des pistes.
    */
+  /**
+   * Pistes sur lesquelles Lift et Extract operent : les pistes CIBLEES, et
+   * elles seules. Contrairement a la navigation, il n'y a PAS de repli sur
+   * toutes les pistes : retirer une plage partout parce que l'utilisateur a
+   * oublie de cibler serait destructeur. On refuse et on le dit.
+   */
+  const pistesAffectees = useMemo(
+    () => etat.sequence.tracks.filter((t) => t.targeted && !t.locked).map((t) => t.id),
+    [etat.sequence.tracks],
+  );
+
+  /**
+   * Pistes dont Extract retire la plage : les ciblees, PLUS celles dont la
+   * synchronisation est active.
+   *
+   * C'est le sens meme du verrou de synchronisation : une piste synchronisee
+   * suit le ripple. La laisser de cote decalerait tout le reste et la
+   * desynchroniserait -- exactement ce que ce verrou existe pour empecher.
+   * Pour la retirer de l'operation, on decoche sa synchronisation.
+   */
+  const pistesExtract = useMemo(() => {
+    const ids = new Set(pistesAffectees);
+    for (const t of etat.sequence.tracks) if (t.syncLock && !t.locked) ids.add(t.id);
+    return [...ids];
+  }, [etat.sequence.tracks, pistesAffectees]);
+
   const pistesNavigables = useMemo(() => {
     const ciblees = etat.sequence.tracks.filter((t) => t.targeted).map((t) => t.id);
     return ciblees.length > 0 ? ciblees : etat.sequence.tracks.map((t) => t.id);
@@ -224,6 +264,61 @@ export function App(): React.JSX.Element {
           if (p !== null) actions.definirTete(p);
           return true;
         }
+        case 'marks.markIn':
+          actions.executer(
+            setWorkAreaCommand({ in: etat.tete, out: etat.sequence.workAreaOut }),
+          );
+          return true;
+        case 'marks.markOut':
+          // La sortie est EXCLUSIVE : marquer sur l'image courante doit inclure
+          // cette image, comme dans tout NLE. D'où le +1.
+          actions.executer(
+            setWorkAreaCommand({ in: etat.sequence.workAreaIn, out: etat.tete + 1 }),
+          );
+          return true;
+        case 'marks.clearIn':
+          actions.executer(setWorkAreaCommand({ in: null, out: etat.sequence.workAreaOut }));
+          return true;
+        case 'marks.clearOut':
+          actions.executer(setWorkAreaCommand({ in: etat.sequence.workAreaIn, out: null }));
+          return true;
+        case 'marks.goToIn':
+          if (etat.sequence.workAreaIn !== null) actions.definirTete(etat.sequence.workAreaIn);
+          return true;
+        case 'marks.goToOut':
+          // On se pose SUR la dernière image de la plage, pas après elle.
+          if (etat.sequence.workAreaOut !== null) {
+            actions.definirTete(Math.max(0, etat.sequence.workAreaOut - 1));
+          }
+          return true;
+        case 'edit.lift':
+        case 'edit.extract': {
+          const plage = workAreaRange(etat.sequence);
+          if (plage === null) {
+            actions.signalerErreur(
+              erreurMontage(
+                'Aucune plage marquée.',
+                'Posez un point d’entrée (I) et un point de sortie (O)',
+              ),
+            );
+            return true;
+          }
+          if (pistesAffectees.length === 0) {
+            actions.signalerErreur(
+              erreurMontage(
+                'Aucune piste ciblée.',
+                'Ciblez au moins une piste avec le bouton de ciblage',
+              ),
+            );
+            return true;
+          }
+          actions.executer(
+            actionId === 'edit.lift'
+              ? liftCommand({ ...plage, trackIds: pistesAffectees }, etat.contexte)
+              : extractCommand({ ...plage, trackIds: pistesExtract }, etat.contexte),
+          );
+          return true;
+        }
         case 'edit.addEdit':
           actions.executer(addEditCommand(etat.tete, etat.contexte));
           return true;
@@ -260,7 +355,18 @@ export function App(): React.JSX.Element {
           return false;
       }
     },
-    [actions, ajuster, duree, etat, persistance, pistesNavigables, shuttle, zoomer],
+    [
+      actions,
+      ajuster,
+      duree,
+      etat,
+      persistance,
+      pistesAffectees,
+      pistesExtract,
+      pistesNavigables,
+      shuttle,
+      zoomer,
+    ],
   );
 
   useEffect(() => {

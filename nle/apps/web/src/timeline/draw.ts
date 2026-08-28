@@ -43,6 +43,7 @@ export const PALETTE = {
   tete: '#e05a52',
   accroche: '#4c8dff',
   marqueur: '#e0a63a',
+  zoneTravail: '#7fb4ff',
 } as const;
 
 export interface CoulJeu {
@@ -163,6 +164,7 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
   ctx.fillRect(0, 0, largeur, hauteur);
 
   dessinerRegle(ctx, o);
+  dessinerZoneTravail(ctx, o);
 
   ctx.save();
   ctx.beginPath();
@@ -182,6 +184,55 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
   dessinerRectangleSelection(ctx, o);
 
   ctx.restore();
+}
+
+/**
+ * Zone de travail : la plage entre les points d entree et de sortie.
+ *
+ * Dessinee en bandeau dans la regle, avec deux fanions aux bornes. Une seule
+ * borne posee est aussi montree -- le reperage est en cours, et ne rien
+ * afficher laisserait croire que la frappe n a pas ete prise.
+ */
+function dessinerZoneTravail(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
+  const { workAreaIn, workAreaOut } = o.sequence;
+  if (workAreaIn === null && workAreaOut === null) return;
+
+  const xEntree = workAreaIn === null ? null : timeToX(o.viewport, workAreaIn);
+  const xSortie = workAreaOut === null ? null : timeToX(o.viewport, workAreaOut);
+
+  if (xEntree !== null && xSortie !== null && xSortie > xEntree) {
+    ctx.fillStyle = PALETTE.zoneTravail;
+    ctx.globalAlpha = 0.22;
+    ctx.fillRect(xEntree, 0, xSortie - xEntree, HAUTEUR_REGLE - 1);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.fillStyle = PALETTE.zoneTravail;
+  // Le fanion pointe VERS la plage : celui d entree s ouvre a droite, celui de
+  // sortie a gauche. C est ce qui rend les deux distinguables d un coup d oeil
+  // quand ils sont proches.
+  if (xEntree !== null) {
+    const x = Math.round(xEntree);
+    ctx.beginPath();
+    ctx.moveTo(x, 1);
+    ctx.lineTo(x + 7, 1);
+    ctx.lineTo(x + 2, 7);
+    ctx.lineTo(x + 2, HAUTEUR_REGLE - 2);
+    ctx.lineTo(x, HAUTEUR_REGLE - 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (xSortie !== null) {
+    const x = Math.round(xSortie);
+    ctx.beginPath();
+    ctx.moveTo(x, 1);
+    ctx.lineTo(x - 7, 1);
+    ctx.lineTo(x - 2, 7);
+    ctx.lineTo(x - 2, HAUTEUR_REGLE - 2);
+    ctx.lineTo(x, HAUTEUR_REGLE - 2);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function dessinerRegle(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {

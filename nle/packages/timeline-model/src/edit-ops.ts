@@ -816,3 +816,53 @@ export function selectTrackForward(
   const pistes = toutesPistes ? sequence.tracks : sequence.tracks.filter((t) => t.id === trackId);
   return pistes.flatMap((t) => t.clips.filter((c) => clipEnd(c) > from).map((c) => c.id));
 }
+
+// ------------------------------------------------- Zone de travail (§78, §92)
+
+export interface WorkArea {
+  readonly in: number | null;
+  readonly out: number | null;
+}
+
+/**
+ * Pose, deplace ou efface les points d entree et de sortie de la sequence.
+ *
+ * Regle des NLE, et elle n est pas arbitraire : poser une entree APRES la
+ * sortie existante n est pas une erreur a refuser, c est le geste de quelqu un
+ * qui recommence son reperage plus loin. On efface donc la borne devenue
+ * incoherente au lieu de rejeter le geste -- refuser obligerait l utilisateur a
+ * effacer lui-meme la sortie avant de pouvoir poser son entree.
+ *
+ * Les positions negatives sont ramenees a zero : il n y a pas de temps avant le
+ * debut de la sequence.
+ */
+export function setWorkArea(sequence: SequenceDoc, zone: WorkArea): EditResult {
+  const entree = zone.in === null ? null : Math.max(0, Math.trunc(zone.in));
+  const sortie = zone.out === null ? null : Math.max(0, Math.trunc(zone.out));
+
+  let workAreaIn = entree;
+  let workAreaOut = sortie;
+  if (workAreaIn !== null && workAreaOut !== null && workAreaIn >= workAreaOut) {
+    // La borne EFFACEE est celle qu on n a pas posee. `setWorkArea` recoit
+    // toujours la zone complete, donc on compare a l etat precedent pour savoir
+    // laquelle des deux bouge.
+    if (entree !== sequence.workAreaIn) workAreaOut = null;
+    else workAreaIn = null;
+  }
+
+  return ok({ ...sequence, workAreaIn, workAreaOut });
+}
+
+/**
+ * Plage effective a retirer, deduite des points d entree et de sortie.
+ *
+ * Renvoie `null` s il n y a pas de plage exploitable. Une seule borne posee ne
+ * suffit PAS : Lift sur une entree seule retirerait tout jusqu a la fin de la
+ * sequence, ce que personne n attend d une frappe unique.
+ */
+export function workAreaRange(sequence: SequenceDoc): { start: number; end: number } | null {
+  const { workAreaIn, workAreaOut } = sequence;
+  if (workAreaIn === null || workAreaOut === null) return null;
+  if (workAreaOut <= workAreaIn) return null;
+  return { start: workAreaIn, end: workAreaOut };
+}

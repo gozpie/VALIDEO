@@ -6,6 +6,8 @@ import { checkSequence, findClip, gaps, sequenceDuration } from './query.js';
 import {
   linkClips,
   rateStretch,
+  setWorkArea,
+  workAreaRange,
   rippleTrimToPlayhead,
   rollEdit,
   slideClip,
@@ -391,5 +393,41 @@ describe('Poignées disponibles', () => {
     const clip = findClip(threeInARow(), 'b')!.clip;
     expect(handleBefore(clip, unknown)).toBeNull();
     expect(handleAfter(clip, unknown)).toBeNull();
+  });
+});
+
+describe('zone de travail (§78)', () => {
+  const base = () => ({ ...threeInARow(), workAreaIn: null, workAreaOut: null });
+
+  it('pose une entrée puis une sortie', () => {
+    const a = unwrap(setWorkArea(base(), { in: 10, out: null }));
+    const b = unwrap(setWorkArea(a, { in: 10, out: 40 }));
+    expect(workAreaRange(b)).toEqual({ start: 10, end: 40 });
+  });
+
+  it('efface la sortie quand la nouvelle entrée la dépasse', () => {
+    // Reprendre son repérage plus loin est un geste courant, pas une erreur.
+    const a = unwrap(setWorkArea(base(), { in: 10, out: 40 }));
+    const b = unwrap(setWorkArea(a, { in: 60, out: 40 }));
+    expect(b.workAreaIn).toBe(60);
+    expect(b.workAreaOut).toBeNull();
+  });
+
+  it('efface l’entrée quand la nouvelle sortie passe avant', () => {
+    const a = unwrap(setWorkArea(base(), { in: 30, out: 80 }));
+    const b = unwrap(setWorkArea(a, { in: 30, out: 20 }));
+    expect(b.workAreaOut).toBe(20);
+    expect(b.workAreaIn).toBeNull();
+  });
+
+  it('ne donne aucune plage avec une seule borne', () => {
+    // Lift sur une entrée seule retirerait tout jusqu’à la fin : on refuse.
+    const a = unwrap(setWorkArea(base(), { in: 10, out: null }));
+    expect(workAreaRange(a)).toBeNull();
+  });
+
+  it('ramène une position négative à zéro', () => {
+    const a = unwrap(setWorkArea(base(), { in: -5, out: 20 }));
+    expect(a.workAreaIn).toBe(0);
   });
 });

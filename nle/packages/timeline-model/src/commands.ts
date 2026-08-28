@@ -157,6 +157,22 @@ export function unlinkCommand(clipIds: readonly string[]): SequenceCommand {
   return command({ label: 'Délier', apply: (seq) => ops.unlinkClips(seq, clipIds) });
 }
 
+/**
+ * Pose ou efface les points d entree et de sortie.
+ *
+ * C est bien une commande annulable : le reperage fait partie du travail de
+ * montage, et le perdre a une annulation malheureuse serait aussi penible que
+ * de perdre une coupe. La `mergeKey` evite qu un deplacement de point au
+ * pointeur n empile une entree par image survolee.
+ */
+export function setWorkAreaCommand(zone: ops.WorkArea, mergeKey?: string): SequenceCommand {
+  return command({
+    label: 'Points d\u2019entrée et de sortie',
+    apply: (seq) => ops.setWorkArea(seq, zone),
+    ...(mergeKey === undefined ? {} : { mergeKey }),
+  });
+}
+
 export function setTrackFlagsCommand(
   trackId: string,
   flags: ops.TrackFlags,

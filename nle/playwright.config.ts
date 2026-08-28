@@ -22,7 +22,11 @@ export default defineConfig({
     command:
       'pnpm --filter @valideo/web run build && pnpm --filter @valideo/web exec vite preview --port 4188 --strictPort',
     port: 4188,
-    reuseExistingServer: true,
+    // Surtout PAS de réutilisation : un serveur d'aperçu resté en vie d'une
+    // exécution précédente sert l'ancien bundle, et les tests valident alors du
+    // code qui n'existe plus. Le coût est une reconstruction de quelques
+    // secondes ; le risque évité est de croire vert ce qui est rouge.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

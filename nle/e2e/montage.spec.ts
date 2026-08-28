@@ -578,3 +578,76 @@ test('supprimer plusieurs clips ne demande qu’une seule annulation', async ({ 
   await page.keyboard.press('Control+z');
   await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(avant);
 });
+
+test('points d’entrée et de sortie : Extract retire la plage et referme (§92)', async ({
+  page,
+}) => {
+  const tc = page.locator('.barre-etat .mono').first();
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+
+  // Le repérage se voit tout de suite dans le titre de la commande.
+  await page.keyboard.press('KeyI');
+  await expect(historique(page)).toContainText(['Points d’entrée et de sortie']);
+
+  // Sortie une seconde plus loin : la plage couvre les images 0 à 25 exclue.
+  for (let i = 0; i < 24; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('KeyO');
+  await expect(tc).toHaveText('01:00:00:24');
+
+  // Aller au point de sortie pose la tête SUR la dernière image de la plage.
+  await page.keyboard.press('Shift+KeyO');
+  await expect(tc).toHaveText('01:00:00:24');
+  await page.keyboard.press('Shift+KeyI');
+  await expect(tc).toHaveText('01:00:00:00');
+
+  // Le deuxième plan démarre à 118 images ; après extraction d'une seconde il
+  // doit démarrer 25 images plus tôt, et son audio lié avec lui.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
+  await page.keyboard.press('Quote');
+  await expect(historique(page)).toContainText(['Extract']);
+  // 118 - 25 = 93 images, soit 3 s et 18 images après le départ de séquence.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:03:18');
+  // L'ambiance de A2 est synchronisée : elle a suivi le ripple, pas dérivé.
+  expect(await debutDe(page, 'Ambiance_salle.wav')).toBe('01:00:00:00');
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
+
+  // Une seule annulation rend tout le montage.
+  await page.keyboard.press('Control+z');
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
+});
+
+test('Lift laisse le trou là où Extract le referme (§92)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('KeyI');
+  for (let i = 0; i < 24; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('KeyO');
+
+  await page.keyboard.press('Semicolon'); // Lift
+  await expect(historique(page)).toContainText(['Lift']);
+  // Rien n'a bougé : c'est toute la différence avec Extract.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:18');
+});
+
+test('Lift sans plage marquée refuse et explique (§1003, §106)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Semicolon');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('Aucune plage marquée');
+  await expect(historique(page)).toHaveCount(1);
+});
+
+test('poser une entrée après la sortie efface la sortie plutôt que de refuser', async ({
+  page,
+}) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('KeyI');
+  for (let i = 0; i < 10; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('KeyO');
+  // On repart plus loin : l'entrée dépasse la sortie, qui doit disparaître.
+  for (let i = 0; i < 30; i += 1) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('KeyI');
+  await page.keyboard.press('Semicolon');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('Aucune plage marquée');
+});
