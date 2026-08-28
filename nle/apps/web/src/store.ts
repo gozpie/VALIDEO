@@ -79,6 +79,21 @@ export interface ActionsEditeur {
   /** Remplace le document courant, à l'ouverture ou après une reprise. */
   chargerDocument(doc: ProjectDoc): void;
   signalerErreur(erreur: AppError): void;
+  /**
+   * Modifie un média du projet : mise hors ligne, reliaison, renommage.
+   *
+   * Volontairement HORS de l'historique, qui ne porte que la séquence. Mettre
+   * un média hors ligne décrit l'état du disque, pas une décision de montage :
+   * une annulation ne doit pas prétendre remettre un fichier en place.
+   */
+  modifierMedia(id: string, modifs: Partial<MediaAssetDoc>): void;
+  /** Remplace les données décodées d'un média déjà présent, après reliaison. */
+  definirDonneesMedia(
+    id: string,
+    pics: PeakPyramid | null,
+    tampon: AudioBuffer | null,
+    video: VideoSource | null,
+  ): void;
   /** Ajoute un média analysé au projet, avec ses pics et son tampon éventuels. */
   ajouterMedia(
     asset: MediaAssetDoc,
@@ -208,6 +223,61 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
         if (video !== null) {
           setSourcesVideo((courantes) => new Map(courantes).set(asset.id, video));
         }
+      },
+      modifierMedia: (id: string, modifs: Partial<MediaAssetDoc>) => {
+        setEnveloppe((courante) => ({
+          ...courante,
+          media: courante.media.map((m) => (m.id === id ? { ...m, ...modifs, id: m.id } : m)),
+        }));
+        if (modifs.status !== undefined && modifs.status !== 'online') {
+          // Les données décodées ne décrivent plus rien : les garder ferait
+          // jouer un son dont le fichier n'est plus là, ce qui contredirait
+          // exactement ce que « hors ligne » annonce.
+          setPics((c) => {
+            const suivant = new Map(c);
+            suivant.delete(id);
+            return suivant;
+          });
+          setTampons((c) => {
+            const suivant = new Map(c);
+            suivant.delete(id);
+            return suivant;
+          });
+          setSourcesVideo((c) => {
+            const suivant = new Map(c);
+            suivant.get(id)?.fermer();
+            suivant.delete(id);
+            return suivant;
+          });
+        }
+      },
+      definirDonneesMedia: (
+        id: string,
+        nouveauxPics: PeakPyramid | null,
+        tampon: AudioBuffer | null,
+        video: VideoSource | null,
+      ) => {
+        setPics((c) => {
+          const suivant = new Map(c);
+          if (nouveauxPics === null) suivant.delete(id);
+          else suivant.set(id, nouveauxPics);
+          return suivant;
+        });
+        setTampons((c) => {
+          const suivant = new Map(c);
+          if (tampon === null) suivant.delete(id);
+          else suivant.set(id, tampon);
+          return suivant;
+        });
+        setSourcesVideo((c) => {
+          const suivant = new Map(c);
+          // L'ancienne source tient un décodeur : la remplacer sans la fermer
+          // laisserait un `VideoDecoder` vivant pour un fichier disparu.
+          suivant.get(id)?.fermer();
+          if (video === null) suivant.delete(id);
+          else suivant.set(id, video);
+          return suivant;
+        });
       },
       chargerDocument: (doc: ProjectDoc) => {
         const premiere = doc.sequences[0];

@@ -134,6 +134,25 @@ export function Timeline({
   const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
 
   /**
+   * Clips dont le média est hors ligne. Calculé ici plutôt que dans le modèle
+   * de rendu : l'état d'un fichier sur le disque n'est pas une propriété du
+   * montage, et le modèle de rendu doit rester une fonction pure de la séquence.
+   */
+  const clipsHorsLigne = useMemo(() => {
+    const ids = new Set<string>();
+    const horsLigne = new Set(
+      etat.document.media.filter((m) => m.status !== 'online').map((m) => m.id),
+    );
+    if (horsLigne.size === 0) return ids;
+    for (const piste of etat.sequence.tracks) {
+      for (const clip of piste.clips) {
+        if (clip.mediaId !== null && horsLigne.has(clip.mediaId)) ids.add(clip.id);
+      }
+    }
+    return ids;
+  }, [etat.document.media, etat.sequence.tracks]);
+
+  /**
    * Aperçu de la dépose, calculé avec la MÊME conversion de durée que
    * l'opération qui suivra : ce que l'utilisateur voit est exactement ce qu'il
    * obtiendra, et non une estimation.
@@ -308,6 +327,7 @@ export function Timeline({
       base,
       debutTimecode: etat.sequence.startTimecode,
       geste: apercu,
+      clipsHorsLigne,
       depose: apercuDepose,
       dpr: window.devicePixelRatio || 1,
       formeOnde,
@@ -321,6 +341,7 @@ export function Timeline({
     taille,
     graduations,
     base,
+    clipsHorsLigne,
     apercuDepose,
     formeOnde,
     vignette,

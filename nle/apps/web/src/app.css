@@ -344,3 +344,5 @@
 .table-projet tbody tr.selectionnee { background: var(--accent-doux); }
 .table-projet tbody tr[draggable='true'] { cursor: grab; }
 .table-projet tbody tr.selectionnee td { color: var(--texte-fort); }
+.actions-media { display: flex; gap: 4px; white-space: nowrap; }
+.actions-media .principal { background: var(--accent); color: #08101f; font-weight: 600; }

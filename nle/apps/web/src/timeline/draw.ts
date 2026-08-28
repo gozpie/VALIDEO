@@ -44,6 +44,7 @@ export const PALETTE = {
   accroche: '#4c8dff',
   marqueur: '#e0a63a',
   zoneTravail: '#7fb4ff',
+  horsLigne: '#c4574f',
 } as const;
 
 export interface CoulJeu {
@@ -144,6 +145,8 @@ export interface OptionsRendu {
   readonly debutTimecode: number;
   readonly geste: ApercuGeste | null;
   readonly dpr: number;
+  /** Identifiants des clips dont le media est hors ligne (section 8, section 106). */
+  readonly clipsHorsLigne?: ReadonlySet<string> | undefined;
   /** Apercu de depose : plage et piste visees, ou `null`. */
   readonly depose?: ApercuDepose | null | undefined;
   readonly formeOnde?: FournisseurFormeOnde | undefined;
@@ -453,8 +456,28 @@ function dessinerClip(
     ctx.restore();
   }
 
-  ctx.strokeStyle = clip.selected ? PALETTE.selection : bord;
-  ctx.lineWidth = clip.selected ? 2 : 1;
+  // Media hors ligne : hachures rouges par-dessus le fond, et bordure rouge.
+  // Le clip reste MONTABLE -- on peut le deplacer, le trimer, le remplacer --
+  // mais rien ne doit laisser croire qu il a encore une image a montrer.
+  const horsLigne = o.clipsHorsLigne?.has(clip.clipId) === true;
+  if (horsLigne) {
+    ctx.save();
+    rectArrondi(ctx, clip.x, y, clip.width, h, 3, !clip.clippedLeft, !clip.clippedRight);
+    ctx.clip();
+    ctx.strokeStyle = PALETTE.horsLigne;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let d = -h; d < clip.width; d += 8) {
+      ctx.moveTo(clip.x + d, y + h);
+      ctx.lineTo(clip.x + d + h, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.strokeStyle = clip.selected ? PALETTE.selection : horsLigne ? PALETTE.horsLigne : bord;
+  ctx.lineWidth = clip.selected || horsLigne ? 2 : 1;
   rectArrondi(
     ctx,
     clip.x + 0.5,
@@ -489,6 +512,11 @@ function dessinerClip(
     ctx.textBaseline = 'top';
     ctx.fillStyle = PALETTE.texteFort;
     ctx.fillText(clip.name || clip.kind, clip.x + 5, y + 6);
+
+    if (horsLigne && clip.width > 90) {
+      ctx.fillStyle = PALETTE.horsLigne;
+      ctx.fillText('MÉDIA HORS LIGNE', clip.x + 5, y + h - 14);
+    }
 
     if (clip.speedPercent !== null && clip.width > 80) {
       ctx.fillStyle = PALETTE.texteDoux;

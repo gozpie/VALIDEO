@@ -43,6 +43,21 @@ async function centreClip(
   return { x: boite.x + boite.width * fraction, y: entete.y + entete.height / 2 };
 }
 
+/**
+ * Clique un bouton qui ouvre un sélecteur de fichier, et fournit le fichier.
+ *
+ * Passer par le bouton n'est pas un détail : c'est lui qui mémorise le média
+ * visé. Écrire directement dans l'input caché sauterait cette étape et
+ * testerait un chemin que personne n'emprunte.
+ */
+async function choisirFichier(page: Page, testId: string, chemin: string): Promise<void> {
+  const [selecteur] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.getByTestId(testId).click(),
+  ]);
+  await selecteur.setFiles(chemin);
+}
+
 /** Sélectionne un clip par un appui-relâché sur place, comme le ferait un monteur. */
 async function selectionnerClip(page: Page, indexPiste: number, fraction: number): Promise<void> {
   const c = await centreClip(page, indexPiste, fraction);
@@ -929,4 +944,49 @@ test('un remplaçant trop court est refusé, pas rallongé en silence', async ({
 
   await expect(page.locator('.barre-etat .alerte')).toContainText('trop court');
   await expect(historique(page)).toHaveCount(1);
+});
+
+test('mettre un média hors ligne garde les clips et le signale (§8, §106)', async ({ page }) => {
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_48k_stereo.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+  await page.locator('[data-test="ligne-media"]').locator('button').first().click();
+  const clipsAvant = await page.locator('.table-projet tbody tr[data-clip]').count();
+
+  await page.getByTestId('hors-ligne').click();
+  await expect(page.getByTestId('etat-media')).toHaveText('hors ligne');
+
+  // Le montage n'est PAS détruit : un fichier absent n'efface pas un travail.
+  await expect(page.locator('.table-projet tbody tr[data-clip]')).toHaveCount(clipsAvant);
+  // Et le média hors ligne ne peut plus être posé.
+  await expect(page.locator('[data-test="ligne-media"]').locator('button').first()).toBeDisabled();
+
+  // Insert le refuse en le disant, plutôt que de poser un clip vide.
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Comma');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('hors ligne');
+});
+
+test('relier un média refuse un fichier trop court pour le montage', async ({ page }) => {
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_enveloppe.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+  await page.locator('[data-test="ligne-media"]').locator('button').first().click();
+  await page.getByTestId('hors-ligne').click();
+
+  // 1 s à la place de 4 : le montage en utilise plus que ça.
+  await choisirFichier(page, 'relier', 'fixtures/generated/audio_96k.wav');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('trop court');
+  await expect(page.getByTestId('etat-media')).toHaveText('hors ligne');
+});
+
+test('relier un média compatible le remet en ligne', async ({ page }) => {
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_96k.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+  await page.locator('[data-test="ligne-media"]').locator('button').first().click();
+  await page.getByTestId('hors-ligne').click();
+  await expect(page.getByTestId('etat-media')).toHaveText('hors ligne');
+
+  // Un fichier plus long convient : la reliaison ne tronque rien.
+  await choisirFichier(page, 'relier', 'fixtures/generated/audio_enveloppe.wav');
+  await expect(page.getByTestId('etat-media')).toContainText('décodé');
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 });
