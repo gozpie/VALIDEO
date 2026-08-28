@@ -1,11 +1,18 @@
+import { existsSync } from 'node:fs';
 import { defineConfig } from '@playwright/test';
 
 /**
  * Tests de bout en bout (§102).
  *
- * Le navigateur est celui préinstallé dans l'environnement : on ne télécharge
- * rien, on pointe l'exécutable directement.
+ * Le navigateur préinstallé du conteneur de développement est utilisé QUAND IL
+ * EXISTE. Le chemin était codé en dur, ce qui rendait la suite inexécutable
+ * partout ailleurs -- sur un poste de développement, Playwright échouait en
+ * cherchant un exécutable absent au lieu d'utiliser celui qu'il a lui-même
+ * installé. On ne force donc le chemin que s'il est là.
  */
+const CHROMIUM_PREINSTALLE = '/opt/pw-browsers/chromium';
+const navigateurLocal = existsSync(CHROMIUM_PREINSTALLE);
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
@@ -16,7 +23,7 @@ export default defineConfig({
     testIdAttribute: 'data-test',
     baseURL: 'http://localhost:4188',
     viewport: { width: 1600, height: 1000 },
-    launchOptions: { executablePath: '/opt/pw-browsers/chromium' },
+    ...(navigateurLocal ? { launchOptions: { executablePath: CHROMIUM_PREINSTALLE } } : {}),
   },
   webServer: {
     command:
