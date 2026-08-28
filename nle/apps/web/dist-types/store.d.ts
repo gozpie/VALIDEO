@@ -28,6 +28,8 @@ export interface EtatEditeur {
     readonly tampons: ReadonlyMap<string, AudioBuffer>;
     /** Sources vidéo démultiplexées, prêtes à décoder. Jamais persistées. */
     readonly sourcesVideo: ReadonlyMap<string, VideoSource>;
+    /** Vrai pendant la lecture : certains travaux de fond doivent s'effacer. */
+    readonly enLecture: boolean;
 }
 export interface ActionsEditeur {
     executer(commande: Command<SequenceDoc>): boolean;
@@ -39,6 +41,7 @@ export interface ActionsEditeur {
     basculerSelection(id: string, additive: boolean): void;
     definirTete(image: number): void;
     definirOutil(outil: Outil): void;
+    definirEnLecture(valeur: boolean): void;
     basculerAccrochage(): void;
     effacerErreur(): void;
     /** Remplace le document courant, à l'ouverture ou après une reprise. */

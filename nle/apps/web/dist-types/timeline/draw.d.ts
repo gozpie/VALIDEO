@@ -6,10 +6,10 @@
  * React (section 2). Elle ne fait que lire un modele deja calcule par
  * `@valideo/timeline-engine`.
  *
- * Les formes d onde dessinees ici proviennent de VRAIS echantillons decodes par
- * le navigateur. Un clip dont le media n a pas ete decode n en recoit aucune :
- * il vaut mieux un fond uni qu une courbe inventee (section 1003). Les vignettes
- * video restent absentes pour la meme raison, tant qu il n y a pas de decodeur.
+ * Formes d onde et vignettes proviennent de VRAIES donnees : echantillons
+ * decodes pour les unes, images decodees par WebCodecs pour les autres. Un clip
+ * dont le media n est pas decode n en recoit aucune -- il vaut mieux un fond uni
+ * qu une courbe ou une image inventee (section 1003).
  */
 import type { SequenceDoc } from '@valideo/project-model';
 import type { TimeBase } from '@valideo/time-core';
@@ -65,6 +65,13 @@ export interface ApercuGeste {
  * de lire la pyramide de pics deja construite (section 19).
  */
 export type FournisseurFormeOnde = (clip: RenderModel['clips'][number], colonnes: number) => readonly WaveformColumn[] | null;
+/**
+ * Fournit une vignette DEJA PRETE pour un clip, ou `null`.
+ *
+ * Le rendu est synchrone : il ne peut pas attendre un decodage. Une vignette
+ * absente est simplement omise ; elle apparaitra au rendu suivant.
+ */
+export type FournisseurVignette = (clip: RenderModel['clips'][number], secondesDansLeClip: number) => ImageBitmap | null;
 export interface OptionsRendu {
     readonly sequence: SequenceDoc;
     readonly modele: RenderModel;
@@ -78,6 +85,7 @@ export interface OptionsRendu {
     readonly geste: ApercuGeste | null;
     readonly dpr: number;
     readonly formeOnde?: FournisseurFormeOnde | undefined;
+    readonly vignette?: FournisseurVignette | undefined;
 }
 export declare function timebaseDeSequence(sequence: SequenceDoc): TimeBase;
 /** Dessine tout. Appelee a chaque image pendant un geste. */

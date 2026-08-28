@@ -6,10 +6,10 @@
  * React (section 2). Elle ne fait que lire un modele deja calcule par
  * `@valideo/timeline-engine`.
  *
- * Les formes d onde dessinees ici proviennent de VRAIS echantillons decodes par
- * le navigateur. Un clip dont le media n a pas ete decode n en recoit aucune :
- * il vaut mieux un fond uni qu une courbe inventee (section 1003). Les vignettes
- * video restent absentes pour la meme raison, tant qu il n y a pas de decodeur.
+ * Formes d onde et vignettes proviennent de VRAIES donnees : echantillons
+ * decodes pour les unes, images decodees par WebCodecs pour les autres. Un clip
+ * dont le media n est pas decode n en recoit aucune -- il vaut mieux un fond uni
+ * qu une courbe ou une image inventee (section 1003).
  */
 import type { SequenceDoc } from '@valideo/project-model';
 import type { TimeBase } from '@valideo/time-core';
@@ -113,6 +113,17 @@ export type FournisseurFormeOnde = (
   colonnes: number,
 ) => readonly WaveformColumn[] | null;
 
+/**
+ * Fournit une vignette DEJA PRETE pour un clip, ou `null`.
+ *
+ * Le rendu est synchrone : il ne peut pas attendre un decodage. Une vignette
+ * absente est simplement omise ; elle apparaitra au rendu suivant.
+ */
+export type FournisseurVignette = (
+  clip: RenderModel['clips'][number],
+  secondesDansLeClip: number,
+) => ImageBitmap | null;
+
 export interface OptionsRendu {
   readonly sequence: SequenceDoc;
   readonly modele: RenderModel;
@@ -126,6 +137,7 @@ export interface OptionsRendu {
   readonly geste: ApercuGeste | null;
   readonly dpr: number;
   readonly formeOnde?: FournisseurFormeOnde | undefined;
+  readonly vignette?: FournisseurVignette | undefined;
 }
 
 function baseDe(sequence: SequenceDoc): TimeBase {
@@ -322,6 +334,10 @@ function dessinerClip(
     dessinerFormeOnde(ctx, o, clip, y, h);
   }
 
+  if (o.modele.policy.thumbnails && clip.kind !== 'audio' && o.vignette !== undefined) {
+    dessinerVignettes(ctx, o, clip, y, h);
+  }
+
   if (o.modele.policy.labels && clip.width > 28) {
     ctx.save();
     ctx.beginPath();
@@ -403,6 +419,51 @@ function dessinerFormeOnde(
   ctx.moveTo(clip.x, Math.round(milieu) + 0.5);
   ctx.lineTo(clip.x + clip.width, Math.round(milieu) + 0.5);
   ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Vignettes de tete et de queue (section 18).
+ *
+ * On n en dessine que deux, et uniquement si le clip est assez large pour
+ * qu elles soient lisibles. Une bande continue de vignettes couterait un
+ * decodage par colonne pour une information que l œil n exploite pas.
+ */
+function dessinerVignettes(
+  ctx: CanvasRenderingContext2D,
+  o: OptionsRendu,
+  clip: RenderModel['clips'][number],
+  y: number,
+  h: number,
+): void {
+  const fournir = o.vignette;
+  if (fournir === undefined || h < 28) return;
+
+  const dureeSecondes = clip.duration / (o.base.rate.n / o.base.rate.d);
+  const positions: number[] = [0];
+  // Vignette de queue seulement si les deux tiennent sans se chevaucher.
+  if (clip.width > 180 && dureeSecondes > 0.5) positions.push(Math.max(0, dureeSecondes - 0.04));
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(clip.x, y, clip.width, h);
+  ctx.clip();
+
+  for (let i = 0; i < positions.length; i += 1) {
+    const seconde = positions[i] ?? 0;
+    const bitmap = fournir(clip, seconde);
+    if (bitmap === null) continue;
+    const hauteur = h - 4;
+    const largeur = Math.max(1, Math.round((bitmap.width / bitmap.height) * hauteur));
+    const x = i === 0 ? clip.x + 1 : clip.x + clip.width - largeur - 1;
+    // Ne pas dessiner deux vignettes qui se chevaucheraient.
+    if (i === 1 && x < clip.x + largeur + 4) break;
+    ctx.drawImage(bitmap, x, y + 2, largeur, hauteur);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 2.5, largeur - 1, hauteur - 1);
+  }
 
   ctx.restore();
 }

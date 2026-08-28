@@ -34,8 +34,9 @@ navigateur, sa forme d'onde vient des vrais échantillons, et il se lit — l'ho
 audio commandant la tête de lecture.
 
 Le **démultiplexage MP4/MOV et la lecture vidéo** : cadence et codec exacts,
-décodage WebCodecs avec cache d'images et décodage anticipé, et une image qui
-suit l'horloge audio à la cadence de la séquence.
+décodage WebCodecs avec cache d'images et décodage anticipé, une image qui suit
+l'horloge audio à la cadence de la séquence, et des vignettes de timeline
+décodées à la demande.
 
 La **persistance** : enregistrement, sauvegarde automatique, instantanés et
 reprise après une session interrompue.
@@ -44,7 +45,7 @@ reprise après une session interrompue.
 
 La **composition** : une seule couche est affichée à la fois. Superposition,
 opacité, fondus et effets demandent le graphe de rendu, qui n'existe pas encore.
-Le **Moniteur Source**. Les **vignettes** de timeline. L'**export**.
+Le **Moniteur Source** et le montage à trois points. L'**export**.
 L'**étalonnage**. L'interface le dit explicitement plutôt que de le simuler.
 
 ## Structure

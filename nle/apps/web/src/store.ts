@@ -53,6 +53,8 @@ export interface EtatEditeur {
   readonly tampons: ReadonlyMap<string, AudioBuffer>;
   /** Sources vidéo démultiplexées, prêtes à décoder. Jamais persistées. */
   readonly sourcesVideo: ReadonlyMap<string, VideoSource>;
+  /** Vrai pendant la lecture : certains travaux de fond doivent s'effacer. */
+  readonly enLecture: boolean;
 }
 
 export interface ActionsEditeur {
@@ -65,6 +67,7 @@ export interface ActionsEditeur {
   basculerSelection(id: string, additive: boolean): void;
   definirTete(image: number): void;
   definirOutil(outil: Outil): void;
+  definirEnLecture(valeur: boolean): void;
   basculerAccrochage(): void;
   effacerErreur(): void;
   /** Remplace le document courant, à l'ouverture ou après une reprise. */
@@ -103,6 +106,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   const [tete, setTete] = useState(0);
   const [outil, setOutil] = useState<Outil>('selection');
   const [accrochage, setAccrochage] = useState(true);
+  const [enLecture, setEnLecture] = useState(false);
   const [derniereErreur, setDerniereErreur] = useState<AppError | null>(null);
 
   const rafraichir = useCallback(() => {
@@ -176,6 +180,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
         }),
       definirTete: (image: number) => setTete(Math.max(0, Math.trunc(image))),
       definirOutil: setOutil,
+      definirEnLecture: setEnLecture,
       basculerAccrochage: () => setAccrochage((v) => !v),
       effacerErreur: () => setDerniereErreur(null),
       signalerErreur: (erreur: AppError) => setDerniereErreur(erreur),
@@ -224,6 +229,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
     tete,
     outil,
     accrochage,
+    enLecture,
     historique: instantane,
     derniereErreur,
     contexte,

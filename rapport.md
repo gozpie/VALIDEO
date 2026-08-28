@@ -560,3 +560,33 @@ progresse de l'image 0 à l'image 44 d'une séquence à 25 images par seconde, s
 la cadence nominale. Un test vérifie surtout que l'image affichée et la tête de
 lecture ne dérivent pas l'une de l'autre, la tête étant pilotée par l'horloge
 audio.
+
+---
+
+## 2026-08-28 — Vignettes de timeline
+
+### Objectif
+
+La section 18 demande d'afficher des vignettes tout en n'en décodant jamais
+inutilement. Ces deux exigences ne se contredisent qu'en apparence.
+
+### Modifications
+
+**`nle/apps/web/src/media/thumbnails.ts`** — cache de vignettes, et dessin des
+vignettes de tête et de queue dans la timeline.
+
+Trois règles concilient les deux exigences. Le rendu est synchrone et ne dessine
+qu'une vignette déjà prête : une vignette absente est demandée puis omise, et
+apparaît au rendu suivant. Les demandes sont dédupliquées et limitées à deux
+simultanées. Et rien n'est demandé pendant la lecture, où le décodeur doit tenir
+la cadence.
+
+Les vignettes sont converties en images bitmap et l'image vidéo est refermée
+aussitôt, ce qui est bien plus économe que de garder des images décodées
+vivantes.
+
+### Vérifications
+
+462 tests unitaires et 21 tests de bout en bout. Le test des vignettes compte les
+couleurs distinctes de la piste avant et après le zoom qui les déclenche : c'est
+la preuve que ce sont de vraies images décodées et non un décor.

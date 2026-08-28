@@ -597,13 +597,38 @@ non implémenté, ce qu'il est.
 
 **Total : 462 tests unitaires + 20 tests de bout en bout.**
 
+### Étape 19 — Vignettes de timeline (§18, §55)
+
+§18 pose deux exigences qui semblent se contredire : « afficher des vignettes »
+et « ne jamais décoder les images inutilement ». Trois règles les concilient :
+
+1. **le rendu Canvas est synchrone** — il ne peut dessiner qu'une vignette déjà
+   prête. Une vignette absente n'est pas attendue : elle est demandée, le clip
+   est dessiné sans elle, et elle apparaît au rendu suivant ;
+2. les demandes sont **dédupliquées et limitées à deux simultanées**, sinon une
+   timeline dense lancerait des centaines de décodages ;
+3. **rien n'est demandé pendant la lecture** — le décodeur y tient déjà la
+   cadence, et lui voler du temps ferait sauter des images.
+
+Deux vignettes par clip, tête et queue, et seulement si le clip est assez large
+pour qu'elles ne se chevauchent pas. Elles sont converties en `ImageBitmap` et la
+`VideoFrame` est refermée aussitôt — bien plus économe que garder des images
+décodées vivantes. Le cache est borné et évince les plus anciennes.
+
+Un test de bout en bout compte les couleurs distinctes de la piste avant et après
+le zoom qui déclenche les vignettes : c'est la preuve que ce sont de vraies
+images et non un décor.
+
+**Total : 462 tests unitaires + 21 tests de bout en bout.**
+
 ## NEXT
 
-1. Graphe de rendu et composition multicouche (§23) — la suite logique : c'est
-   ce qui manque pour afficher plus d'une piste à la fois.
-2. Vignettes de timeline (§18), qui réutiliseront le cache d'images.
+1. Graphe de rendu et composition multicouche (§23) — c'est ce qui manque pour
+   afficher plus d'une piste à la fois, et le préalable à l'export et aux effets.
+2. Moniteur Source, points d'entrée/sortie, Insert et Overwrite depuis la source
+   (§20, §91) — le cœur du montage à trois points.
 3. Branchement du service d'analyse ffprobe sur l'import (§9).
-4. Export (§48) — il demande le graphe de rendu et un encodeur.
+4. Export (§48), qui demande le graphe de rendu et un encodeur.
 
 ## BLOCKED
 

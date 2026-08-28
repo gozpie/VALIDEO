@@ -293,6 +293,11 @@ export function App(): React.JSX.Element {
    * l'horloge du navigateur, ce que l'interface signale.
    */
   useEffect(() => {
+    actions.definirEnLecture(vitesse !== 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vitesse]);
+
+  useEffect(() => {
     if (vitesse === 0) {
       transport.arreter();
       transport.placer(etat.tete);

@@ -53,8 +53,9 @@ import {
 } from '../panels/Icones.js';
 import type { ActionsEditeur, EtatEditeur } from '../store.js';
 import { readWaveform } from '@valideo/audio-engine';
+import { CacheVignettes } from '../media/thumbnails.js';
 import { HAUTEUR_REGLE, dessinerTimeline, timebaseDeSequence } from './draw.js';
-import type { ApercuGeste, FournisseurFormeOnde } from './draw.js';
+import type { ApercuGeste, FournisseurFormeOnde, FournisseurVignette } from './draw.js';
 
 type Geste =
   | { type: 'aucun' }
@@ -100,6 +101,14 @@ export function Timeline({
   const gesteRef = useRef<Geste>({ type: 'aucun' });
   const [taille, setTaille] = useState({ largeur: 800, hauteur: 300 });
   const [curseur, setCurseur] = useState('default');
+  /** Compteur incrémenté quand une vignette devient prête, pour redessiner. */
+  const [generationVignettes, setGenerationVignettes] = useState(0);
+
+  const cacheVignettesRef = useRef<CacheVignettes | null>(null);
+  if (cacheVignettesRef.current === null) {
+    cacheVignettesRef.current = new CacheVignettes(400, () => setGenerationVignettes((g) => g + 1));
+  }
+  const cacheVignettes = cacheVignettesRef.current;
 
   const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
   const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
@@ -147,6 +156,33 @@ export function Timeline({
   const mediasParId = useMemo(
     () => new Map(etat.document.media.map((m) => [m.id, m])),
     [etat.document.media],
+  );
+
+  // Pendant la lecture, le décodeur doit tenir la cadence : on ne lui demande
+  // pas de vignettes en même temps.
+  useEffect(() => {
+    cacheVignettes.suspendre(etat.enLecture);
+  }, [cacheVignettes, etat.enLecture]);
+
+  /**
+   * Vignette d'un clip, si elle est déjà décodée.
+   *
+   * Le rendu est synchrone : il ne peut pas attendre. Une vignette absente est
+   * demandée puis omise ; elle apparaîtra au rendu suivant (§18).
+   */
+  const vignette = useMemo<FournisseurVignette>(
+    () => (clip, secondesDansLeClip) => {
+      if (clip.mediaId === null) return null;
+      const source = etat.sourcesVideo.get(clip.mediaId);
+      const media = mediasParId.get(clip.mediaId);
+      if (source === undefined || media === undefined || !source.infos.decodable) return null;
+      const cadenceSource = media.duration.base.rate.n / media.duration.base.rate.d;
+      if (cadenceSource <= 0) return null;
+      const vitesse = clip.speed.n / clip.speed.d;
+      const secondes = clip.sourceIn / cadenceSource + secondesDansLeClip * vitesse;
+      return cacheVignettes.obtenir(clip.mediaId, source, secondes);
+    },
+    [cacheVignettes, etat.sourcesVideo, mediasParId],
   );
 
   /**
@@ -222,8 +258,19 @@ export function Timeline({
       geste: apercu,
       dpr: window.devicePixelRatio || 1,
       formeOnde,
+      vignette,
     });
-  }, [etat.sequence, etat.tete, modele, vueMesuree, taille, graduations, base, formeOnde]);
+  }, [
+    etat.sequence,
+    etat.tete,
+    modele,
+    vueMesuree,
+    taille,
+    graduations,
+    base,
+    formeOnde,
+    vignette,
+  ]);
 
   // Dimensionnement du canvas en pixels physiques : sans cela le rendu est flou
   // sur un écran à haute densité.
@@ -238,7 +285,9 @@ export function Timeline({
 
   useEffect(() => {
     redessiner();
-  }, [redessiner]);
+    // `generationVignettes` n'est pas lu par `redessiner` : il sert uniquement
+    // à redéclencher le dessin quand une vignette vient d'être décodée.
+  }, [redessiner, generationVignettes]);
 
   const positionLocale = useCallback(
     (e: React.PointerEvent | PointerEvent): { x: number; y: number } => {

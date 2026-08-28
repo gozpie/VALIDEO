@@ -475,3 +475,48 @@ test('la vidéo est lue en temps réel et suit l’horloge audio (§22, §121)',
   const imageTete = Number(m?.[1] ?? 0) * 25 + Number(m?.[2] ?? 0);
   expect(Math.abs(imageTete - imageAffichee)).toBeLessThanOrEqual(6);
 });
+
+test('les vignettes de timeline sont de vraies images décodées (§18)', async ({ page }) => {
+  const fixture = new URL('../fixtures/generated/vp9_25.mp4', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+  await expect(page.locator('tr[data-test="ligne-media"]')).toContainText('démuxé · décodable');
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+
+  /** Compte les couleurs distinctes dans la bande de la piste V1. */
+  const richesse = async (): Promise<number> => {
+    const entete = await page.locator('.entete-piste').nth(2).boundingBox(); // V1
+    const toile = await page.locator('.timeline-toile canvas').boundingBox();
+    if (entete === null || toile === null) throw new Error('géométrie introuvable');
+    const y = entete.y - toile.y + entete.height / 2;
+    return page.evaluate((yy) => {
+      const canvas = document.querySelector('.timeline-toile canvas') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d');
+      if (ctx === null) return 0;
+      const dpr = canvas.width / canvas.getBoundingClientRect().width;
+      const bande = ctx.getImageData(
+        0,
+        Math.round((yy - 15) * dpr),
+        Math.round(400 * dpr),
+        Math.round(30 * dpr),
+      ).data;
+      const couleurs = new Set<string>();
+      for (let i = 0; i < bande.length; i += 4 * 13) {
+        couleurs.add(
+          `${(bande[i] ?? 0) >> 4},${(bande[i + 1] ?? 0) >> 4},${(bande[i + 2] ?? 0) >> 4}`,
+        );
+      }
+      return couleurs.size;
+    }, y);
+  };
+
+  // Sans vignette, la piste est un aplat : très peu de couleurs distinctes.
+  const avant = await richesse();
+
+  // On zoome pour atteindre le niveau de détail qui affiche les vignettes (§55).
+  await page.locator('.timeline-toile canvas').click({ position: { x: 40, y: 10 } });
+  await page.keyboard.press('Home');
+  for (let i = 0; i < 3; i += 1) await page.getByTitle('Zoom avant').click();
+
+  // Les vignettes arrivent de façon asynchrone : on attend qu'elles soient là.
+  await expect.poll(richesse, { timeout: 10_000 }).toBeGreaterThan(avant + 15);
+});
