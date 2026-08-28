@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.bench.ts"],
+  "references": [
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../time-core"
+    },
+    {
+      "path": "../project-model"
+    },
+    {
+      "path": "../timeline-model"
+    }
+  ]
+}

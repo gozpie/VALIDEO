@@ -1,0 +1,47 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/shared"
+    },
+    {
+      "path": "./packages/time-core"
+    },
+    {
+      "path": "./packages/project-model"
+    },
+    {
+      "path": "./packages/command-system"
+    },
+    {
+      "path": "./packages/timeline-model"
+    },
+    {
+      "path": "./packages/timeline-engine"
+    },
+    {
+      "path": "./packages/media-engine"
+    },
+    {
+      "path": "./packages/audio-engine"
+    },
+    {
+      "path": "./packages/keyboard"
+    },
+    {
+      "path": "./apps/media-worker"
+    },
+    {
+      "path": "./packages/storage"
+    },
+    {
+      "path": "./packages/playback"
+    },
+    {
+      "path": "./packages/demux"
+    },
+    {
+      "path": "./apps/web"
+    }
+  ]
+}

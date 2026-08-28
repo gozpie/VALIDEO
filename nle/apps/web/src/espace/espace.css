@@ -1,0 +1,249 @@
+/*
+ * Espace de travail à panneaux ancrables (§6, §73).
+ *
+ * Densité d'abord : les onglets font 22 px, les poignées 4 px. Un monteur
+ * regarde son image et sa timeline, pas l'habillage des panneaux.
+ */
+
+.espace-travail {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  background: var(--bord);
+}
+
+/* --- Divisions et poignées ------------------------------------------------ */
+
+.division {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.division.colonnes {
+  flex-direction: row;
+}
+.division.rangees {
+  flex-direction: column;
+}
+
+/* La première branche porte sa taille en pourcentage, la seconde prend le
+   reste. Deux pourcentages qui doivent tomber juste à 100 % laissent un liseré
+   d'un pixel selon l'arrondi du navigateur. */
+.division > .branche {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+.division > .branche.reste {
+  flex: 1 1 0;
+}
+
+.poignee {
+  flex: 0 0 4px;
+  background: var(--bord);
+  position: relative;
+  z-index: 2;
+}
+.poignee.colonnes {
+  cursor: col-resize;
+}
+.poignee.rangees {
+  cursor: row-resize;
+}
+/* Zone de saisie plus large que le trait : viser 4 px à la souris est pénible,
+   mais un trait de 10 px serait laid. La cible déborde, le trait non. */
+.poignee::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+}
+.poignee:hover,
+.poignee:focus-visible {
+  background: var(--bord-fort);
+}
+.poignee.aimantee {
+  background: var(--accent);
+}
+
+/* --- Zones et onglets ----------------------------------------------------- */
+
+.zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--fond-panneau);
+}
+
+.zone-onglets {
+  display: flex;
+  align-items: stretch;
+  height: 22px;
+  background: var(--fond-app);
+  border-bottom: 1px solid var(--bord);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.onglets-reste {
+  flex: 1;
+}
+
+.onglet {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--bord);
+  background: var(--fond-panneau-haut);
+  max-width: 220px;
+}
+.onglet.actif {
+  background: var(--fond-panneau);
+  /* Le liseré du haut marque l'onglet actif sans déplacer d'un pixel le texte,
+     contrairement à une bordure ajoutée au survol. */
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.onglet.en-vol {
+  opacity: 0.4;
+}
+
+.onglet-titre {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0 var(--esp-3);
+  height: 100%;
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grab;
+  touch-action: none;
+}
+.onglet.actif .onglet-titre {
+  color: var(--texte-fort);
+}
+.onglet-titre:hover:not(:disabled) {
+  background: none;
+  border-color: transparent;
+}
+
+.onglet-fermer {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0 5px 0 2px;
+  height: 100%;
+  line-height: 1;
+  font-size: var(--t-md);
+  color: var(--texte-doux);
+  opacity: 0;
+}
+.onglet:hover .onglet-fermer,
+.onglet.actif .onglet-fermer {
+  opacity: 1;
+}
+.onglet-fermer:hover:not(:disabled) {
+  background: var(--fond-survol);
+  color: var(--texte-fort);
+}
+.onglet-fermer:disabled {
+  opacity: 0;
+}
+
+.zone-corps {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  position: relative;
+}
+.zone-contenu {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+/* `display: none` explicite, et non l'attribut `hidden` : un élément en
+   `display: flex` ignore `[hidden]`, et l'onglet inactif resterait visible. */
+.zone-contenu.masque {
+  display: none;
+}
+.zone-contenu > * {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* --- Dépôt ---------------------------------------------------------------- */
+
+/* Rectangle qui montre où le panneau va atterrir. Il occupe exactement la
+   place que le panneau prendra : la moitié de la zone pour un bord, la zone
+   entière pour un dépôt en onglet. Une simple bordure clignotante ne dirait
+   pas la même chose. */
+.depot {
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border: 1px solid var(--accent);
+  z-index: 5;
+}
+.depot.centre {
+  inset: 0;
+}
+.depot.gauche {
+  inset: 0 50% 0 0;
+}
+.depot.droite {
+  inset: 0 0 0 50%;
+}
+.depot.haut {
+  inset: 0 0 50% 0;
+}
+.depot.bas {
+  inset: 50% 0 0 0;
+}
+
+.glisser-fantome {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  padding: 2px 8px;
+  font-size: var(--t-sm);
+  color: var(--texte-fort);
+  background: var(--fond-actif);
+  border: 1px solid var(--accent);
+  border-radius: var(--r);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 45%);
+}
+
+/* Pendant un glisser ou un redimensionnement, le curseur doit rester le même
+   partout : sans ça il change au survol de chaque bouton traversé, et le geste
+   paraît interrompu. La sélection de texte est coupée pour la même raison. */
+body.espace-en-glisser,
+body.espace-en-redim {
+  user-select: none;
+}
+body.espace-en-glisser * {
+  cursor: grabbing !important;
+}
+body.espace-en-redim * {
+  cursor: inherit;
+}
+
+.panneau-inconnu {
+  padding: var(--esp-5);
+  color: var(--texte-doux);
+  font-size: var(--t-sm);
+}
+
+/* Un panneau posé dans une zone remplit toute la zone : c'est le dock qui
+   décide de la taille, plus la grille. */
+.zone-contenu > .panneau {
+  height: 100%;
+}

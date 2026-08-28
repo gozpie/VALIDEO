@@ -1,0 +1,104 @@
+/*
+ * Système de design (§73).
+ *
+ * Densité avant tout : c'est un outil professionnel, pas un tableau de bord.
+ * Les contrôles sont compacts, les marges petites, l'information dense —
+ * un monteur veut voir sa timeline, pas des espaces vides.
+ */
+:root {
+  --fond-app: #171719;
+  --fond-panneau: #1e1e21;
+  --fond-panneau-haut: #26262a;
+  --fond-champ: #131315;
+  --fond-survol: #2e2e33;
+  --fond-actif: #3a3a41;
+
+  --bord: #333338;
+  --bord-fort: #45454d;
+
+  --texte: #d6d6da;
+  --texte-doux: #8e8e96;
+  --texte-fort: #f2f2f4;
+
+  --accent: #4c8dff;
+  --accent-doux: #2c4f8f;
+  --avert: #e0a63a;
+  --erreur: #e05a52;
+  --succes: #4fb477;
+
+  --piste-video: #3d4f6b;
+  --piste-video-bord: #5c7aa8;
+  --piste-audio: #3d5f4a;
+  --piste-audio-bord: #5c9070;
+  --selection: #f0a800;
+
+  --r: 3px;
+  --esp-1: 2px;
+  --esp-2: 4px;
+  --esp-3: 8px;
+  --esp-4: 12px;
+  --esp-5: 16px;
+
+  --police: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --police-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --t-xs: 10px;
+  --t-sm: 11px;
+  --t-md: 12px;
+  --t-lg: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#racine {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--fond-app);
+  color: var(--texte);
+  font-family: var(--police);
+  font-size: var(--t-md);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: var(--texte);
+  background: var(--fond-panneau-haut);
+  border: 1px solid var(--bord);
+  border-radius: var(--r);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--fond-survol);
+  border-color: var(--bord-fort);
+}
+button:active:not(:disabled) {
+  background: var(--fond-actif);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.actif {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--texte-fort);
+}
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mono {
+  font-family: var(--police-mono);
+  font-variant-numeric: tabular-nums;
+}

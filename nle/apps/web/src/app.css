@@ -1,0 +1,620 @@
+/* Disposition générale de l'espace de travail Montage (§6). */
+
+/* Colonne flexible plutôt que grille à rangées fixes : le nombre de bandeaux
+   affichés varie (reprise, stockage non persistant), une grille figée casserait
+   la mise en page dès qu'il change. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.barre-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: 0 var(--esp-3);
+  height: 30px;
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  flex: 0 0 auto;
+}
+.barre-menu .marque {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--texte-fort);
+  font-size: var(--t-sm);
+}
+.barre-menu .menu {
+  color: var(--texte-doux);
+  font-size: var(--t-sm);
+  cursor: default;
+}
+.barre-menu .espace {
+  flex: 1;
+}
+
+/* La disposition de l'espace de travail est désormais un arbre de découpes
+   déplaçables : voir `espace/espace.css` et `espace/modele.ts`. La grille fixe
+   qui se trouvait ici ne pouvait exprimer qu'une seule disposition. */
+
+.panneau {
+  display: flex;
+  flex-direction: column;
+  background: var(--fond-panneau);
+  min-height: 0;
+  min-width: 0;
+}
+
+.panneau-entete {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  height: 24px;
+  padding: 0 var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  flex: 0 0 auto;
+}
+.panneau-entete .titre {
+  color: var(--texte);
+  font-weight: 500;
+}
+.panneau-entete .espace {
+  flex: 1;
+}
+.panneau-corps {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.etiquette-etat {
+  font-size: var(--t-xs);
+  padding: 1px 5px;
+  border-radius: var(--r);
+  border: 1px solid;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.etiquette-etat.indisponible {
+  color: var(--avert);
+  border-color: color-mix(in srgb, var(--avert) 45%, transparent);
+}
+.etiquette-etat.partiel {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Moniteurs — volontairement vides tant que la lecture n'existe pas (§1003). */
+.moniteur {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.moniteur-image {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  background: #0b0b0c;
+  margin: var(--esp-3);
+  border: 1px solid var(--bord);
+  min-height: 0;
+}
+.moniteur-vide {
+  text-align: center;
+  color: var(--texte-doux);
+  max-width: 340px;
+  padding: var(--esp-4);
+}
+.moniteur-vide h3 {
+  margin: 0 0 var(--esp-3);
+  font-size: var(--t-md);
+  color: var(--texte);
+  font-weight: 600;
+}
+.moniteur-vide p {
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.moniteur-barre {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0 var(--esp-3) var(--esp-3);
+  font-size: var(--t-sm);
+}
+.moniteur-barre .tc {
+  font-size: var(--t-md);
+  color: var(--texte-fort);
+}
+
+/* Panneau Projet (§7) */
+.table-projet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+}
+.table-projet th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--texte-doux);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  padding: 3px var(--esp-3);
+  white-space: nowrap;
+}
+.table-projet td {
+  padding: 2px var(--esp-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--bord) 50%, transparent);
+  white-space: nowrap;
+}
+.table-projet tr:hover td {
+  background: var(--fond-survol);
+}
+.pastille {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Timeline */
+.zone-timeline {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.timeline-outils {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  flex: 0 0 auto;
+}
+.timeline-outils .sep {
+  width: 1px;
+  height: 16px;
+  background: var(--bord);
+  margin: 0 var(--esp-2);
+}
+.outil {
+  width: 26px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.timeline-corps {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.entetes-pistes {
+  width: 148px;
+  flex: 0 0 148px;
+  background: var(--fond-panneau);
+  border-right: 1px solid var(--bord);
+  overflow: hidden;
+  position: relative;
+}
+.timeline-toile {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+.timeline-toile canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.entete-regle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  /* Les en-tetes de piste sont poses apres dans le DOM et defilent
+     verticalement : sans cet empilement, celui du haut passerait PAR-DESSUS la
+     regle des que l on remonte la vue. La regle est fixe, les pistes glissent
+     dessous. */
+  z-index: 1;
+}
+
+.entete-piste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: 0 var(--esp-2);
+  border-bottom: 1px solid var(--bord);
+  background: var(--fond-panneau);
+  font-size: var(--t-sm);
+}
+.entete-piste .nom {
+  width: 26px;
+  color: var(--texte-fort);
+  font-weight: 600;
+}
+.bouton-piste {
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--fond-champ);
+  color: var(--texte-doux);
+}
+.bouton-piste:hover {
+  color: var(--texte);
+}
+.bouton-piste.on {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--texte-fort);
+}
+.bouton-piste.cible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #08101f;
+}
+
+.barre-etat {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  height: 24px;
+  padding: 0 var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-top: 1px solid var(--bord);
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  flex: 0 0 auto;
+}
+.barre-etat .espace {
+  flex: 1;
+}
+.barre-etat .alerte {
+  color: var(--avert);
+}
+
+/* Historique (§43) */
+.liste-historique {
+  font-size: var(--t-sm);
+}
+.liste-historique li {
+  padding: 2px var(--esp-3);
+  cursor: pointer;
+  list-style: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--bord) 40%, transparent);
+}
+.liste-historique li:hover {
+  background: var(--fond-survol);
+}
+.liste-historique li.courant {
+  background: var(--accent-doux);
+  color: var(--texte-fort);
+}
+.liste-historique li.annulee {
+  color: var(--texte-doux);
+  opacity: 0.55;
+}
+.liste-historique ul {
+  margin: 0;
+  padding: 0;
+}
+
+.info-cle {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px var(--esp-3);
+  font-size: var(--t-sm);
+}
+.info-cle span:first-child {
+  color: var(--texte-doux);
+}
+.info-cle span:last-child {
+  color: var(--texte);
+}
+
+.message {
+  margin: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid;
+  border-radius: var(--r);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.message.avert {
+  border-color: color-mix(in srgb, var(--avert) 40%, transparent);
+  color: var(--avert);
+  background: color-mix(in srgb, var(--avert) 8%, transparent);
+}
+
+/* Bandeau de reprise après incident (§44). */
+.bandeau-reprise {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  background: color-mix(in srgb, var(--accent) 14%, var(--fond-panneau-haut));
+  border-bottom: 1px solid var(--accent-doux);
+  font-size: var(--t-sm);
+  flex: 0 0 auto;
+}
+.bandeau-reprise strong {
+  color: var(--texte-fort);
+}
+.bandeau-reprise button {
+  margin-left: auto;
+}
+.bandeau-reprise button + button {
+  margin-left: var(--esp-2);
+}
+.bandeau-reprise.alerte {
+  background: color-mix(in srgb, var(--avert) 12%, var(--fond-panneau-haut));
+  border-bottom-color: color-mix(in srgb, var(--avert) 45%, transparent);
+  color: var(--avert);
+}
+
+.ouverture {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--texte-doux);
+  font-size: var(--t-lg);
+}
+
+/* Le moniteur programme dessine dans un canvas dimensionné par l'image décodée ;
+   on l'ajuste au panneau sans jamais l'étirer hors de son rapport. */
+.moniteur-image {
+  position: relative;
+}
+.toile-programme {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+  background: #000;
+}
+.moniteur-image .moniteur-vide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+}
+
+/* ------------------------------------------------------- Boîtes de dialogue */
+
+.voile-modale {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 55%);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+.modale {
+  min-width: 380px;
+  max-width: min(560px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--fond-panneau);
+  border: 1px solid var(--bord-fort);
+  border-radius: 6px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+  display: flex;
+  flex-direction: column;
+}
+
+.titre-modale {
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  font-size: var(--t-md);
+  color: var(--texte-fort);
+  border-bottom: 1px solid var(--bord);
+  background: var(--fond-panneau-haut);
+}
+
+.corps-modale {
+  padding: var(--esp-3);
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.pied-modale {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  border-top: 1px solid var(--bord);
+}
+.pied-modale button {
+  padding: 4px 14px;
+}
+.pied-modale .principal {
+  background: var(--accent);
+  color: #08101f;
+  font-weight: 600;
+}
+
+.grille-formulaire {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--esp-2) var(--esp-3);
+  align-items: center;
+}
+.grille-formulaire label {
+  color: var(--texte-doux);
+}
+.grille-formulaire input[type='checkbox'] {
+  justify-self: start;
+}
+
+.champ-avec-unite {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.champ-avec-unite input {
+  width: 8em;
+}
+.champ-avec-unite .unite {
+  color: var(--texte-doux);
+  font-size: var(--t-sm);
+}
+
+.grille-formulaire input[aria-invalid='true'] {
+  border-color: var(--avert);
+}
+
+.note-modale {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  line-height: 1.45;
+}
+.note-modale strong {
+  color: var(--texte);
+}
+.note-modale.alerte {
+  color: var(--avert);
+}
+.table-projet tbody tr.selectionnee {
+  background: var(--accent-doux);
+}
+.table-projet tbody tr[draggable='true'] {
+  cursor: grab;
+}
+.table-projet tbody tr.selectionnee td {
+  color: var(--texte-fort);
+}
+.actions-media {
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+.actions-media .principal {
+  background: var(--accent);
+  color: #08101f;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- Menus contextuels */
+
+.menu-contextuel {
+  position: fixed;
+  z-index: 200;
+  min-width: 236px;
+  padding: 4px 0;
+  background: var(--fond-panneau-haut);
+  border: 1px solid var(--bord-fort);
+  border-radius: 5px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
+  outline: none;
+}
+
+.enveloppe-entree {
+  position: relative;
+}
+
+.entree-menu {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--esp-2);
+  width: 100%;
+  padding: 4px 10px 4px 4px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  color: var(--texte);
+  font-size: var(--t-sm);
+}
+.entree-menu:hover:not(:disabled),
+.entree-menu.survolee:not(:disabled) {
+  background: var(--accent-doux);
+  color: var(--texte-fort);
+}
+.entree-menu:disabled {
+  color: var(--texte-doux);
+  opacity: 0.5;
+}
+.entree-menu .coche {
+  text-align: center;
+  color: var(--accent);
+}
+.entree-menu .raccourci {
+  color: var(--texte-doux);
+  font-size: var(--t-xs, 11px);
+}
+
+.separateur-menu {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--bord);
+}
+
+.sous-menu {
+  position: absolute;
+  left: 100%;
+  top: -4px;
+  min-width: 176px;
+  padding: 4px 0;
+  background: var(--fond-panneau-haut);
+  border: 1px solid var(--bord-fort);
+  border-radius: 5px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
+}
+
+.table-raccourcis {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+}
+.table-raccourcis td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--bord);
+}
+.table-raccourcis .categorie {
+  color: var(--texte-doux);
+  width: 7em;
+}
+.table-raccourcis .touches {
+  text-align: right;
+  color: var(--texte-fort);
+  white-space: nowrap;
+}
+
+.barre-menu .menu {
+  padding: 2px 8px;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--texte);
+  font-size: var(--t-sm);
+}
+.barre-menu .menu:hover,
+.barre-menu .menu.ouvert {
+  background: var(--accent-doux);
+  color: var(--texte-fort);
+}

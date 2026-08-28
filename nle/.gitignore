@@ -1,0 +1,15 @@
+node_modules/
+dist/
+# Sortie de `tsc -b` pour l'application web : regeneree a chaque build.
+dist-types/
+coverage/
+*.tsbuildinfo
+.turbo/
+.vitest/
+tmp/
+fixtures/generated/
+
+# Fixtures média : régénérées par scripts/make-fixtures.sh, jamais versionnées
+fixtures/generated/
+test-results/
+playwright-report/
