@@ -17,17 +17,26 @@ import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboar
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
+  addMarkerCommand,
   changeSpeedCommand,
   copyClips,
   deleteClipsCommand,
   extractCommand,
   findClip,
+  insertCommand,
+  linkCommand,
+  nextMarker,
+  overwriteCommand,
   pasteCommand,
+  previousMarker,
+  rippleTrimToPlayheadCommand,
+  unlinkCommand,
   liftCommand,
   nextEditPoint,
   previousEditPoint,
   sequenceDuration,
   setWorkAreaCommand,
+  syncedTargets,
   workAreaRange,
 } from '@valideo/timeline-model';
 import type { ClipboardContent } from '@valideo/timeline-model';
@@ -51,6 +60,7 @@ import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { DialogueVitesse } from './panels/DialogueVitesse.js';
 import type { ReglagesVitesse } from './panels/DialogueVitesse.js';
+import { clipDepuisMedia, pisteDAccueil, typeDeMedia } from './media/placement.js';
 import { usePersistance } from './persistance.js';
 import { TransportAudio } from './playback/transport.js';
 
@@ -214,20 +224,8 @@ export function App(): React.JSX.Element {
     [etat.sequence.tracks],
   );
 
-  /**
-   * Pistes dont Extract retire la plage : les ciblees, PLUS celles dont la
-   * synchronisation est active.
-   *
-   * C'est le sens meme du verrou de synchronisation : une piste synchronisee
-   * suit le ripple. La laisser de cote decalerait tout le reste et la
-   * desynchroniserait -- exactement ce que ce verrou existe pour empecher.
-   * Pour la retirer de l'operation, on decoche sa synchronisation.
-   */
-  const pistesExtract = useMemo(() => {
-    const ids = new Set(pistesAffectees);
-    for (const t of etat.sequence.tracks) if (t.syncLock && !t.locked) ids.add(t.id);
-    return [...ids];
-  }, [etat.sequence.tracks, pistesAffectees]);
+  /** Pistes dont Extract retire la plage. La règle vit dans le moteur. */
+  const pistesExtract = useMemo(() => syncedTargets(etat.sequence), [etat.sequence]);
 
   const pistesNavigables = useMemo(() => {
     const ciblees = etat.sequence.tracks.filter((t) => t.targeted).map((t) => t.id);
@@ -431,6 +429,102 @@ export function App(): React.JSX.Element {
             return true;
           }
           setClipVitesse([...etat.selection][0] ?? null);
+          return true;
+        }
+        case 'marks.addMarker':
+          actions.executer(addMarkerCommand({ time: etat.tete }));
+          return true;
+        case 'nav.nextMarker': {
+          const m = nextMarker(etat.sequence, etat.tete);
+          if (m !== null) actions.definirTete(m.time);
+          else
+            actions.signalerErreur(
+              erreurMontage('Aucun marqueur après la tête de lecture.', 'Posez-en un avec M'),
+            );
+          return true;
+        }
+        case 'nav.previousMarker': {
+          const m = previousMarker(etat.sequence, etat.tete);
+          if (m !== null) actions.definirTete(m.time);
+          else
+            actions.signalerErreur(
+              erreurMontage('Aucun marqueur avant la tête de lecture.', 'Posez-en un avec M'),
+            );
+          return true;
+        }
+        case 'edit.rippleTrimPrevious':
+        case 'edit.rippleTrimNext':
+          actions.executer(
+            rippleTrimToPlayheadCommand(
+              etat.tete,
+              actionId === 'edit.rippleTrimPrevious' ? 'previous' : 'next',
+              etat.contexte,
+            ),
+          );
+          return true;
+        case 'edit.linkToggle': {
+          if (etat.selection.size < 1) {
+            actions.signalerErreur(
+              erreurMontage('Aucun clip sélectionné.', 'Sélectionnez les clips à lier'),
+            );
+            return true;
+          }
+          // Une sélection dont TOUT est déjà lié se délie ; sinon on lie. C'est
+          // la bascule attendue, et elle ne peut pas surprendre : lier deux
+          // clips déjà liés à d'autres groupes les réunit dans un seul.
+          const ids = [...etat.selection];
+          const dejaLies = ids.every((id) => findClip(etat.sequence, id)?.clip.linkGroup !== null);
+          if (dejaLies) {
+            actions.executer(unlinkCommand(ids));
+            return true;
+          }
+          if (ids.length < 2) {
+            actions.signalerErreur(
+              erreurMontage(
+                'Il faut au moins deux clips pour créer une liaison.',
+                'Ajoutez un clip à la sélection',
+              ),
+            );
+            return true;
+          }
+          actions.executer(linkCommand(ids));
+          return true;
+        }
+        case 'edit.insert':
+        case 'edit.overwrite': {
+          // Ce qu'on pose est le média SÉLECTIONNÉ dans le panneau Médias.
+          // C'est le rôle du moniteur source dans un NLE ; ici la sélection en
+          // tient lieu, et l'absence de sélection est dite, pas ignorée.
+          const asset = etat.document.media.find((m) => m.id === etat.mediaSelectionne);
+          if (asset === undefined) {
+            actions.signalerErreur(
+              erreurMontage(
+                'Aucun média sélectionné.',
+                'Cliquez un média dans le panneau Médias',
+              ),
+            );
+            return true;
+          }
+          if (asset.status !== 'online') {
+            actions.signalerErreur(
+              appError('MEDIA_OFFLINE', `« ${asset.name} » est hors ligne.`, {
+                action: 'Reliez-le à un fichier avant de le monter',
+              }),
+            );
+            return true;
+          }
+          const accueil = pisteDAccueil(etat.sequence, typeDeMedia(asset));
+          if (isErr(accueil)) {
+            actions.signalerErreur(accueil.error);
+            return true;
+          }
+          const piste = accueil.value;
+          const clip = clipDepuisMedia(asset, etat.sequence, piste.id, etat.tete);
+          actions.executer(
+            actionId === 'edit.insert'
+              ? insertCommand({ clip, trackId: piste.id, at: etat.tete }, etat.contexte)
+              : overwriteCommand({ clip, trackId: piste.id, at: etat.tete }, etat.contexte),
+          );
           return true;
         }
         case 'edit.addEdit':

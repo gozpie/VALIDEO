@@ -7,10 +7,10 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import type { MediaAssetDoc } from '@valideo/project-model';
-import { createClip } from '@valideo/project-model';
+import { isErr } from '@valideo/shared';
 import { overwriteCommand } from '@valideo/timeline-model';
-import { div, mul, rational, round } from '@valideo/time-core';
 import { importerFichier } from '../media/import.js';
+import { clipDepuisMedia, pisteDAccueil, typeDeMedia } from '../media/placement.js';
 import type { ActionsEditeur, EtatEditeur } from '../store.js';
 
 export interface ProprietesMedias {
@@ -63,37 +63,17 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
   /** Overwrite du média sur la première piste ciblée du bon type, à la tête. */
   const poser = useCallback(
     (asset: MediaAssetDoc) => {
-      const type = asset.videoStreams.length > 0 ? 'video' : 'audio';
-      const piste =
-        etat.sequence.tracks.find((t) => t.kind === type && t.targeted && !t.locked) ??
-        etat.sequence.tracks.find((t) => t.kind === type && !t.locked);
-      if (piste === undefined) {
-        actions.signalerErreur({
-          code: 'EDIT_REJECTED',
-          message: `Aucune piste ${type === 'video' ? 'vidéo' : 'audio'} disponible.`,
-          action: 'Déverrouiller ou cibler une piste',
-        });
+      const accueil = pisteDAccueil(etat.sequence, typeDeMedia(asset));
+      if (isErr(accueil)) {
+        actions.signalerErreur(accueil.error);
         return;
       }
+      const piste = accueil.value;
 
-      // Conversion exacte de la durée du média vers la cadence de la séquence.
-      const cadenceSource = rational(asset.duration.base.rate.n, asset.duration.base.rate.d);
-      const cadenceSequence = rational(
-        etat.sequence.timebase.rate.n,
-        etat.sequence.timebase.rate.d,
-      );
-      const duree = Math.max(
-        1,
-        round(mul(rational(asset.duration.frames), div(cadenceSequence, cadenceSource))),
-      );
-
-      const clip = createClip(type, piste.id, etat.tete, duree, {
-        mediaId: asset.id,
-        name: asset.name,
-      });
+      const clip = clipDepuisMedia(asset, etat.sequence, piste.id, etat.tete);
       actions.executer(overwriteCommand({ clip, trackId: piste.id, at: etat.tete }, etat.contexte));
     },
-    [actions, etat.contexte, etat.sequence.timebase.rate, etat.sequence.tracks, etat.tete],
+    [actions, etat.contexte, etat.sequence, etat.tete],
   );
 
   return (
@@ -139,7 +119,19 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
           </thead>
           <tbody>
             {etat.document.media.map((asset) => (
-              <tr key={asset.id} data-test="ligne-media">
+              <tr
+                key={asset.id}
+                data-test="ligne-media"
+                className={etat.mediaSelectionne === asset.id ? 'selectionnee' : ''}
+                onClick={() => actions.definirMediaSelectionne(asset.id)}
+                draggable
+                onDragStart={(e) => {
+                  // Le média voyage par son identifiant : le document reste la
+                  // seule source de vérité, la timeline le relira à la dépose.
+                  actions.definirMediaSelectionne(asset.id);
+                  e.dataTransfer.setData('application/x-valideo-media', asset.id);
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}>
                 <td>{asset.name}</td>
                 <td style={{ color: 'var(--texte-doux)' }}>{libelleFlux(asset)}</td>
                 <td className="mono">{timecode(asset.duration.frames)}</td>

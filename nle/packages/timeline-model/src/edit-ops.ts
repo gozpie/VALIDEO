@@ -114,6 +114,27 @@ function rippleTargets(sequence: SequenceDoc, explicit: readonly string[] | unde
   return sequence.tracks.filter((t) => t.syncLock && !t.locked).map((t) => t.id);
 }
 
+/**
+ * Pistes concernees par une operation de type Extract : les CIBLEES, plus
+ * celles dont la synchronisation est active.
+ *
+ * C est le sens meme du verrou de synchronisation. Retirer une plage des seules
+ * pistes ciblees tout en decalant les pistes synchronisees les desynchroniserait
+ * -- exactement ce que ce verrou existe pour empecher. Pour laisser une piste en
+ * dehors de l operation, on decoche sa synchronisation.
+ *
+ * Une seule definition, utilisee par l interface comme par le moteur : deux
+ * copies de cette regle finiraient par diverger, et le montage avec elles.
+ */
+export function syncedTargets(sequence: SequenceDoc): string[] {
+  const ids = new Set<string>();
+  for (const t of sequence.tracks) {
+    if (t.locked) continue;
+    if (t.targeted || t.syncLock) ids.add(t.id);
+  }
+  return [...ids];
+}
+
 function tracksOf(sequence: SequenceDoc, ids: readonly string[]): TrackDoc[] {
   return sequence.tracks.filter((t) => ids.includes(t.id));
 }
@@ -557,6 +578,9 @@ export function rippleTrimToPlayhead(
   side: 'previous' | 'next',
   ctx: TimelineContext,
 ): EditResult {
+  // Le point de montage est cherche sur les pistes CIBLEES seules : c est ce
+  // que le monteur regarde. Le retrait, lui, s etend aux pistes synchronisees,
+  // sans quoi elles se decaleraient sans etre raccourcies.
   const targets = sequence.tracks.filter((t) => t.targeted && !t.locked).map((t) => t.id);
   if (targets.length === 0) return err(rejected('Aucune piste ciblée.'));
 
@@ -571,7 +595,7 @@ export function rippleTrimToPlayhead(
   const end = side === 'previous' ? at : edge;
   if (end <= start) return err(rejected('La plage à supprimer est vide.'));
 
-  return extract(sequence, { start, end, trackIds: targets }, ctx);
+  return extract(sequence, { start, end, trackIds: syncedTargets(sequence) }, ctx);
 }
 
 // -------------------------------------------------------------------- Roll

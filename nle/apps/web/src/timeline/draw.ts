@@ -165,6 +165,7 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
 
   dessinerRegle(ctx, o);
   dessinerZoneTravail(ctx, o);
+  dessinerMarqueurs(ctx, o);
 
   ctx.save();
   ctx.beginPath();
@@ -193,6 +194,36 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
  * borne posee est aussi montree -- le reperage est en cours, et ne rien
  * afficher laisserait croire que la frappe n a pas ete prise.
  */
+/**
+ * Marqueurs de sequence, dans le bas de la regle (section 41).
+ *
+ * Un marqueur de duree non nulle est dessine en bandeau, les autres en pastille.
+ * La couleur vient du document : c est la seule chose qui distingue deux
+ * reperes voisins quand le zoom les rapproche.
+ */
+function dessinerMarqueurs(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
+  const y = HAUTEUR_REGLE - 7;
+  for (const m of o.sequence.markers) {
+    const x = Math.round(timeToX(o.viewport, m.time));
+    if (x < -40 || x > o.largeur + 40) continue;
+    ctx.fillStyle = m.color;
+    if (m.duration > 0) {
+      const fin = Math.round(timeToX(o.viewport, m.time + m.duration));
+      ctx.globalAlpha = 0.5;
+      ctx.fillRect(x, y, Math.max(2, fin - x), 5);
+      ctx.globalAlpha = 1;
+    }
+    // Pastille pointue vers le bas : elle designe une image precise, et une
+    // simple barre se confondrait avec les graduations de la regle.
+    ctx.beginPath();
+    ctx.moveTo(x - 3, y);
+    ctx.lineTo(x + 3, y);
+    ctx.lineTo(x, HAUTEUR_REGLE - 1);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
 function dessinerZoneTravail(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
   const { workAreaIn, workAreaOut } = o.sequence;
   if (workAreaIn === null && workAreaOut === null) return;

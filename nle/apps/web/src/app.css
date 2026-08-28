@@ -341,3 +341,5 @@
 }
 .note-modale strong { color: var(--texte); }
 .note-modale.alerte { color: var(--avert); }
+.table-projet tbody tr.selectionnee { background: var(--accent-doux); }
+.table-projet tbody tr[draggable='true'] { cursor: grab; }

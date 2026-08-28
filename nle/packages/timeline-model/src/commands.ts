@@ -14,6 +14,7 @@ import type { SequenceDoc } from '@valideo/project-model';
 import type { TimelineContext } from './source.js';
 import * as ops from './edit-ops.js';
 import * as clip from './clipboard.js';
+import * as mark from './markers.js';
 
 export type SequenceCommand = Command<SequenceDoc>;
 
@@ -233,4 +234,20 @@ export function changeSpeedCommand(
     label: 'Vitesse et durée',
     apply: (seq) => ops.changeSpeed(seq, options, ctx),
   });
+}
+
+export function addMarkerCommand(options: mark.AddMarkerOptions): SequenceCommand {
+  return command({ label: 'Ajouter un marqueur', apply: (seq) => mark.addMarker(seq, options) });
+}
+
+export function removeMarkerCommand(markerId: string): SequenceCommand {
+  return command({ label: 'Supprimer le marqueur', apply: (seq) => mark.removeMarker(seq, markerId) });
+}
+
+export function updateMarkerCommand(
+  markerId: string,
+  modifs: Parameters<typeof mark.updateMarker>[2],
+  label = 'Modifier le marqueur',
+): SequenceCommand {
+  return command({ label, apply: (seq) => mark.updateMarker(seq, markerId, modifs) });
 }

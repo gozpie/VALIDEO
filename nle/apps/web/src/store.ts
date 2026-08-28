@@ -55,6 +55,11 @@ export interface EtatEditeur {
   readonly sourcesVideo: ReadonlyMap<string, VideoSource>;
   /** Vrai pendant la lecture : certains travaux de fond doivent s'effacer. */
   readonly enLecture: boolean;
+  /**
+   * Média sélectionné dans le panneau Médias. C'est la source des raccourcis
+   * Insert et Overwrite : sans lui, ces touches n'auraient rien à poser.
+   */
+  readonly mediaSelectionne: string | null;
 }
 
 export interface ActionsEditeur {
@@ -68,6 +73,7 @@ export interface ActionsEditeur {
   definirTete(image: number): void;
   definirOutil(outil: Outil): void;
   definirEnLecture(valeur: boolean): void;
+  definirMediaSelectionne(id: string | null): void;
   basculerAccrochage(): void;
   effacerErreur(): void;
   /** Remplace le document courant, à l'ouverture ou après une reprise. */
@@ -107,6 +113,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   const [outil, setOutil] = useState<Outil>('selection');
   const [accrochage, setAccrochage] = useState(true);
   const [enLecture, setEnLecture] = useState(false);
+  const [mediaSelectionne, setMediaSelectionne] = useState<string | null>(null);
   const [derniereErreur, setDerniereErreur] = useState<AppError | null>(null);
 
   const rafraichir = useCallback(() => {
@@ -181,6 +188,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
       definirTete: (image: number) => setTete(Math.max(0, Math.trunc(image))),
       definirOutil: setOutil,
       definirEnLecture: setEnLecture,
+      definirMediaSelectionne: setMediaSelectionne,
       basculerAccrochage: () => setAccrochage((v) => !v),
       effacerErreur: () => setDerniereErreur(null),
       signalerErreur: (erreur: AppError) => setDerniereErreur(erreur),
@@ -230,6 +238,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
     outil,
     accrochage,
     enLecture,
+    mediaSelectionne,
     historique: instantane,
     derniereErreur,
     contexte,

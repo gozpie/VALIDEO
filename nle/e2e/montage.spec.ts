@@ -770,3 +770,77 @@ test('la boîte Vitesse et durée change réellement la vitesse (§38)', async (
   await page.keyboard.press('Escape');
   await expect(page.locator('.modale')).toHaveCount(0);
 });
+
+test('marqueurs : poser, naviguer, refuser un doublon (§41)', async ({ page }) => {
+  const tc = page.locator('.barre-etat .mono').first();
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+
+  // Le projet de démonstration en contient déjà trois.
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('KeyM');
+  await expect(historique(page)).toContainText(['Ajouter un marqueur']);
+
+  // Deux fois au même endroit : refusé et dit.
+  await page.keyboard.press('KeyM');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('déjà un marqueur');
+
+  // Navigation : retour au marqueur qu'on vient de poser.
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+KeyM');
+  await expect(tc).toHaveText('01:00:00:05');
+});
+
+test('lier et délier bascule sur la sélection (§80)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  // Le premier plan est lié : sélectionner l'image prend aussi le son.
+  await selectionnerClip(page, 2, 0.05);
+  await expect(page.locator('.barre-etat')).toContainText('2 sélectionnés');
+
+  await page.keyboard.press('Control+Shift+l');
+  await expect(historique(page)).toContainText(['Délier']);
+
+  // Délié : sélectionner l'image ne prend plus que l'image.
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await selectionnerClip(page, 2, 0.05);
+  await expect(page.locator('.barre-etat')).toContainText('1 sélectionné');
+});
+
+test('Insert et Overwrite posent le média sélectionné (§91)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  // Rien de sélectionné dans le panneau Médias : la touche le dit.
+  await page.keyboard.press('Period');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('Aucun média sélectionné');
+
+  await page.getByTestId('import-medias').setInputFiles('fixtures/generated/audio_48k_stereo.wav');
+  await expect(page.locator('[data-test="ligne-media"]')).toHaveCount(1);
+  await page.locator('[data-test="ligne-media"]').click();
+
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Period'); // Overwrite
+  await expect(historique(page)).toContainText(['Overwrite']);
+
+  const apresOverwrite = await page.locator('.table-projet').last().locator('tbody tr').count();
+  await page.keyboard.press('Comma'); // Insert
+  await expect(historique(page)).toContainText(['Insert']);
+  await expect(page.locator('.table-projet').last().locator('tbody tr')).toHaveCount(
+    apresOverwrite + 1,
+  );
+  await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
+});
+
+test('le trim ripple jusqu’à la tête retire la portion et referme', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown'); // fin du premier plan, 118
+  await page.keyboard.press('ArrowUp');
+  for (let i = 0; i < 10; i += 1) await page.keyboard.press('ArrowRight');
+
+  // Q retire de la tête jusqu'au point de montage précédent, et referme.
+  await page.keyboard.press('KeyQ');
+  await expect(historique(page)).toContainText(['Ripple trim jusqu’à la tête (précédent)']);
+  // Dix images retirées : le plan suivant recule d'autant.
+  expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:04:08');
+  // Et l'ambiance synchronisée de A2 a été raccourcie, pas décalée.
+  expect(await debutDe(page, 'Ambiance_salle.wav')).toBe('01:00:00:00');
+});
