@@ -10,11 +10,11 @@ import { History } from '@valideo/command-system';
 import type { Command } from '@valideo/command-system';
 import type { AppError } from '@valideo/shared';
 import { isErr } from '@valideo/shared';
-import type { SequenceDoc } from '@valideo/project-model';
+import type { ProjectDoc, SequenceDoc } from '@valideo/project-model';
 import type { TimelineContext } from '@valideo/timeline-model';
 import { rational } from '@valideo/time-core';
 import { timebaseDeSequence } from './timeline/draw.js';
-import { creerSequenceDemo } from './demo-project.js';
+import { creerProjetDemo } from './demo-project.js';
 
 export type Outil =
   | 'selection'
@@ -42,6 +42,8 @@ export interface EtatEditeur {
   };
   readonly derniereErreur: AppError | null;
   readonly contexte: TimelineContext;
+  /** Document complet, tel qu'il sera enregistré. */
+  readonly document: ProjectDoc;
 }
 
 export interface ActionsEditeur {
@@ -56,14 +58,23 @@ export interface ActionsEditeur {
   definirOutil(outil: Outil): void;
   basculerAccrochage(): void;
   effacerErreur(): void;
+  /** Remplace le document courant, à l'ouverture ou après une reprise. */
+  chargerDocument(doc: ProjectDoc): void;
+  signalerErreur(erreur: AppError): void;
 }
 
 export function useEditeur(): [EtatEditeur, ActionsEditeur] {
+  const demoRef = useRef<ProjectDoc | null>(null);
+  if (demoRef.current === null) demoRef.current = creerProjetDemo().projet;
+
   const historyRef = useRef<History<SequenceDoc> | null>(null);
   if (historyRef.current === null) {
-    historyRef.current = new History<SequenceDoc>(creerSequenceDemo(), { maxDepth: 300 });
+    const premiere = demoRef.current.sequences[0];
+    if (premiere === undefined) throw new Error('Projet de démonstration sans séquence.');
+    historyRef.current = new History<SequenceDoc>(premiere, { maxDepth: 300 });
   }
   const history = historyRef.current;
+  const [enveloppe, setEnveloppe] = useState<ProjectDoc>(demoRef.current);
 
   const [sequence, setSequence] = useState<SequenceDoc>(() => history.current());
   const [instantane, setInstantane] = useState(() => history.snapshot());
@@ -132,11 +143,27 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
       definirOutil: setOutil,
       basculerAccrochage: () => setAccrochage((v) => !v),
       effacerErreur: () => setDerniereErreur(null),
+      signalerErreur: (erreur: AppError) => setDerniereErreur(erreur),
+      chargerDocument: (doc: ProjectDoc) => {
+        const premiere = doc.sequences[0];
+        if (premiere === undefined) return;
+        setEnveloppe(doc);
+        history.reinitialiser(premiere);
+        setSelection(new Set<string>());
+        setTete(0);
+        rafraichir();
+      },
     }),
     [executer, history, rafraichir],
   );
 
+  const document = useMemo<ProjectDoc>(
+    () => ({ ...enveloppe, sequences: [sequence], activeSequenceId: sequence.id }),
+    [enveloppe, sequence],
+  );
+
   const etat: EtatEditeur = {
+    document,
     sequence,
     selection,
     tete,

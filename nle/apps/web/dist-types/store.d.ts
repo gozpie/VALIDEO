@@ -1,6 +1,6 @@
 import type { Command } from '@valideo/command-system';
 import type { AppError } from '@valideo/shared';
-import type { SequenceDoc } from '@valideo/project-model';
+import type { ProjectDoc, SequenceDoc } from '@valideo/project-model';
 import type { TimelineContext } from '@valideo/timeline-model';
 export type Outil = 'selection' | 'trackSelect' | 'ripple' | 'rolling' | 'razor' | 'slip' | 'slide' | 'rateStretch' | 'hand';
 export interface EtatEditeur {
@@ -18,6 +18,8 @@ export interface EtatEditeur {
     };
     readonly derniereErreur: AppError | null;
     readonly contexte: TimelineContext;
+    /** Document complet, tel qu'il sera enregistré. */
+    readonly document: ProjectDoc;
 }
 export interface ActionsEditeur {
     executer(commande: Command<SequenceDoc>): boolean;
@@ -31,6 +33,9 @@ export interface ActionsEditeur {
     definirOutil(outil: Outil): void;
     basculerAccrochage(): void;
     effacerErreur(): void;
+    /** Remplace le document courant, à l'ouverture ou après une reprise. */
+    chargerDocument(doc: ProjectDoc): void;
+    signalerErreur(erreur: AppError): void;
 }
 export declare function useEditeur(): [EtatEditeur, ActionsEditeur];
 /** Cadence de la séquence, en flottant, pour l affichage seul. */

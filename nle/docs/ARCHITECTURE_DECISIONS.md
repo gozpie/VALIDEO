@@ -425,3 +425,63 @@ et la frontière vers le modèle passe par des images entières.
 **Conséquences.** La règle garde tout son mordant là où elle protège quelque
 chose, sans pousser à la contourner par des exceptions locales — ce qui l'aurait
 vidée de son sens.
+
+---
+
+## ADR-026 — L'interface de stockage tient en quatre opérations
+
+**Contexte.** §62 et §63 exigent que le moteur ne dépende d'aucun fournisseur :
+disque local, OPFS, S3, R2, NAS.
+
+**Décision.** `StorageProvider` expose **lire, écrire, supprimer, lister**. Rien
+de plus.
+
+**Conséquences.** Tout fournisseur imaginable sait faire ces quatre choses ; en
+demander plus (transactions, verrous, métadonnées riches) exclurait des cibles.
+Les mécanismes de plus haut niveau — instantanés, reprise, rotation — sont
+construits **au-dessus**, dans `ProjectStore`, et fonctionnent donc à
+l'identique sur les trois implémentations.
+
+---
+
+## ADR-027 — L'autosave n'écrase jamais l'enregistrement explicite
+
+**Contexte.** Un autosave qui écrit par-dessus le fichier du projet peut
+enregistrer une modification que l'utilisateur regrettait, et détruire un état
+qu'il avait volontairement figé.
+
+**Décision.** Deux fichiers distincts : `projet.json` (explicite) et
+`auto.json` (automatique). Le chargement normal lit toujours `projet.json`.
+
+**Conséquences.** La reprise après incident devient une simple comparaison de
+dates : si `auto.json` est plus récent, une session s'est interrompue. On la
+**propose**, sans jamais écraser d'office.
+
+---
+
+## ADR-028 — Un échec de chargement doit se voir
+
+**Contexte.** La première version ignorait silencieusement une erreur de lecture
+et repartait du document par défaut.
+
+**Décision.** Toute erreur de chargement ou de reprise remonte dans l'interface
+avec son message et son détail technique (§106).
+
+**Conséquences.** C'est précisément cette remontée qui a permis de diagnostiquer
+deux autres bugs — un identifiant instable et des marqueurs non conformes au
+schéma. Une erreur avalée n'est pas une erreur évitée : c'est une erreur qu'on
+ne trouvera qu'après avoir perdu du travail.
+
+---
+
+## ADR-029 — L'éditeur n'apparaît qu'une fois le stockage interrogé
+
+**Contexte.** Le chargement est asynchrone. Afficher le document par défaut en
+attendant fait clignoter un projet qui n'est pas celui de l'utilisateur.
+
+**Décision.** Tant que la persistance n'a pas répondu, l'application affiche
+« Ouverture du projet… » et rien d'autre.
+
+**Conséquences.** Plus de clignotement, et — effet secondaire utile — les tests
+de bout en bout deviennent déterministes : ils n'ont plus de fenêtre pendant
+laquelle ils liraient l'ancien document.

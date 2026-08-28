@@ -39,6 +39,8 @@ async function centreClip(
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  // L'éditeur n'apparaît qu'une fois le stockage interrogé.
+  await expect(page.locator('.ouverture')).toHaveCount(0);
   await expect(page.locator('.timeline-toile canvas')).toBeVisible();
   await expect(ligne(page, 'A001_ouverture')).toBeVisible();
 });
@@ -169,4 +171,51 @@ test('aucune erreur console au chargement', async ({ page }) => {
   await expect(page.locator('.timeline-toile canvas')).toBeVisible();
   await page.waitForTimeout(500);
   expect(erreurs).toEqual([]);
+});
+
+test('le projet survit à un rechargement de page (§44)', async ({ page }) => {
+  const avant = await debutDe(page, 'Générique début');
+
+  // On déplace un clip, puis on enregistre explicitement.
+  const depart = await centreClip(page, 1, 0.09);
+  await page.mouse.move(depart.x, depart.y);
+  await page.mouse.down();
+  await page.mouse.move(depart.x + 200, depart.y, { steps: 20 });
+  await page.mouse.up();
+  const apres = await debutDe(page, 'Générique début');
+  expect(apres).not.toBe(avant);
+
+  await page.getByTitle('Enregistrer le projet (Ctrl+S)').click();
+  await expect(page.locator('.barre-etat')).toContainText('Enregistré');
+
+  // Rechargement complet : le montage doit revenir tel quel.
+  await page.reload();
+  await expect(ligne(page, 'Générique début')).toBeVisible();
+  await expect(ligne(page, 'Générique début').locator('td').nth(3)).toHaveText(apres);
+
+  // Et l'historique repart à zéro : les étapes de la session précédente n'ont
+  // plus de sens sur un document rechargé.
+  await expect(historique(page)).toHaveCount(1);
+});
+
+test('un travail non enregistré est proposé à la reprise après un rechargement', async ({
+  page,
+}) => {
+  const depart = await centreClip(page, 1, 0.09);
+  await page.mouse.move(depart.x, depart.y);
+  await page.mouse.down();
+  await page.mouse.move(depart.x + 240, depart.y, { steps: 20 });
+  await page.mouse.up();
+  const nonEnregistre = await debutDe(page, 'Générique début');
+
+  // On attend la sauvegarde automatique, SANS enregistrer explicitement.
+  await page.waitForTimeout(2500);
+  await page.reload();
+
+  const bandeau = page.locator('.bandeau-reprise');
+  await expect(bandeau).toContainText('Travail non enregistré retrouvé');
+
+  await bandeau.getByRole('button', { name: 'Récupérer' }).click();
+  await expect(bandeau).toHaveCount(0);
+  await expect(ligne(page, 'Générique début').locator('td').nth(3)).toHaveText(nonEnregistre);
 });

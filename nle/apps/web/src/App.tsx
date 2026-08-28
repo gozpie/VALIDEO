@@ -34,6 +34,7 @@ import type { Outil } from './store.js';
 import { PanneauProjet } from './panels/PanneauProjet.js';
 import { Moniteur } from './panels/Moniteur.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
+import { usePersistance } from './persistance.js';
 
 const OUTILS: readonly { id: Outil; libelle: string; touche: string; titre: string }[] = [
   { id: 'selection', libelle: 'V', touche: 'V', titre: 'Sélection' },
@@ -65,6 +66,13 @@ export function App(): React.JSX.Element {
   const [defilementVertical, definirDefilementVertical] = useState(0);
   const [shuttle] = useState(() => new ShuttleController());
   const [vitesse, definirVitesse] = useState(0);
+
+  const persistance = usePersistance({
+    document: etat.document,
+    modifie: etat.historique.dirty,
+    surChargement: actions.chargerDocument,
+    surEnregistrement: actions.enregistrer,
+  });
 
   const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
   const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
@@ -115,7 +123,7 @@ export function App(): React.JSX.Element {
           actions.retablir();
           return true;
         case 'file.save':
-          actions.enregistrer();
+          void persistance.enregistrer(etat.document);
           return true;
         case 'timeline.toggleSnap':
           actions.basculerAccrochage();
@@ -190,7 +198,7 @@ export function App(): React.JSX.Element {
           return false;
       }
     },
-    [actions, ajuster, duree, etat, pistesNavigables, shuttle],
+    [actions, ajuster, duree, etat, persistance, pistesNavigables, shuttle],
   );
 
   useEffect(() => {
@@ -254,6 +262,21 @@ export function App(): React.JSX.Element {
     }
   }, [actions, base, etat.sequence.startTimecode, etat.tete, timecode]);
 
+  // Tant que le stockage n'a pas répondu, on n'affiche pas de document : sinon
+  // le projet de démonstration apparaîtrait une fraction de seconde avant d'être
+  // remplacé par le projet enregistré, ce qui est déroutant et fait croire à une
+  // perte de travail.
+  if (!persistance.pret) {
+    return (
+      <div className="app">
+        <header className="barre-menu">
+          <span className="marque">VALIDEO</span>
+        </header>
+        <div className="ouverture">Ouverture du projet…</div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="barre-menu">
@@ -275,6 +298,27 @@ export function App(): React.JSX.Element {
         <span className="espace" />
         <span className="etiquette-etat partiel">Socle · montage fonctionnel</span>
       </header>
+
+      {persistance.reprise.type === 'disponible' && (
+        <div className="bandeau-reprise">
+          <strong>Travail non enregistré retrouvé.</strong> Une session précédente s’est interrompue
+          sans enregistrer&nbsp;; une sauvegarde automatique plus récente que le dernier
+          enregistrement existe.
+          <button type="button" className="actif" onClick={persistance.accepterReprise}>
+            Récupérer
+          </button>
+          <button type="button" onClick={persistance.refuserReprise}>
+            Ignorer
+          </button>
+        </div>
+      )}
+
+      {!persistance.persistant && (
+        <div className="bandeau-reprise alerte">
+          <strong>Aucun stockage persistant.</strong> Ce navigateur ne permet ni OPFS ni
+          localStorage&nbsp;: le projet sera perdu à la fermeture de l’onglet.
+        </div>
+      )}
 
       <div className="espace-travail">
         <Moniteur titre="Moniteur Source" />
@@ -363,6 +407,15 @@ export function App(): React.JSX.Element {
             <button type="button" onClick={ajuster} title="Ajuster la séquence">
               Ajuster
             </button>
+            <span className="sep" />
+            <button
+              type="button"
+              onClick={() => void persistance.enregistrer(etat.document)}
+              disabled={persistance.etat === 'enregistrement'}
+              title="Enregistrer le projet (Ctrl+S)"
+            >
+              Enregistrer
+            </button>
             <span className="espace" style={{ flex: 1 }} />
             {vitesse !== 0 && (
               <span className="mono">{vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}</span>
@@ -393,13 +446,26 @@ export function App(): React.JSX.Element {
           {etat.selection.size} sélectionné{etat.selection.size > 1 ? 's' : ''}
         </span>
         <span className="espace" />
+        {persistance.erreur !== null && (
+          <span className="alerte" title={persistance.erreur.detail ?? ''}>
+            {persistance.erreur.message}
+          </span>
+        )}
         {etat.derniereErreur !== null && (
           <span className="alerte" title={etat.derniereErreur.detail ?? ''}>
             {etat.derniereErreur.message}
             {etat.derniereErreur.action !== undefined ? ` — ${etat.derniereErreur.action}` : ''}
           </span>
         )}
-        <span>{etat.historique.dirty ? 'Modifié' : 'Enregistré'}</span>
+        <span title={`Stockage : ${persistance.nomStockage}`}>
+          {persistance.etat === 'enregistrement'
+            ? 'Enregistrement…'
+            : persistance.etat === 'erreur'
+              ? 'Échec de l’enregistrement'
+              : etat.historique.dirty
+                ? 'Modifié'
+                : 'Enregistré'}
+        </span>
       </footer>
     </div>
   );

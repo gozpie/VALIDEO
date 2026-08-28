@@ -75,6 +75,9 @@ importers:
       '@valideo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@valideo/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@valideo/time-core':
         specifier: workspace:*
         version: link:../../packages/time-core
@@ -153,6 +156,15 @@ importers:
         version: 3.25.76
 
   packages/shared: {}
+
+  packages/storage:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/time-core: {}
 

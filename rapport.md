@@ -330,3 +330,60 @@ piste, annulent, et vérifient que le modèle a réellement changé. Ils vérifi
 aussi qu'un geste continu ne produit qu'une seule entrée d'annulation, qu'une
 opération refusée affiche son message sans rien modifier, et qu'aucune erreur ne
 survient dans la console.
+
+---
+
+## 2026-08-28 — Persistance, sauvegarde automatique et reprise après incident
+
+### Objectif
+
+Rendre vrai l'un des trente points du jalon 1000 : fermer et rouvrir sans perte.
+
+### Modifications
+
+**`nle/packages/storage`** — interface de stockage réduite à quatre opérations,
+avec trois implémentations : le système de fichiers privé du navigateur, le
+stockage local en repli, et la mémoire en dernier recours.
+
+Par-dessus, un gestionnaire de projet qui distingue l'enregistrement explicite
+de la sauvegarde automatique, écrites dans deux fichiers différents. La
+sauvegarde automatique n'écrase donc jamais ce que l'utilisateur a
+volontairement enregistré, et la reprise après incident se réduit à comparer
+deux dates : si la sauvegarde automatique est plus récente, c'est qu'une session
+s'est interrompue. Un bandeau la propose, sans jamais l'imposer.
+
+S'y ajoutent des instantanés horodatés en rotation et une sauvegarde automatique
+temporisée avec verrou d'écriture, pour qu'une écriture lente ne se chevauche
+pas avec la suivante.
+
+**`nle/apps/web`** — bouton Enregistrer, raccourci correspondant, bandeau de
+reprise, bandeau d'avertissement si aucun stockage persistant n'est disponible,
+et indicateur d'état dans la barre inférieure.
+
+### Portée déclarée
+
+Le mécanisme repose sur des instantanés du document. Le journal transactionnel
+par commande évoqué à la section 44 n'est pas implémenté : il exigerait des
+commandes sérialisables, ce que le moteur ne fournit pas. C'est écrit dans le
+code plutôt que sous-entendu.
+
+### Quatre bugs réels trouvés en testant dans un vrai navigateur
+
+1. Le projet de démonstration recevait un identifiant différent à chaque
+   chargement de page : rien ne pouvait donc jamais être retrouvé.
+2. Ses marqueurs avaient des identifiants qui n'étaient pas des UUID.
+   L'écriture passait, mais la relecture échouait à la validation.
+3. L'échec de chargement était avalé en silence : un projet illisible repartait
+   d'un document vide sans prévenir. C'est le pire scénario possible pour un
+   monteur. L'erreur est maintenant affichée, et c'est elle qui a permis de
+   diagnostiquer les deux bugs précédents.
+4. Le projet de démonstration s'affichait une fraction de seconde avant d'être
+   remplacé par le projet enregistré. L'éditeur n'apparaît désormais qu'une fois
+   le stockage interrogé.
+
+### Vérifications
+
+424 tests unitaires et 11 tests de bout en bout. Ces derniers vérifient
+notamment qu'après un déplacement de clip, un enregistrement et un rechargement
+complet de la page, le montage revient exactement tel quel ; et qu'un travail
+non enregistré laissé par une session interrompue est bien proposé à la reprise.

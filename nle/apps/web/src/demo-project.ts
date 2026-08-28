@@ -9,7 +9,18 @@
 import { createClip, createProject, createSequence, toTimeBaseDoc } from '@valideo/project-model';
 import type { ClipDoc, ProjectDoc, SequenceDoc } from '@valideo/project-model';
 import { TIMEBASES } from '@valideo/time-core';
-import { newLinkGroupId } from '@valideo/shared';
+import { newLinkGroupId, newMarkerId, newProjectId, newSequenceId } from '@valideo/shared';
+
+/**
+ * Identite STABLE du projet de demonstration.
+ *
+ * Sans identifiant fixe, chaque chargement de page creerait un projet different
+ * et rien ne pourrait jamais etre retrouve dans le stockage : l enregistrement
+ * ecrirait a une adresse neuve a chaque fois. Un vrai projet, lui, recevra son
+ * identifiant a la creation et le conservera.
+ */
+export const ID_PROJET_DEMO = newProjectId.of('00000000-0000-4000-8000-000000000001');
+export const ID_SEQUENCE_DEMO = newSequenceId.of('00000000-0000-4000-8000-000000000002');
 
 const ETIQUETTES = ['#c0563f', '#3f7fc0', '#4f9e5c', '#a05fbf', '#c08f3f', '#3f9ea0'];
 
@@ -86,11 +97,12 @@ export function creerSequenceDemo(): SequenceDoc {
 
   return {
     ...base,
+    id: ID_SEQUENCE_DEMO,
     timebase: toTimeBaseDoc(TIMEBASES.TB25),
     tracks,
     markers: [
       {
-        id: 'm1',
+        id: newMarkerId(),
         name: 'Départ montage',
         comment: '',
         color: '#4fb477',
@@ -99,7 +111,7 @@ export function creerSequenceDemo(): SequenceDoc {
         type: 'comment',
       },
       {
-        id: 'm2',
+        id: newMarkerId(),
         name: 'Point à revoir',
         comment: 'Raccord à retravailler',
         color: '#e0a63a',
@@ -108,7 +120,7 @@ export function creerSequenceDemo(): SequenceDoc {
         type: 'comment',
       },
       {
-        id: 'm3',
+        id: newMarkerId(),
         name: 'Fin',
         comment: '',
         color: '#4c8dff',
@@ -124,7 +136,7 @@ export function creerProjetDemo(): { projet: ProjectDoc; sequence: SequenceDoc }
   const sequence = creerSequenceDemo();
   const projet = createProject('Démonstration VALIDEO');
   return {
-    projet: { ...projet, sequences: [sequence], activeSequenceId: sequence.id },
+    projet: { ...projet, id: ID_PROJET_DEMO, sequences: [sequence], activeSequenceId: sequence.id },
     sequence,
   };
 }

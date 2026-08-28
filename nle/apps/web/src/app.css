@@ -1,8 +1,11 @@
 /* Disposition générale de l'espace de travail Montage (§6). */
 
+/* Colonne flexible plutôt que grille à rangées fixes : le nombre de bandeaux
+   affichés varie (reprise, stockage non persistant), une grille figée casserait
+   la mise en page dès qu'il change. */
 .app {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   height: 100%;
 }
 
@@ -26,6 +29,7 @@
 .barre-menu .espace { flex: 1; }
 
 .espace-travail {
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr);
   /* Trois rangées explicites : moniteurs, panneaux, timeline. Sans la troisième
@@ -223,3 +227,31 @@
   line-height: 1.5;
 }
 .message.avert { border-color: color-mix(in srgb, var(--avert) 40%, transparent); color: var(--avert); background: color-mix(in srgb, var(--avert) 8%, transparent); }
+
+/* Bandeau de reprise après incident (§44). */
+.bandeau-reprise {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  background: color-mix(in srgb, var(--accent) 14%, var(--fond-panneau-haut));
+  border-bottom: 1px solid var(--accent-doux);
+  font-size: var(--t-sm);
+  flex: 0 0 auto;
+}
+.bandeau-reprise strong { color: var(--texte-fort); }
+.bandeau-reprise button { margin-left: auto; }
+.bandeau-reprise button + button { margin-left: var(--esp-2); }
+.bandeau-reprise.alerte {
+  background: color-mix(in srgb, var(--avert) 12%, var(--fond-panneau-haut));
+  border-bottom-color: color-mix(in srgb, var(--avert) 45%, transparent);
+  color: var(--avert);
+}
+
+.ouverture {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--texte-doux);
+  font-size: var(--t-lg);
+}

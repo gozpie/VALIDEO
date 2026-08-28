@@ -183,6 +183,19 @@ export class History<S> {
     return !Object.is(this.state, this.savedState);
   }
 
+  /**
+   * Remplace l etat et repart d un historique vide.
+   * Sert a l ouverture d un projet ou a une reprise apres incident : les etapes
+   * de la session precedente n ont plus de sens sur un autre document.
+   */
+  reinitialiser(etat: S): void {
+    this.entries.length = 0;
+    this.cursor = 0;
+    this.state = etat;
+    this.savedState = etat;
+    this.emit();
+  }
+
   /** Vide l historique en conservant l etat courant. */
   clear(): void {
     this.entries.length = 0;

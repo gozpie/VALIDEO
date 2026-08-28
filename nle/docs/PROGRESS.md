@@ -367,11 +367,56 @@ ne regarde pas. Corrigé.
 
 **Total : 401 tests unitaires + 9 tests de bout en bout.**
 
+### Étape 13 — `@valideo/storage` : persistance et reprise (§44, §45, §46, §61, §62)
+
+**« Fermer et rouvrir sans perte »** — l'un des 30 points du jalon 1000 — est
+maintenant vrai, et vérifié dans un navigateur.
+
+- **Interface de stockage** volontairement minuscule (lire, écrire, supprimer,
+  lister) : tout fournisseur imaginable sait faire ces quatre choses. Trois
+  implémentations : **OPFS**, **localStorage** (repli) et mémoire.
+- **Choix automatique** avec vérification *réelle* : un navigateur en navigation
+  privée expose `localStorage` tout en refusant l'écriture, on teste donc
+  vraiment. Si aucun stockage persistant n'existe, l'interface **prévient en
+  bandeau** que le travail sera perdu (§1003).
+- **Enregistrement explicite** et **sauvegarde automatique** écrivent dans des
+  fichiers **distincts** : l'autosave n'écrase jamais ce que l'utilisateur a
+  volontairement enregistré.
+- **Reprise après incident** (§44) : si l'autosave est plus récente que le
+  dernier enregistrement, c'est qu'une session s'est interrompue. Un bandeau la
+  **propose** — il n'écrase jamais d'office.
+- **Instantanés horodatés** en rotation, restaurables individuellement.
+- **Autosave temporisée** avec verrou d'écriture : une sauvegarde lente ne se
+  chevauche pas avec la suivante, et une modification survenue pendant
+  l'écriture est replanifiée au lieu d'être perdue.
+
+**Portée déclarée.** Le mécanisme repose sur des **instantanés du document**. Le
+journal transactionnel par commande évoqué en §44 n'est **pas** implémenté : il
+exigerait des commandes sérialisables, ce que le moteur ne fournit pas
+(ADR-009). C'est écrit dans le code, pas sous-entendu.
+
+**Quatre bugs réels trouvés en testant dans un vrai navigateur :**
+
+1. Le projet de démonstration recevait un **identifiant neuf à chaque
+   chargement** : rien ne pouvait donc jamais être retrouvé.
+2. Ses marqueurs avaient les identifiants `m1`, `m2`, `m3` — pas des UUID.
+   L'écriture passait, la **relecture** échouait à la validation.
+3. **L'échec de chargement était avalé en silence.** Un projet illisible
+   repartait d'un document vide sans prévenir — le pire scénario possible pour
+   un monteur. L'erreur est maintenant affichée (§106) ; c'est elle qui a permis
+   de diagnostiquer les deux bugs précédents.
+4. Le projet de démonstration **s'affichait une fraction de seconde** avant
+   d'être remplacé par le projet enregistré. L'éditeur n'apparaît maintenant
+   qu'une fois le stockage interrogé.
+
+22 tests unitaires + 2 tests de bout en bout.
+**Total : 424 tests unitaires + 11 tests de bout en bout.**
+
 ## NEXT
 
 1. Moteur de lecture : démuxeur, WebCodecs, horloge audio maître (§22, §901-1000).
-2. Génération de proxies (§11) et caches (§53).
-3. Import de médias réels dans l'application, branchement des formes d'onde.
+2. Import de médias réels dans l'application, branchement des formes d'onde.
+3. Génération de proxies (§11) et caches (§53).
 
 ## BLOCKED
 

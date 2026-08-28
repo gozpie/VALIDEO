@@ -282,3 +282,19 @@ describe('historique — partage de structure (section 57)', () => {
     expect(h.current().heavy).toBe(heavy);
   });
 });
+
+describe('historique — réinitialisation', () => {
+  it('repart d un état neuf, sans étape ni modification en attente', () => {
+    const h = new History(start);
+    h.execute(inc(5));
+    expect(h.canUndo()).toBe(true);
+    expect(h.isDirty()).toBe(true);
+
+    h.reinitialiser({ count: 99, items: ['chargé'] });
+    expect(h.current().count).toBe(99);
+    expect(h.canUndo()).toBe(false);
+    expect(h.canRedo()).toBe(false);
+    expect(h.snapshot().labels).toEqual([]);
+    expect(h.isDirty()).toBe(false);
+  });
+});

@@ -32,6 +32,9 @@
       "path": "./apps/media-worker"
     },
     {
+      "path": "./packages/storage"
+    },
+    {
       "path": "./apps/web"
     }
   ]
