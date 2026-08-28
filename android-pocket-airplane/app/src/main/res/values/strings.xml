@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Poche Avion</string>
+    <string name="fgs_special_use_reason">Surveillance continue des capteurs d\'orientation et de proximité pour basculer le mode avion lorsque le téléphone est rangé tête en bas.</string>
+
+    <!-- Notifications -->
+    <string name="channel_status">Surveillance</string>
+    <string name="channel_status_description">Notification permanente indiquant l\'état de la détection.</string>
+    <string name="channel_alert">Alertes</string>
+    <string name="channel_alert_description">Signale les bascules du mode avion impossibles.</string>
+    <string name="notification_status">%1$s · Mode avion : %2$s</string>
+    <string name="action_stop">Arrêter</string>
+    <string name="alert_title">Bascule du mode avion impossible</string>
+
+    <!-- États -->
+    <string name="phase_in_pocket">Rangé tête en bas</string>
+    <string name="phase_out_of_pocket">Sorti de la poche</string>
+    <string name="airplane_on">actif</string>
+    <string name="airplane_off">inactif</string>
+
+    <!-- Stratégies -->
+    <string name="strategy_root">Root (su)</string>
+    <string name="strategy_secure_settings">Permission ADB (WRITE_SECURE_SETTINGS)</string>
+
+    <!-- Journal -->
+    <string name="log_service_started">Surveillance démarrée</string>
+    <string name="log_service_stopped">Surveillance arrêtée</string>
+    <string name="log_verb_enable">Activation du mode avion</string>
+    <string name="log_verb_disable">Désactivation du mode avion</string>
+    <string name="log_applied">%1$s : effectuée via %2$s</string>
+    <string name="log_skipped">%1$s : ignorée (%2$s)</string>
+    <string name="log_failed">%1$s : échec (%2$s)</string>
+    <string name="log_unsupported">%1$s : impossible, aucune méthode disponible sur cet appareil</string>
+    <string name="log_no_strategy">Aucune méthode de bascule disponible : root absent et permission WRITE_SECURE_SETTINGS non accordée</string>
+
+    <!-- Interface -->
+    <string name="title_status">État</string>
+    <string name="title_settings">Réglages de détection</string>
+    <string name="title_journal">Journal</string>
+    <string name="switch_service">Activer la surveillance</string>
+    <string name="switch_require_proximity">Exiger le capteur de proximité (téléphone contre le tissu)</string>
+    <string name="switch_require_darkness">Exiger l\'obscurité (capteur de luminosité)</string>
+    <string name="label_enter_delay">Délai avant activation : %1$.1f s</string>
+    <string name="label_exit_delay">Délai avant désactivation : %1$.1f s</string>
+    <string name="label_head_down_threshold">Seuil « tête en bas » : %1$.1f m/s²</string>
+    <string name="button_test_enable">Tester : activer</string>
+    <string name="button_test_disable">Tester : désactiver</string>
+    <string name="button_clear_journal">Vider le journal</string>
+    <string name="button_open_airplane_settings">Ouvrir les réglages du mode avion</string>
+
+    <string name="status_method_ok">Méthode de bascule : %1$s</string>
+    <string name="status_method_missing">Aucune méthode de bascule disponible.\n\nAndroid interdit aux applications tierces de basculer le mode avion. Deux solutions :\n• appareil rooté (aucune action nécessaire, l\'application utilisera su) ;\n• depuis un PC, une seule fois :\nadb shell pm grant com.gozpie.pocketairplane android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="status_sensors">Capteurs — orientation : %1$s · proximité : %2$s · luminosité : %3$s</string>
+    <string name="status_live">Gravité Y : %1$s · Proximité : %2$s · Luminosité : %3$s</string>
+    <string name="status_phase">Détection : %1$s · Mode avion : %2$s</string>
+    <string name="value_present">présent</string>
+    <string name="value_absent">absent</string>
+    <string name="value_near">obstrué</string>
+    <string name="value_far">dégagé</string>
+    <string name="value_unknown">—</string>
+    <string name="journal_empty">Aucun événement enregistré.</string>
+    <string name="warning_no_proximity">Sans capteur de proximité, l\'orientation est échantillonnée en continu : la consommation de batterie augmente.</string>
+</resources>
