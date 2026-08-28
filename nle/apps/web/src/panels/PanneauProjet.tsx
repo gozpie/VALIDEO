@@ -51,6 +51,8 @@ export function PanneauProjet({
           <tr
             key={clip.id}
             data-clip={clip.id}
+            data-nom={clip.name}
+            data-piste={piste.name}
             className={selection.has(clip.id) ? 'selectionnee' : ''}
           >
             <td>

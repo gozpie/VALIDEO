@@ -431,7 +431,14 @@ export function Timeline({
 
       if (etat.outil === 'razor') {
         if (impact.trackId !== null) {
-          actions.executer(razorCommand(image, [impact.trackId], etat.contexte));
+          // Alt coupe la seule piste visée. Par défaut la coupe suit les
+          // liaisons : une moitié d'image liée à un son entier se
+          // désynchroniserait au premier déplacement.
+          actions.executer(
+            razorCommand(image, [impact.trackId], etat.contexte, {
+              suivreLiaisons: !e.altKey,
+            }),
+          );
         }
         return;
       }

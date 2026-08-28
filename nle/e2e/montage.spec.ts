@@ -10,14 +10,21 @@ import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
 /**
- * Ligne du panneau Projet correspondant à un clip.
+ * Ligne du panneau Projet correspondant à un clip, par nom EXACT.
  *
- * Le sélecteur exige `data-clip` : le panneau Médias emploie la même classe de
- * table, et un média portant le nom d'un clip renverrait sa ligne à sa place —
- * avec des colonnes qui ne veulent pas dire la même chose.
+ * Deux pièges, tous deux rencontrés :
+ *
+ * 1. Le panneau Médias emploie la même classe de table ; un média homonyme
+ *    d'un clip renvoyait sa ligne à sa place, avec des colonnes qui ne veulent
+ *    pas dire la même chose. D'où `[data-clip]`.
+ *
+ * 2. Une recherche par sous-chaîne fait correspondre « A003_large » à
+ *    « A003_large.wav », et les lignes audio passent avant les lignes vidéo
+ *    dans le tri. On lisait donc le son en croyant lire l'image, et un test de
+ *    rolling trim passait sans rien vérifier. D'où le nom exact.
  */
 function ligne(page: Page, nom: string): Locator {
-  return page.locator('.table-projet tbody tr[data-clip]', { hasText: nom }).first();
+  return page.locator(`.table-projet tbody tr[data-nom="${nom}"]`).first();
 }
 
 async function debutDe(page: Page, nom: string): Promise<string> {
@@ -108,19 +115,34 @@ test('déplacer un clip modifie réellement le modèle et se voit dans l’histo
   expect(await debutDe(page, 'Générique début')).toBe(avant);
 });
 
-test('l’outil Lame coupe un clip en deux', async ({ page }) => {
-  const avant = await page.locator('.table-projet tbody tr').count();
+test('l’outil Lame coupe le plan ET son son lié (§80, §94)', async ({ page }) => {
+  const clips = (): Locator => page.locator('.table-projet tbody tr[data-clip]');
+  const avant = await clips().count();
   await page.keyboard.press('KeyC');
   await expect(page.locator('.outil.actif')).toHaveText('C');
 
   const cible = await centreClip(page, 2, 0.2); // V1
   await page.mouse.click(cible.x, cible.y);
 
-  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant + 1);
-  await expect(historique(page)).toContainText(['Couper']);
+  // Deux clips de plus : couper l'image sans couper le son laisserait une
+  // moitié d'image liée à un son entier, désynchronisée au premier mouvement.
+  await expect(clips()).toHaveCount(avant + 2);
+  await expect(historique(page)).toContainText(['Lame']);
 
+  // Une seule annulation rend les deux coupes : c'est une seule opération.
   await page.keyboard.press('Control+z');
-  await expect(page.locator('.table-projet tbody tr')).toHaveCount(avant);
+  await expect(clips()).toHaveCount(avant);
+});
+
+test('Alt avec la Lame ne coupe que la piste visée', async ({ page }) => {
+  const clips = (): Locator => page.locator('.table-projet tbody tr[data-clip]');
+  const avant = await clips().count();
+  await page.keyboard.press('KeyC');
+  const cible = await centreClip(page, 2, 0.2);
+  await page.keyboard.down('Alt');
+  await page.mouse.click(cible.x, cible.y);
+  await page.keyboard.up('Alt');
+  await expect(clips()).toHaveCount(avant + 1);
 });
 
 test('les raccourcis de navigation déplacent la tête de lecture', async ({ page }) => {

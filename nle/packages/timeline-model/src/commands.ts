@@ -64,10 +64,13 @@ export function razorCommand(
   at: number,
   trackIds: readonly string[],
   ctx: TimelineContext,
+  options: { readonly suivreLiaisons?: boolean } = {},
 ): SequenceCommand {
   return command({
-    label: 'Couper',
-    apply: (seq) => ops.razor(seq, at, trackIds, ctx),
+    // « Lame » et non « Couper » : dans l'historique, « Couper » se confondrait
+    // avec le couper du presse-papiers, qui est une tout autre opération.
+    label: 'Lame',
+    apply: (seq) => ops.razor(seq, at, trackIds, ctx, options),
   });
 }
 

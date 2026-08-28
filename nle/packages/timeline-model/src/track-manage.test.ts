@@ -4,8 +4,17 @@
  */
 import { describe, it, expect } from 'vitest';
 import { isErr, unwrap } from '@valideo/shared';
-import { makeSequence } from './fixtures.js';
-import { addTrack, removeTrack, renameTrack, setClipEnabled, setClipLabel } from './edit-ops.js';
+import { makeContext, makeSequence } from './fixtures.js';
+
+const ctx = makeContext();
+import {
+  addTrack,
+  razor,
+  removeTrack,
+  renameTrack,
+  setClipEnabled,
+  setClipLabel,
+} from './edit-ops.js';
 import { findClip } from './query.js';
 
 function deuxVideo() {
@@ -109,5 +118,68 @@ describe('propriétés de clip', () => {
   it('un nom de piste vide revient au nom par défaut de son rang', () => {
     const seq = unwrap(renameTrack(unwrap(renameTrack(deuxVideo(), 'v2', 'Titrage')), 'v2', '  '));
     expect(seq.tracks.find((t) => t.name === 'V2')).toBeDefined();
+  });
+});
+
+describe('lame et liaisons (§80, §94)', () => {
+  const liee = () =>
+    makeSequence([
+      {
+        id: 'v1',
+        index: 0,
+        clips: [{ id: 'img', start: 0, duration: 100, sourceIn: 0, linkGroup: 'g' }],
+      },
+      {
+        id: 'a1',
+        kind: 'audio',
+        index: 0,
+        clips: [{ id: 'son', start: 0, duration: 100, sourceIn: 0, linkGroup: 'g' }],
+      },
+    ]);
+
+  it('coupe aussi le son lié, sans qu’on ait à désigner sa piste', () => {
+    const next = unwrap(razor(liee(), 40, ['v1'], ctx));
+    expect(next.tracks[0]!.clips).toHaveLength(2);
+    // Le son a suivi : une moitié d'image liée à un son entier se
+    // désynchroniserait au premier déplacement.
+    expect(next.tracks[1]!.clips).toHaveLength(2);
+  });
+
+  it('regroupe les moitiés deux à deux au lieu d’en faire un seul groupe', () => {
+    const next = unwrap(razor(liee(), 40, ['v1'], ctx));
+    const [imgG, imgD] = next.tracks[0]!.clips;
+    const [sonG, sonD] = next.tracks[1]!.clips;
+    expect(imgG?.linkGroup).toBe(sonG?.linkGroup);
+    expect(imgD?.linkGroup).toBe(sonD?.linkGroup);
+    // Et surtout : les deux paires ne sont PAS le même groupe.
+    expect(imgG?.linkGroup).not.toBe(imgD?.linkGroup);
+  });
+
+  it('ne coupe qu’une piste quand on le demande explicitement', () => {
+    const next = unwrap(razor(liee(), 40, ['v1'], ctx, { suivreLiaisons: false }));
+    expect(next.tracks[0]!.clips).toHaveLength(2);
+    expect(next.tracks[1]!.clips).toHaveLength(1);
+  });
+
+  it('délie une moitié qui se retrouve seule de son côté', () => {
+    // Le son s'arrête à 30 : couper à 40 ne le traverse pas.
+    const seq = makeSequence([
+      {
+        id: 'v1',
+        index: 0,
+        clips: [{ id: 'img', start: 0, duration: 100, sourceIn: 0, linkGroup: 'g' }],
+      },
+      {
+        id: 'a1',
+        kind: 'audio',
+        index: 0,
+        clips: [{ id: 'son', start: 0, duration: 30, sourceIn: 0, linkGroup: 'g' }],
+      },
+    ]);
+    const next = unwrap(razor(seq, 40, ['v1'], ctx));
+    const droite = next.tracks[0]!.clips[1];
+    // Un groupe à un seul membre ne veut rien dire : on délie.
+    expect(droite?.linkGroup).toBeNull();
+    expect(next.tracks[0]!.clips[0]?.linkGroup).toBe(next.tracks[1]!.clips[0]?.linkGroup);
   });
 });

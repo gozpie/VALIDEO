@@ -297,21 +297,90 @@ export function deleteClip(
 
 // ------------------------------------------------- Razor et Add Edit (§94)
 
-/** Ajoute un point de coupe a `at` sur les pistes indiquees. */
+/**
+ * Ajoute un point de coupe a `at` sur les pistes indiquees.
+ *
+ * Deux comportements que la version naive n avait pas, et qui ne sont pas des
+ * raffinements :
+ *
+ * 1. LA COUPE SUIT LES LIAISONS. Couper l image d un plan lie sans couper son
+ *    son laisserait une moitie d image liee a un son entier : le moindre
+ *    deplacement les desynchroniserait. C est le comportement de tous les NLE,
+ *    et `suivreLiaisons: false` -- Alt dans l interface -- permet de ne couper
+ *    qu une piste quand c est vraiment ce qu on veut.
+ *
+ * 2. LES MOITIES SE REGROUPENT DEUX A DEUX. `splitAt` recopie le groupe de
+ *    liaison sur la moitie droite ; sans correction, les quatre morceaux d une
+ *    paire image/son coupee formeraient UN SEUL groupe, et selectionner la
+ *    premiere moitie selectionnerait aussi la seconde. Les moities droites
+ *    recoivent donc un groupe neuf -- ou aucun, si elles se retrouvent seules,
+ *    un groupe a un membre ne voulant rien dire.
+ */
 export function razor(
   sequence: SequenceDoc,
   at: number,
   trackIds: readonly string[],
   ctx: TimelineContext,
+  options: { readonly suivreLiaisons?: boolean } = {},
 ): EditResult {
   for (const id of trackIds) {
     const t = requireTrack(sequence, id);
     if (!t.ok) return t;
   }
+
+  const traverse = (clip: ClipDoc): boolean => clip.start < at && clipEnd(clip) > at;
+
+  const pistes = new Set(trackIds);
+  if (options.suivreLiaisons !== false) {
+    const groupes = new Set<string>();
+    for (const t of sequence.tracks) {
+      if (!pistes.has(t.id)) continue;
+      for (const c of t.clips) if (traverse(c) && c.linkGroup !== null) groupes.add(c.linkGroup);
+    }
+    for (const t of sequence.tracks) {
+      if (t.locked) continue;
+      if (t.clips.some((c) => c.linkGroup !== null && groupes.has(c.linkGroup) && traverse(c))) {
+        pistes.add(t.id);
+      }
+    }
+  }
+
+  // Groupes reellement coupes, et nombre de moities droites attendues : c est
+  // ce qui permet de distinguer une paire coupee en deux paires d une moitie
+  // qui se retrouve orpheline.
+  const coupes = new Map<string, number>();
+  for (const t of sequence.tracks) {
+    if (!pistes.has(t.id)) continue;
+    for (const c of t.clips) {
+      if (!traverse(c) || c.linkGroup === null) continue;
+      coupes.set(c.linkGroup, (coupes.get(c.linkGroup) ?? 0) + 1);
+    }
+  }
+
   let tracks = sequence.tracks;
-  for (const id of trackIds) {
+  for (const id of pistes) {
     tracks = mapTrack(tracks, id, (t) => splitAt(t, at, ctx));
   }
+
+  if (coupes.size > 0) {
+    const neufs = new Map<string, string | null>();
+    for (const [groupe, nombre] of coupes) {
+      neufs.set(groupe, nombre >= 2 ? newLinkGroupId() : null);
+    }
+    tracks = tracks.map((t) =>
+      pistes.has(t.id)
+        ? {
+            ...t,
+            clips: t.clips.map((c) =>
+              c.start === at && c.linkGroup !== null && neufs.has(c.linkGroup)
+                ? { ...c, linkGroup: neufs.get(c.linkGroup) ?? null }
+                : c,
+            ),
+          }
+        : t,
+    );
+  }
+
   return finalize({ ...sequence, tracks });
 }
 
