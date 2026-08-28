@@ -562,73 +562,96 @@ d'images et la synchronisation de l'image sur l'horloge audio. Un saut d'un
 groupe d'images complet prend visiblement plus de temps qu'un pas d'une image —
 c'est inhérent, et c'est ce que le cache résoudra.
 
-**Total : 462 tests unitaires + 19 tests de bout en bout.**
-
-### Étape 18 — Cache d'images et lecture vidéo temps réel (§22, §57, §120, §121)
-
-**Ça lit.** L'image suit la lecture, calée sur l'horloge audio.
-
-- **Cache d'images décodées**, borné en **pixels** et non en nombre d'images :
-  vingt-quatre images en 320×240 coûtent 7 Mo, les mêmes en 4K en coûteraient
-  800 (§57). Le budget est ajustable selon le profil de la machine (§58).
-- **Décodage anticipé** : pendant la lecture, le cache est rempli une seconde et
-  demie devant la tête, quatre fois par seconde. C'est exactement ce qui sépare
-  « afficher une image » de « lire » — sans avance, chaque image coûterait un
-  aller-retour de décodage et la cadence s'effondrerait.
-- Les images voisines d'un scrub sont **conservées** : avancer d'une image ne
-  redécode plus le groupe entier.
-- Les images sont rendues par **clone**, pour que l'appelant puisse les fermer
-  sans vider le cache.
-
-**Mesuré dans un vrai navigateur** : en 1,78 s d'horloge murale, l'affichage
-progresse de l'image 0 à l'image **44** d'une séquence à 25 i/s — soit ~24,7 i/s,
-la cadence nominale. 27 images distinctes sur 27 échantillons : l'image change
-réellement à chaque relevé.
-
-Un test de bout en bout vérifie surtout que l'image affichée et la tête de
-lecture **ne dérivent pas l'une de l'autre** : la tête est pilotée par l'horloge
-audio, et l'image la suit à moins de six images près.
-
-**Les moniteurs disent maintenant exactement ce qu'ils font** : le Moniteur
-Programme affiche « une seule couche · pas de composition » — l'image est réelle
-et suit la lecture, mais superposition, opacité, fondus et effets demandent le
-graphe de rendu, qui n'existe pas. Le Moniteur Source, lui, est annoncé comme
-non implémenté, ce qu'il est.
-
-**Total : 462 tests unitaires + 20 tests de bout en bout.**
-
-### Étape 19 — Vignettes de timeline (§18, §55)
-
-§18 pose deux exigences qui semblent se contredire : « afficher des vignettes »
-et « ne jamais décoder les images inutilement ». Trois règles les concilient :
-
-1. **le rendu Canvas est synchrone** — il ne peut dessiner qu'une vignette déjà
-   prête. Une vignette absente n'est pas attendue : elle est demandée, le clip
-   est dessiné sans elle, et elle apparaît au rendu suivant ;
-2. les demandes sont **dédupliquées et limitées à deux simultanées**, sinon une
-   timeline dense lancerait des centaines de décodages ;
-3. **rien n'est demandé pendant la lecture** — le décodeur y tient déjà la
-   cadence, et lui voler du temps ferait sauter des images.
-
-Deux vignettes par clip, tête et queue, et seulement si le clip est assez large
-pour qu'elles ne se chevauchent pas. Elles sont converties en `ImageBitmap` et la
-`VideoFrame` est refermée aussitôt — bien plus économe que garder des images
-décodées vivantes. Le cache est borné et évince les plus anciennes.
-
-Un test de bout en bout compte les couleurs distinctes de la piste avant et après
-le zoom qui déclenche les vignettes : c'est la preuve que ce sont de vraies
-images et non un décor.
-
 **Total : 462 tests unitaires + 21 tests de bout en bout.**
+
+---
+
+## Passe d'audit et surface de montage professionnelle
+
+Une reprise systématique de tout ce qui existait, en cherchant ce qui est FAUX
+plutôt que ce qui manque, puis le comblement de la surface d'interaction : ce
+qu'un monteur fait à la souris et au clavier dans un logiciel professionnel.
+
+### Défauts trouvés et corrigés
+
+Chacun a d'abord été démontré par un test qui échouait.
+
+1. **Chaîne de codec audio supposée.** Toute piste `mp4a` était annoncée
+   `mp4a.40.2`, alors que cette « sample entry » couvre aussi le MP3.
+   `AudioDecoder.isConfigSupported` acceptait donc la configuration, puis le
+   décodage échouait au premier paquet avec un message sans rapport. Le
+   descripteur esds est maintenant PARCOURU — longueurs à bit de continuation
+   comprises — et l'audioObjectType distingue AAC-LC de HE-AAC. Sans esds
+   lisible, on renvoie `mp4a` nu, jamais un profil inventé.
+
+2. **Projet corrompu levant une exception.** Des octets qui ne sont pas de
+   l'UTF-8 faisaient traverser une `URIError` à toute l'application. Ils
+   remontent maintenant comme `PROJECT_CORRUPT`, avec l'action « ouvrir un
+   instantané précédent ».
+
+3. **La règle recouverte par les en-têtes de piste** dès que la vue défilait
+   vers le haut.
+
+4. **La lame ignorait les liaisons.** Couper l'image d'un plan lié laissait une
+   moitié d'image liée à un son entier. Et `splitAt` recopiant le groupe de
+   liaison, les quatre morceaux d'une paire coupée auraient formé un seul
+   groupe. La coupe suit désormais les liaisons, les moitiés se regroupent deux
+   à deux, une moitié restée seule est déliée, et Alt ne coupe qu'une piste.
+
+5. **Un test qui ne testait rien.** Le sélecteur de ligne du panneau Projet
+   cherchait par sous-chaîne : « A003_large » trouvait « A003_large.wav », et
+   l'audio passe avant la vidéo dans le tri. Le test de rolling trim lisait donc
+   un clip qu'aucun roll ne touche, et passait quoi qu'il arrive.
+
+6. **Un serveur d'aperçu réutilisé** d'une exécution Playwright à l'autre
+   servait l'ancien bundle : les tests validaient du code qui n'existait plus.
+
+7. **Sortie de build versionnée** (`dist-types/`), qui salissait l'arbre de
+   trente-quatre fichiers à chaque compilation.
+
+### Ce qui a été ajouté
+
+- **Points d'entrée et de sortie**, dessinés dans la règle, avec Lift et
+  Extract. Extract retire la plage des pistes ciblées ET synchronisées : c'est
+  le sens du verrou de synchronisation, et la règle vit à UN seul endroit
+  (`syncedTargets`), partagé par le moteur et l'interface.
+- **Presse-papiers de montage** : couper, copier, coller, coller par insertion,
+  avec conservation des positions relatives entre clips et entre pistes.
+- **Vitesse et durée** (Ctrl+R) : boîte liant les deux champs, marche arrière
+  qui déplace le point d'entrée à l'ancienne sortie, ripple optionnel.
+- **Menus contextuels** sur clip, piste et espace vide, plus une **barre de
+  menus réelle** — elle affichait jusque-là huit étiquettes inertes.
+- **Glisser-déposer** depuis le panneau Médias, avec insertion (Ctrl) et
+  remplacement (Alt), et un aperçu calculé exactement comme l'opération.
+- **Mise hors ligne et reliaison** des médias, avec vérification de durée.
+- **Marqueurs**, gestion des pistes (ajout, suppression, renommage, hauteur),
+  étiquettes de clip, activation, renommage.
+- **Table des raccourcis** engendrée depuis le clavier en vigueur.
+- **Lecture en boucle** et **écoute autour du raccord**.
+- Les actions qui n'ont rien derrière — imbriquer, grouper, exporter, palette
+  de commandes, plume, loupe — le DISENT quand on les déclenche (§1003).
+
+### Simulation de montage complet
+
+`e2e/simulation.spec.ts` ne teste pas une fonction : il monte. Dix-huit étapes,
+chaque outil exercé une fois dans l'ordre où on s'en sert vraiment, le modèle
+vérifié à chaque geste, puis tout annuler, tout rétablir, enregistrer et
+recharger. C'est cette simulation qui a révélé les défauts 4 et 5 ci-dessus.
+
+**Total : 524 tests unitaires + 56 tests de bout en bout.**
 
 ## NEXT
 
 1. Graphe de rendu et composition multicouche (§23) — c'est ce qui manque pour
    afficher plus d'une piste à la fois, et le préalable à l'export et aux effets.
-2. Moniteur Source, points d'entrée/sortie, Insert et Overwrite depuis la source
-   (§20, §91) — le cœur du montage à trois points.
+2. Moniteur Source à part entière (§20) : le panneau Médias en tient lieu pour
+   Insert et Overwrite, mais il n'a ni ses propres points d'entrée et de sortie
+   ni sa propre lecture.
 3. Branchement du service d'analyse ffprobe sur l'import (§9).
 4. Export (§48), qui demande le graphe de rendu et un encodeur.
+5. Séquences imbriquées et groupes (§72) : les actions existent au clavier et
+   annoncent leur indisponibilité, le modèle ne les porte pas encore.
+6. Transitions (§95) : le schéma les décrit, aucune opération ne les pose.
 
 ## BLOCKED
 

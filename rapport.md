@@ -640,3 +640,73 @@ retrait d'un champ et d'un export vestigiaux.
 
 478 tests unitaires, typage strict des sources ET des tests, ESLint sans
 avertissement.
+
+---
+
+## 2026-08-28 — Surface de montage professionnelle, et ce que la simulation a trouvé
+
+### Objectif
+
+Reprendre toutes les manipulations qu'un monteur attend d'un logiciel
+professionnel — glisser-déposer, remplacement avec Alt, menus contextuels, mise
+hors ligne, Ctrl+R, vitesse de clip — puis les vérifier une à une par une
+simulation de montage complet.
+
+### Ce qui a été ajouté
+
+**Points d'entrée et de sortie, Lift et Extract.** `setWorkArea` efface la
+borne devenue incohérente au lieu de refuser le geste : reprendre son repérage
+plus loin est un geste courant, pas une erreur. `syncedTargets` définit à UN
+seul endroit les pistes concernées par un Extract — les ciblées plus les
+synchronisées — et le moteur comme l'interface s'en servent ; deux copies de
+cette règle auraient fini par diverger, et le montage avec elles.
+
+**Presse-papiers de montage.** Il mémorise des positions RELATIVES, entre clips
+et entre pistes, ce qui permet de coller un étagement V1/V2/A1 sur d'autres
+pistes en le reproduisant. Les identifiants de clip et de groupe de liaison sont
+renouvelés : coller deux fois donne deux paires indépendantes. Le collage par
+insertion ouvre le trou une seule fois, sur toute l'étendue de la copie — clip
+par clip, la copie se décalerait elle-même.
+
+**Vitesse et durée (Ctrl+R).** `changeSpeed` fixe la vitesse et laisse la durée
+suivre, là où `rateStretch` fait l'inverse. Inverser la lecture déplace le point
+d'entrée à l'ancienne sortie : notre modèle consomme les images en descendant
+depuis `sourceIn`, et sans cet ajustement, inverser un plan montrerait tout
+autre chose.
+
+**Glisser-déposer, avec insertion et remplacement.** `replaceClip` garde la
+place, la durée et tout ce qui a été travaillé sur le clip, et refuse un
+remplaçant trop court avec le compte d'images demandées et disponibles.
+
+**Mise hors ligne et reliaison.** Les clips restent en place, hachurés de rouge :
+un fichier absent n'efface pas un montage. La reliaison vérifie le type et la
+durée réellement consommée.
+
+**Menus contextuels et barre de menus.** La barre affichait huit étiquettes
+inertes — exactement ce que §1003 interdit. Tout est câblé, et ce qui n'est pas
+applicable est grisé AVEC sa raison plutôt que masqué : une entrée qui disparaît
+d'un clic à l'autre déplace toutes les autres.
+
+**Le reste** : marqueurs, gestion des pistes, étiquettes, activation,
+renommage, table des raccourcis engendrée depuis le clavier en vigueur, lecture
+en boucle, écoute autour du raccord.
+
+### Ce que la simulation a révélé
+
+`e2e/simulation.spec.ts` monte réellement, en dix-huit étapes. Deux défauts que
+les tests unitaires ne pouvaient pas voir :
+
+**La lame ignorait les liaisons.** Couper l'image d'un plan lié laissait une
+moitié d'image liée à un son entier, désynchronisée au premier déplacement. Et
+`splitAt` recopiant le groupe de liaison sur la moitié droite, les quatre
+morceaux d'une paire coupée auraient formé un seul groupe.
+
+**Un test qui ne testait rien.** Le sélecteur de ligne cherchait par
+sous-chaîne : « A003_large » trouvait « A003_large.wav », et l'audio passe avant
+la vidéo dans le tri. Le test de rolling trim lisait un clip qu'aucun roll ne
+touche, et passait quoi qu'il arrive.
+
+### Vérifications
+
+524 tests unitaires, 56 tests de bout en bout, typage strict des sources et des
+tests, ESLint sans avertissement.
