@@ -667,3 +667,62 @@ export function unlinkClips(sequence: SequenceDoc, clipIds: readonly string[]): 
 export function duplicateClip(clip: ClipDoc): ClipDoc {
   return { ...clip, id: newClipId(), linkGroup: null };
 }
+
+// ------------------------------------------------------- Proprietes de piste
+
+/** Proprietes de piste modifiables depuis l en-tete (section 14). */
+export interface TrackFlags {
+  readonly locked?: boolean;
+  readonly enabled?: boolean;
+  readonly muted?: boolean;
+  readonly solo?: boolean;
+  readonly targeted?: boolean;
+  readonly syncLock?: boolean;
+  readonly height?: number;
+}
+
+/**
+ * Modifie les drapeaux d une piste.
+ *
+ * Le verrouillage est le SEUL drapeau modifiable sur une piste verrouillee :
+ * sans cette exception, on ne pourrait plus jamais la deverrouiller.
+ */
+export function setTrackFlags(
+  sequence: SequenceDoc,
+  trackId: string,
+  flags: TrackFlags,
+): EditResult {
+  const track = findTrack(sequence, trackId);
+  if (track === undefined) {
+    return err(appError('TRACK_NOT_FOUND', "Cette piste n'existe plus.", { detail: trackId }));
+  }
+  const seulementVerrou = Object.keys(flags).length === 1 && flags.locked !== undefined;
+  if (track.locked && !seulementVerrou) {
+    return err(
+      appError('TRACK_LOCKED', `La piste ${track.name} est verrouillée.`, {
+        action: 'Déverrouiller la piste',
+      }),
+    );
+  }
+  if (flags.height !== undefined && flags.height < 16) {
+    return err(rejected('Une piste ne peut pas être plus basse que 16 pixels.'));
+  }
+  return finalize({
+    ...sequence,
+    tracks: sequence.tracks.map((t) => (t.id === trackId ? { ...t, ...flags } : t)),
+  });
+}
+
+/**
+ * Selection de piste vers l avant : tous les clips de la piste qui commencent
+ * a `from` ou apres. C est l outil A des NLE (section 14).
+ */
+export function selectTrackForward(
+  sequence: SequenceDoc,
+  trackId: string,
+  from: number,
+  toutesPistes = false,
+): string[] {
+  const pistes = toutesPistes ? sequence.tracks : sequence.tracks.filter((t) => t.id === trackId);
+  return pistes.flatMap((t) => t.clips.filter((c) => clipEnd(c) > from).map((c) => c.id));
+}

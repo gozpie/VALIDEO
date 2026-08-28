@@ -156,3 +156,11 @@ export function linkCommand(clipIds: readonly string[]): SequenceCommand {
 export function unlinkCommand(clipIds: readonly string[]): SequenceCommand {
   return command({ label: 'Délier', apply: (seq) => ops.unlinkClips(seq, clipIds) });
 }
+
+export function setTrackFlagsCommand(
+  trackId: string,
+  flags: ops.TrackFlags,
+  libelle: string,
+): SequenceCommand {
+  return command({ label: libelle, apply: (seq) => ops.setTrackFlags(seq, trackId, flags) });
+}

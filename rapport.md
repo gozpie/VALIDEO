@@ -275,3 +275,58 @@ Le détecteur de conflits a trouvé une vraie erreur dans mon propre preset
 ### Vérifications
 
 395 tests verts au total.
+
+---
+
+## 2026-08-28 — Application de montage
+
+### Objectif
+
+Rendre le moteur visible et manipulable. Jusqu'ici tout était vérifié par des
+tests ; il fallait qu'un monteur puisse s'en servir.
+
+### Modifications
+
+**`nle/apps/web`** — application React et Vite, interface sombre dense conforme
+à la section 73, avec moniteurs, panneau Projet, panneau Historique, réglages de
+séquence et timeline.
+
+La timeline est dessinée en Canvas à partir du moteur de rendu déjà testé.
+Fonctionnent réellement, à la souris et au clavier : déplacement avec accrochage
+magnétique, trim simple et ripple, lame, ajout de point de montage, roll, slip,
+slide, étirement temporel, sélection simple, additive, au rectangle et par
+piste, verrouillage et ciblage de pistes, annulation et rétablissement, retour à
+n'importe quelle étape de l'historique, zoom autour du pointeur, navigation par
+points de montage, saisie de timecode et navigation JKL.
+
+Point d'architecture important : pendant un geste, aucun état React n'est
+modifié. Le geste vit dans une référence mutable et le canvas est redessiné
+directement ; React n'intervient qu'au relâchement pour appliquer la commande.
+C'est ce que demande la section 2.
+
+**Ce qui n'est pas fait est annoncé, pas simulé.** Les deux moniteurs sont vides
+et expliquent que le moteur de lecture n'existe pas encore. Aucune vignette,
+aucune forme d'onde dessinée : le projet de démonstration ne référence aucun
+média, et en inventer une serait exactement ce qu'interdit la section 1003.
+
+Les icônes sont dessinées à la main en SVG : aucun asset tiers.
+
+### Corrections issues des tests
+
+Deux vrais défauts trouvés et corrigés :
+
+1. Les boutons d'en-tête de piste étaient inertes dans la première version.
+   C'étaient donc de faux boutons, ce que la section 1003 interdit. Ils passent
+   maintenant par de vraies commandes annulables.
+2. La navigation par points de montage parcourait toutes les pistes. Un logiciel
+   professionnel ne s'arrête que sur les pistes ciblées, sinon la tête de lecture
+   bute sur chaque raccord d'une piste de titrage qu'on ne regarde pas.
+
+### Vérifications
+
+401 tests unitaires et 9 tests de bout en bout exécutés dans un vrai navigateur.
+Ces derniers déplacent des clips à la souris, coupent à la lame, verrouillent une
+piste, annulent, et vérifient que le modèle a réellement changé. Ils vérifient
+aussi qu'un geste continu ne produit qu'une seule entrée d'annulation, qu'une
+opération refusée affiche son message sans rien modifier, et qu'aucune erreur ne
+survient dans la console.

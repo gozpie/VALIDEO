@@ -1,0 +1,406 @@
+/**
+ * Espace de travail Montage (§5, §6).
+ *
+ * Ce que cette interface fait REELLEMENT : monter. Déplacer, trimer, couper,
+ * ripple, roll, slip, slide, étirer, annuler, refaire, zoomer, accrocher, au
+ * clavier comme à la souris — le tout à travers le moteur testé.
+ *
+ * Ce qu'elle ne fait PAS, et qu'elle annonce clairement plutôt que de le
+ * simuler (§1003) : lire de la vidéo, afficher des vignettes, afficher des
+ * formes d'onde, exporter.
+ */
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatTimecode, parseTimecodeEntry } from '@valideo/time-core';
+import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
+import type { KeyContext } from '@valideo/keyboard';
+import {
+  addEditCommand,
+  deleteClipCommand,
+  nextEditPoint,
+  previousEditPoint,
+  sequenceDuration,
+} from '@valideo/timeline-model';
+import {
+  clampScroll,
+  fit,
+  viewport as creerViewport,
+  zoomCentered,
+} from '@valideo/timeline-engine';
+import type { Viewport } from '@valideo/timeline-engine';
+import { Timeline } from './timeline/Timeline.js';
+import { timebaseDeSequence } from './timeline/draw.js';
+import { useEditeur } from './store.js';
+import type { Outil } from './store.js';
+import { PanneauProjet } from './panels/PanneauProjet.js';
+import { Moniteur } from './panels/Moniteur.js';
+import { PanneauInfo } from './panels/PanneauInfo.js';
+
+const OUTILS: readonly { id: Outil; libelle: string; touche: string; titre: string }[] = [
+  { id: 'selection', libelle: 'V', touche: 'V', titre: 'Sélection' },
+  { id: 'trackSelect', libelle: 'A', touche: 'A', titre: 'Sélection de piste' },
+  { id: 'ripple', libelle: 'B', touche: 'B', titre: 'Ripple' },
+  { id: 'rolling', libelle: 'N', touche: 'N', titre: 'Rolling' },
+  { id: 'rateStretch', libelle: 'R', touche: 'R', titre: 'Étirement temporel' },
+  { id: 'razor', libelle: 'C', touche: 'C', titre: 'Lame' },
+  { id: 'slip', libelle: 'Y', touche: 'Y', titre: 'Slip' },
+  { id: 'slide', libelle: 'U', touche: 'U', titre: 'Slide' },
+  { id: 'hand', libelle: 'H', touche: 'H', titre: 'Main' },
+];
+
+const OUTIL_PAR_ACTION: Readonly<Record<string, Outil>> = {
+  'tool.selection': 'selection',
+  'tool.trackSelectForward': 'trackSelect',
+  'tool.ripple': 'ripple',
+  'tool.rolling': 'rolling',
+  'tool.rateStretch': 'rateStretch',
+  'tool.razor': 'razor',
+  'tool.slip': 'slip',
+  'tool.slide': 'slide',
+  'tool.hand': 'hand',
+};
+
+export function App(): React.JSX.Element {
+  const [etat, actions] = useEditeur();
+  const [vue, definirVue] = useState<Viewport>(() => creerViewport(0, 1.4, 800));
+  const [defilementVertical, definirDefilementVertical] = useState(0);
+  const [shuttle] = useState(() => new ShuttleController());
+  const [vitesse, definirVitesse] = useState(0);
+
+  const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
+  const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
+  const resolveur = useMemo(
+    () =>
+      new KeyResolver(
+        DEFAULT_KEYMAP,
+        navigator.platform.toLowerCase().includes('mac') ? 'mac' : 'other',
+      ),
+    [],
+  );
+
+  const timecode = useCallback(
+    (image: number) => formatTimecode(etat.sequence.startTimecode + image, base),
+    [base, etat.sequence.startTimecode],
+  );
+
+  const ajuster = useCallback(() => {
+    definirVue((v) =>
+      fit(creerViewport(v.scroll, v.pixelsPerFrame, v.width), Math.max(1, duree), 20),
+    );
+  }, [duree]);
+
+  /**
+   * Navigation par points de montage : elle se limite aux pistes CIBLÉES, comme
+   * dans tout NLE. Sans cette restriction, la tête s'arrêterait sur le moindre
+   * raccord d'une piste de titrage qu'on ne regarde pas.
+   * Si aucune piste n'est ciblée, on retombe sur l'ensemble des pistes.
+   */
+  const pistesNavigables = useMemo(() => {
+    const ciblees = etat.sequence.tracks.filter((t) => t.targeted).map((t) => t.id);
+    return ciblees.length > 0 ? ciblees : etat.sequence.tracks.map((t) => t.id);
+  }, [etat.sequence.tracks]);
+
+  const executerAction = useCallback(
+    (actionId: string): boolean => {
+      const outil = OUTIL_PAR_ACTION[actionId];
+      if (outil !== undefined) {
+        actions.definirOutil(outil);
+        return true;
+      }
+
+      switch (actionId) {
+        case 'edit.undo':
+          actions.annuler();
+          return true;
+        case 'edit.redo':
+          actions.retablir();
+          return true;
+        case 'file.save':
+          actions.enregistrer();
+          return true;
+        case 'timeline.toggleSnap':
+          actions.basculerAccrochage();
+          return true;
+        case 'timeline.zoomIn':
+          definirVue((v) => zoomCentered(v, 1.4));
+          return true;
+        case 'timeline.zoomOut':
+          definirVue((v) => clampScroll(zoomCentered(v, 1 / 1.4), duree));
+          return true;
+        case 'timeline.zoomToFit':
+          ajuster();
+          return true;
+        case 'nav.nextFrame':
+          actions.definirTete(etat.tete + 1);
+          return true;
+        case 'nav.previousFrame':
+          actions.definirTete(etat.tete - 1);
+          return true;
+        case 'nav.nextFrame5':
+          actions.definirTete(etat.tete + 5);
+          return true;
+        case 'nav.previousFrame5':
+          actions.definirTete(etat.tete - 5);
+          return true;
+        case 'nav.start':
+          actions.definirTete(0);
+          return true;
+        case 'nav.end':
+          actions.definirTete(duree);
+          return true;
+        case 'nav.nextEdit': {
+          const p = nextEditPoint(etat.sequence, etat.tete, pistesNavigables);
+          if (p !== null) actions.definirTete(p);
+          return true;
+        }
+        case 'nav.previousEdit': {
+          const p = previousEditPoint(etat.sequence, etat.tete, pistesNavigables);
+          if (p !== null) actions.definirTete(p);
+          return true;
+        }
+        case 'edit.addEdit':
+          actions.executer(addEditCommand(etat.tete, etat.contexte));
+          return true;
+        case 'edit.delete':
+        case 'edit.rippleDelete': {
+          const ripple = actionId === 'edit.rippleDelete';
+          for (const id of etat.selection) {
+            actions.executer(deleteClipCommand(id, etat.contexte, ripple));
+          }
+          actions.definirSelection([]);
+          return true;
+        }
+        case 'playback.shuttleForward':
+          shuttle.pressL();
+          definirVitesse(shuttle.rate());
+          return true;
+        case 'playback.shuttleReverse':
+          shuttle.pressJ();
+          definirVitesse(shuttle.rate());
+          return true;
+        case 'playback.stop':
+          shuttle.pressK();
+          shuttle.releaseK();
+          definirVitesse(shuttle.rate());
+          return true;
+        case 'playback.togglePlay':
+          shuttle.togglePlay();
+          definirVitesse(shuttle.rate());
+          return true;
+        default:
+          return false;
+      }
+    },
+    [actions, ajuster, duree, etat, pistesNavigables, shuttle],
+  );
+
+  useEffect(() => {
+    const surTouche = (e: KeyboardEvent): void => {
+      const cible = e.target;
+      if (cible instanceof HTMLInputElement || cible instanceof HTMLTextAreaElement) return;
+      const contexte: KeyContext = 'timeline';
+      const actionId = resolveur.resolve(
+        {
+          code: e.code,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          shiftKey: e.shiftKey,
+          altKey: e.altKey,
+        },
+        contexte,
+      );
+      if (actionId === null) return;
+      if (executerAction(actionId)) e.preventDefault();
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [executerAction, resolveur]);
+
+  // Le shuttle déplace la tête de lecture image par image, sans son ni image :
+  // c'est une navigation réelle, pas une lecture simulée.
+  useEffect(() => {
+    if (vitesse === 0) return undefined;
+    let dernier = performance.now();
+    let brut = etat.tete;
+    let id = 0;
+    const pas = (maintenant: number): void => {
+      const dt = (maintenant - dernier) / 1000;
+      dernier = maintenant;
+      brut += vitesse * dt * (base.rate.n / base.rate.d);
+      const image = Math.max(0, Math.min(duree, Math.round(brut)));
+      actions.definirTete(image);
+      if (image >= duree || image <= 0) {
+        shuttle.stop();
+        definirVitesse(0);
+        return;
+      }
+      id = requestAnimationFrame(pas);
+    };
+    id = requestAnimationFrame(pas);
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vitesse]);
+
+  const saisirTimecode = useCallback(() => {
+    const saisie = window.prompt(
+      'Aller au timecode (ex. 01:00:12:00, 1512, +10)',
+      timecode(etat.tete),
+    );
+    if (saisie === null) return;
+    try {
+      const absolu = parseTimecodeEntry(saisie, base, etat.sequence.startTimecode + etat.tete);
+      actions.definirTete(absolu - etat.sequence.startTimecode);
+    } catch {
+      // Une saisie invalide ne fait rien : pas de position inventée.
+    }
+  }, [actions, base, etat.sequence.startTimecode, etat.tete, timecode]);
+
+  return (
+    <div className="app">
+      <header className="barre-menu">
+        <span className="marque">VALIDEO</span>
+        {[
+          'Fichier',
+          'Édition',
+          'Clip',
+          'Séquence',
+          'Marqueur',
+          'Graphiques',
+          'Fenêtre',
+          'Aide',
+        ].map((m) => (
+          <span className="menu" key={m}>
+            {m}
+          </span>
+        ))}
+        <span className="espace" />
+        <span className="etiquette-etat partiel">Socle · montage fonctionnel</span>
+      </header>
+
+      <div className="espace-travail">
+        <Moniteur titre="Moniteur Source" />
+        <Moniteur titre="Moniteur Programme" tete={timecode(etat.tete)} duree={timecode(duree)} />
+
+        <section className="panneau">
+          <div className="panneau-entete">
+            <span className="titre">Projet</span>
+            <span className="espace" />
+            <span>{etat.sequence.tracks.reduce((n, t) => n + t.clips.length, 0)} clips</span>
+          </div>
+          <div className="panneau-corps">
+            <PanneauProjet sequence={etat.sequence} timecode={timecode} />
+          </div>
+        </section>
+
+        <PanneauInfo etat={etat} actions={actions} timecode={timecode} duree={duree} />
+
+        <section className="panneau zone-timeline" style={{ gridColumn: '1 / -1' }}>
+          <div className="panneau-entete">
+            <span className="titre">Timeline · {etat.sequence.name}</span>
+            <span className="espace" />
+            <button
+              type="button"
+              onClick={saisirTimecode}
+              className="mono"
+              title="Saisir un timecode (§16)"
+            >
+              {timecode(etat.tete)}
+            </button>
+          </div>
+
+          <div className="timeline-outils">
+            {OUTILS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={`outil ${etat.outil === o.id ? 'actif' : ''}`}
+                title={`${o.titre} (${o.touche})`}
+                onClick={() => actions.definirOutil(o.id)}
+              >
+                {o.libelle}
+              </button>
+            ))}
+            <span className="sep" />
+            <button
+              type="button"
+              className={etat.accrochage ? 'actif' : ''}
+              onClick={actions.basculerAccrochage}
+              title="Accrochage magnétique (S)"
+            >
+              Accrochage
+            </button>
+            <span className="sep" />
+            <button
+              type="button"
+              onClick={actions.annuler}
+              disabled={!etat.historique.canUndo}
+              title="Annuler"
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              onClick={actions.retablir}
+              disabled={!etat.historique.canRedo}
+              title="Rétablir"
+            >
+              ↷
+            </button>
+            <span className="sep" />
+            <button
+              type="button"
+              onClick={() => definirVue((v) => zoomCentered(v, 1 / 1.6))}
+              title="Zoom arrière"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => definirVue((v) => zoomCentered(v, 1.6))}
+              title="Zoom avant"
+            >
+              +
+            </button>
+            <button type="button" onClick={ajuster} title="Ajuster la séquence">
+              Ajuster
+            </button>
+            <span className="espace" style={{ flex: 1 }} />
+            {vitesse !== 0 && (
+              <span className="mono">{vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}</span>
+            )}
+          </div>
+
+          <Timeline
+            etat={etat}
+            actions={actions}
+            vue={vue}
+            definirVue={definirVue}
+            defilementVertical={defilementVertical}
+            definirDefilementVertical={definirDefilementVertical}
+          />
+        </section>
+      </div>
+
+      <footer className="barre-etat">
+        <span className="mono">{timecode(etat.tete)}</span>
+        <span>
+          {etat.sequence.settings.width}×{etat.sequence.settings.height}
+        </span>
+        <span>
+          {(base.rate.n / base.rate.d).toFixed(3).replace(/0+$/, '').replace(/\.$/, '')} i/s{' '}
+          {base.mode}
+        </span>
+        <span>
+          {etat.selection.size} sélectionné{etat.selection.size > 1 ? 's' : ''}
+        </span>
+        <span className="espace" />
+        {etat.derniereErreur !== null && (
+          <span className="alerte" title={etat.derniereErreur.detail ?? ''}>
+            {etat.derniereErreur.message}
+            {etat.derniereErreur.action !== undefined ? ` — ${etat.derniereErreur.action}` : ''}
+          </span>
+        )}
+        <span>{etat.historique.dirty ? 'Modifié' : 'Enregistré'}</span>
+      </footer>
+    </div>
+  );
+}

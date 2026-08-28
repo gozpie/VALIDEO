@@ -318,11 +318,60 @@ un avertissement propose le conform.
 
 28 tests. **Total : 395 tests verts.**
 
+### Étape 12 — `apps/web` : l'application (§2, §5, §6, §7, §14, §43, §73, §75, §102)
+
+Le moteur devient visible et manipulable. **Ce qui fonctionne réellement**, à la
+souris et au clavier, à travers le moteur testé :
+
+- déplacer un clip (avec accrochage magnétique et repère visuel), changer de
+  piste ;
+- trimer par les bords, en mode simple ou ripple ;
+- couper à la lame, ajouter un point de montage à la tête de lecture ;
+- roll, slip, slide, étirement temporel ;
+- sélection simple, additive, au rectangle, et par piste vers l'avant ;
+- verrouiller / cibler / masquer / muter / soloer une piste — **via de vraies
+  commandes annulables** ;
+- annuler, rétablir, et **revenir à n'importe quelle étape** en cliquant dans
+  l'historique ;
+- zoom autour du pointeur à la molette, ajustement, défilement, navigation par
+  points de montage sur les **pistes ciblées** ;
+- saisie de timecode à la manière d'un monteur (`01:00:12:00`, `1512`, `+10`) ;
+- navigation JKL avec paliers de vitesse.
+
+**Architecture conforme à §2.** Pendant un geste — déplacement, trim, scrub —
+**aucun état React n'est modifié**. Le geste vit dans une `ref` mutable et le
+canvas est redessiné directement. React n'intervient qu'au relâchement, pour
+appliquer la commande. Le coût par image est celui d'un `dessinerTimeline`, pas
+celui d'un arbre de composants.
+
+**Ce qui n'est PAS fait, et que l'interface annonce au lieu de le simuler**
+(§1003) : les deux moniteurs sont **vides**, avec un texte expliquant que le
+moteur de lecture n'existe pas encore. Aucune vignette, **aucune forme d'onde
+dessinée** — le projet de démonstration ne référence aucun média, et inventer
+une forme d'onde serait exactement le « faire semblant » interdit. Pas d'export.
+
+**Icônes maison** en SVG monochrome piloté par `currentColor` — aucun asset
+tiers, conformément à §1.
+
+**9 tests de bout en bout dans un vrai navigateur** (§102) : ils déplacent des
+clips à la souris, coupent à la lame, verrouillent une piste, annulent, et
+vérifient que le **modèle** a réellement changé en lisant le panneau Projet. Ils
+vérifient aussi qu'un geste continu ne produit **qu'une** entrée d'historique,
+qu'une opération refusée affiche son message sans rien modifier, et qu'aucune
+erreur console n'apparaît.
+
+Un écart de comportement réel trouvé par ces tests : la navigation par points de
+montage parcourait **toutes** les pistes. Un NLE ne s'arrête que sur les pistes
+**ciblées** — sinon la tête bute sur chaque raccord d'une piste de titrage qu'on
+ne regarde pas. Corrigé.
+
+**Total : 401 tests unitaires + 9 tests de bout en bout.**
+
 ## NEXT
 
-1. Application web : coquille d'interface et rendu Canvas de la timeline.
+1. Moteur de lecture : démuxeur, WebCodecs, horloge audio maître (§22, §901-1000).
 2. Génération de proxies (§11) et caches (§53).
-3. Moteur de lecture : horloge audio maître (§22).
+3. Import de médias réels dans l'application, branchement des formes d'onde.
 
 ## BLOCKED
 

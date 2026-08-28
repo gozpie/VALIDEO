@@ -377,3 +377,51 @@ ne peut être fait : le média est hors ligne.
 
 **Conséquences.** Un ProRes n'est pas « non supporté » : il demande un proxy, et
 la réponse porte la raison en clair, prête à être affichée.
+
+---
+
+## ADR-023 — Pendant un geste, React ne rend rien
+
+**Contexte.** §2 interdit un rerender React massif pendant un déplacement, et
+fixe l'objectif de 60 images par seconde.
+
+**Décision.** Un geste (déplacement, trim, scrub, rectangle de sélection) vit
+dans une `ref` mutable. Le canvas est redessiné directement à chaque mouvement
+de pointeur. React n'est sollicité **qu'au relâchement**, pour appliquer la
+commande.
+
+**Conséquences.** Le coût par image est celui de `dessinerTimeline` — mesuré à
+0,1–0,28 ms sur 10 000 clips — et non celui d'un arbre de composants. Les états
+provisoires ne polluent ni l'historique ni le document.
+
+---
+
+## ADR-024 — Les moniteurs restent vides tant que la lecture n'existe pas
+
+**Contexte.** Un moniteur vide « fait inachevé ». La tentation est d'y mettre une
+mire, une image fixe, ou des boutons de transport.
+
+**Décision.** Les deux moniteurs affichent un texte qui dit ce qui manque et
+pourquoi. Aucun bouton de transport qui ne transporte rien. Aucune forme d'onde
+dessinée tant qu'aucun média n'est analysé.
+
+**Conséquences.** §1003 respectée à la lettre. Le corollaire vaut aussi pour les
+boutons d'en-tête de piste : ils étaient inertes à la première version, ce qui
+en faisait de faux boutons — ils passent maintenant par de vraies commandes
+annulables.
+
+---
+
+## ADR-025 — La règle « pas d'arrondi flottant » ne s'applique qu'au moteur
+
+**Contexte.** Le lint interdit `Math.round` pour protéger les calculs temporels
+(§12). Appliquée partout, la règle criait dans la couche d'affichage, où l'on
+aligne des pixels et où l'on convertit un geste de souris en images.
+
+**Décision.** La règle est restreinte à `packages/**`. La couche d'affichage en
+est exemptée, conformément à ADR-015 : les pixels sont des flottants légitimes,
+et la frontière vers le modèle passe par des images entières.
+
+**Conséquences.** La règle garde tout son mordant là où elle protège quelque
+chose, sans pousser à la contourner par des exceptions locales — ce qui l'aurait
+vidée de son sens.

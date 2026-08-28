@@ -9,3 +9,5 @@ fixtures/generated/
 
 # Fixtures média : régénérées par scripts/make-fixtures.sh, jamais versionnées
 fixtures/generated/
+test-results/
+playwright-report/

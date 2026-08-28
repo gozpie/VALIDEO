@@ -1,0 +1,225 @@
+/* Disposition générale de l'espace de travail Montage (§6). */
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+.barre-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: 0 var(--esp-3);
+  height: 30px;
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  flex: 0 0 auto;
+}
+.barre-menu .marque {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--texte-fort);
+  font-size: var(--t-sm);
+}
+.barre-menu .menu { color: var(--texte-doux); font-size: var(--t-sm); cursor: default; }
+.barre-menu .espace { flex: 1; }
+
+.espace-travail {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr);
+  /* Trois rangées explicites : moniteurs, panneaux, timeline. Sans la troisième
+     déclarée, la timeline créait une rangée implicite qui écrasait les
+     panneaux du milieu. */
+  grid-template-rows: minmax(180px, 34%) minmax(120px, 22%) minmax(200px, 1fr);
+  gap: 1px;
+  background: var(--bord);
+  min-height: 0;
+}
+.espace-travail > .zone-timeline { grid-column: 1 / -1; }
+
+.panneau {
+  display: flex;
+  flex-direction: column;
+  background: var(--fond-panneau);
+  min-height: 0;
+  min-width: 0;
+}
+
+.panneau-entete {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  height: 24px;
+  padding: 0 var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  flex: 0 0 auto;
+}
+.panneau-entete .titre { color: var(--texte); font-weight: 500; }
+.panneau-entete .espace { flex: 1; }
+.panneau-corps { flex: 1; min-height: 0; overflow: auto; }
+
+.etiquette-etat {
+  font-size: var(--t-xs);
+  padding: 1px 5px;
+  border-radius: var(--r);
+  border: 1px solid;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.etiquette-etat.indisponible { color: var(--avert); border-color: color-mix(in srgb, var(--avert) 45%, transparent); }
+.etiquette-etat.partiel { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* Moniteurs — volontairement vides tant que la lecture n'existe pas (§1003). */
+.moniteur { display: flex; flex-direction: column; height: 100%; }
+.moniteur-image {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  background: #0b0b0c;
+  margin: var(--esp-3);
+  border: 1px solid var(--bord);
+  min-height: 0;
+}
+.moniteur-vide { text-align: center; color: var(--texte-doux); max-width: 340px; padding: var(--esp-4); }
+.moniteur-vide h3 { margin: 0 0 var(--esp-3); font-size: var(--t-md); color: var(--texte); font-weight: 600; }
+.moniteur-vide p { margin: 0; font-size: var(--t-sm); line-height: 1.5; }
+.moniteur-barre {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0 var(--esp-3) var(--esp-3);
+  font-size: var(--t-sm);
+}
+.moniteur-barre .tc { font-size: var(--t-md); color: var(--texte-fort); }
+
+/* Panneau Projet (§7) */
+.table-projet { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.table-projet th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--texte-doux);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  padding: 3px var(--esp-3);
+  white-space: nowrap;
+}
+.table-projet td { padding: 2px var(--esp-3); border-bottom: 1px solid color-mix(in srgb, var(--bord) 50%, transparent); white-space: nowrap; }
+.table-projet tr:hover td { background: var(--fond-survol); }
+.pastille { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+/* Timeline */
+.zone-timeline { display: flex; flex-direction: column; min-height: 0; }
+.timeline-outils {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+  flex: 0 0 auto;
+}
+.timeline-outils .sep { width: 1px; height: 16px; background: var(--bord); margin: 0 var(--esp-2); }
+.outil {
+  width: 26px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.timeline-corps { flex: 1; display: flex; min-height: 0; }
+.entetes-pistes {
+  width: 148px;
+  flex: 0 0 148px;
+  background: var(--fond-panneau);
+  border-right: 1px solid var(--bord);
+  overflow: hidden;
+  position: relative;
+}
+.timeline-toile { flex: 1; position: relative; min-width: 0; overflow: hidden; }
+.timeline-toile canvas { display: block; width: 100%; height: 100%; }
+
+.entete-regle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--fond-panneau-haut);
+  border-bottom: 1px solid var(--bord);
+}
+
+.entete-piste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: 0 var(--esp-2);
+  border-bottom: 1px solid var(--bord);
+  background: var(--fond-panneau);
+  font-size: var(--t-sm);
+}
+.entete-piste .nom { width: 26px; color: var(--texte-fort); font-weight: 600; }
+.bouton-piste {
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--fond-champ);
+  color: var(--texte-doux);
+}
+.bouton-piste:hover { color: var(--texte); }
+.bouton-piste.on { background: var(--accent-doux); border-color: var(--accent); color: var(--texte-fort); }
+.bouton-piste.cible { background: var(--accent); border-color: var(--accent); color: #08101f; }
+
+.barre-etat {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  height: 24px;
+  padding: 0 var(--esp-3);
+  background: var(--fond-panneau-haut);
+  border-top: 1px solid var(--bord);
+  font-size: var(--t-sm);
+  color: var(--texte-doux);
+  flex: 0 0 auto;
+}
+.barre-etat .espace { flex: 1; }
+.barre-etat .alerte { color: var(--avert); }
+
+/* Historique (§43) */
+.liste-historique { font-size: var(--t-sm); }
+.liste-historique li {
+  padding: 2px var(--esp-3);
+  cursor: pointer;
+  list-style: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--bord) 40%, transparent);
+}
+.liste-historique li:hover { background: var(--fond-survol); }
+.liste-historique li.courant { background: var(--accent-doux); color: var(--texte-fort); }
+.liste-historique li.annulee { color: var(--texte-doux); opacity: 0.55; }
+.liste-historique ul { margin: 0; padding: 0; }
+
+.info-cle { display: flex; justify-content: space-between; padding: 2px var(--esp-3); font-size: var(--t-sm); }
+.info-cle span:first-child { color: var(--texte-doux); }
+.info-cle span:last-child { color: var(--texte); }
+
+.message {
+  margin: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid;
+  border-radius: var(--r);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.message.avert { border-color: color-mix(in srgb, var(--avert) 40%, transparent); color: var(--avert); background: color-mix(in srgb, var(--avert) 8%, transparent); }

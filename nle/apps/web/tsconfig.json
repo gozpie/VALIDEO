@@ -1,0 +1,49 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist-types",
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [],
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "references": [
+    {
+      "path": "../../packages/shared"
+    },
+    {
+      "path": "../../packages/time-core"
+    },
+    {
+      "path": "../../packages/project-model"
+    },
+    {
+      "path": "../../packages/command-system"
+    },
+    {
+      "path": "../../packages/timeline-model"
+    },
+    {
+      "path": "../../packages/timeline-engine"
+    },
+    {
+      "path": "../../packages/audio-engine"
+    },
+    {
+      "path": "../../packages/keyboard"
+    },
+    {
+      "path": "../../packages/media-engine"
+    }
+  ]
+}

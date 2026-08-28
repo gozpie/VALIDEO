@@ -11,6 +11,8 @@ import {
   moveClip,
   overwrite,
   razor,
+  selectTrackForward,
+  setTrackFlags,
 } from './edit-ops.js';
 
 const ctx = makeContext();
@@ -360,5 +362,60 @@ describe('Déplacement de clip', () => {
 
   it('refuse une position negative', () => {
     expect(isErr(moveClip(threeInARow(), { clipId: 'a', toStart: -5 }, ctx))).toBe(true);
+  });
+});
+
+// =================================================== PROPRIÉTÉS DE PISTE
+
+describe('Propriétés de piste', () => {
+  it('modifie les drapeaux', () => {
+    const seq = makeSequence([{ id: 'v1' }]);
+    const next = unwrap(setTrackFlags(seq, 'v1', { targeted: true, muted: true }));
+    expect(next.tracks[0]?.targeted).toBe(true);
+    expect(next.tracks[0]?.muted).toBe(true);
+  });
+
+  it('refuse de modifier une piste verrouillée', () => {
+    const seq = makeSequence([{ id: 'v1', locked: true }]);
+    const r = setTrackFlags(seq, 'v1', { targeted: true });
+    expect(isErr(r)).toBe(true);
+    if (isErr(r)) expect(r.error.code).toBe('TRACK_LOCKED');
+  });
+
+  it('laisse TOUJOURS déverrouiller une piste verrouillée', () => {
+    // Sans cette exception, une piste verrouillée le resterait pour toujours.
+    const seq = makeSequence([{ id: 'v1', locked: true }]);
+    const next = unwrap(setTrackFlags(seq, 'v1', { locked: false }));
+    expect(next.tracks[0]?.locked).toBe(false);
+  });
+
+  it('refuse une hauteur absurde', () => {
+    const seq = makeSequence([{ id: 'v1' }]);
+    expect(isErr(setTrackFlags(seq, 'v1', { height: 4 }))).toBe(true);
+  });
+
+  it('signale une piste inexistante', () => {
+    const r = setTrackFlags(makeSequence([{ id: 'v1' }]), 'fantome', { muted: true });
+    expect(isErr(r)).toBe(true);
+    if (isErr(r)) expect(r.error.code).toBe('TRACK_NOT_FOUND');
+  });
+
+  it('sélectionne vers l avant sur une piste', () => {
+    const seq = makeSequence([
+      {
+        id: 'v1',
+        clips: [
+          { id: 'a', start: 0, duration: 100 },
+          { id: 'b', start: 100, duration: 100 },
+          { id: 'c', start: 200, duration: 100 },
+        ],
+      },
+      { id: 'v2', index: 1, clips: [{ id: 'd', start: 150, duration: 100 }] },
+    ]);
+    expect(selectTrackForward(seq, 'v1', 150)).toEqual(['b', 'c']);
+    expect(selectTrackForward(seq, 'v1', 0)).toEqual(['a', 'b', 'c']);
+    expect(selectTrackForward(seq, 'v1', 999)).toEqual([]);
+    // Avec le modificateur, toutes les pistes suivent.
+    expect(selectTrackForward(seq, 'v1', 150, true).sort()).toEqual(['b', 'c', 'd']);
   });
 });

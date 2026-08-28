@@ -3,18 +3,38 @@
 Moteur de montage vidéo non linéaire professionnel, dont l'interface principale
 est le web.
 
-> **État : socle en construction.** Voir `docs/PROGRESS.md` pour ce qui est
-> réellement fonctionnel. Conformément à §1003 du cahier des charges, rien
-> n'est présenté ici comme fonctionnel sans l'être.
+> **État : socle fonctionnel, lecture non construite.** Voir `docs/PROGRESS.md`.
+> Conformément à §1003 du cahier des charges, rien n'est présenté ici comme
+> fonctionnel sans l'être.
 
 ## Démarrage
 
 ```bash
 cd nle
 pnpm install
-pnpm run check     # format + lint + typecheck + tests
-pnpm test          # tests seuls
+pnpm --filter @valideo/web run dev    # l'application
+pnpm run check                        # format + lint + typecheck + tests
+pnpm test                             # 401 tests unitaires
+pnpm run e2e                          # 9 tests de bout en bout (navigateur)
+bash scripts/make-fixtures.sh         # fixtures média réelles (nécessite FFmpeg)
 ```
+
+## Ce qui marche aujourd'hui
+
+Le **montage** : déplacer, trimer, ripple, roll, slip, slide, lame, étirement
+temporel, sélection au rectangle et par piste, verrouillage et ciblage de
+pistes, annulation illimitée avec retour à n'importe quelle étape, accrochage
+magnétique, zoom autour du pointeur, navigation JKL et saisie de timecode.
+
+L'**analyse média** : ffprobe sur de vrais fichiers, cadences exactes, timecode
+drop-frame, détection de cadence variable, alpha, colorimétrie HDR.
+
+## Ce qui n'existe pas encore
+
+La **lecture** — décodage, horloge audio, composition GPU — et donc les
+moniteurs, les vignettes et les formes d'onde à l'écran. L'**export**. Les
+**effets** et l'**étalonnage**. L'interface le dit explicitement plutôt que de
+le simuler.
 
 ## Structure
 
