@@ -12,6 +12,7 @@ import type { AppError } from '@valideo/shared';
 import { isErr } from '@valideo/shared';
 import type { MediaAssetDoc, ProjectDoc, SequenceDoc } from '@valideo/project-model';
 import type { PeakPyramid } from '@valideo/audio-engine';
+import type { VideoSource } from './media/video-source.js';
 import type { TimelineContext } from '@valideo/timeline-model';
 import { rational } from '@valideo/time-core';
 import type { SourceInfo } from '@valideo/timeline-model';
@@ -50,6 +51,8 @@ export interface EtatEditeur {
   readonly pics: ReadonlyMap<string, PeakPyramid>;
   /** Tampons audio décodés, conservés pour la lecture. Jamais persistés. */
   readonly tampons: ReadonlyMap<string, AudioBuffer>;
+  /** Sources vidéo démultiplexées, prêtes à décoder. Jamais persistées. */
+  readonly sourcesVideo: ReadonlyMap<string, VideoSource>;
 }
 
 export interface ActionsEditeur {
@@ -68,7 +71,12 @@ export interface ActionsEditeur {
   chargerDocument(doc: ProjectDoc): void;
   signalerErreur(erreur: AppError): void;
   /** Ajoute un média analysé au projet, avec ses pics et son tampon éventuels. */
-  ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null, tampon: AudioBuffer | null): void;
+  ajouterMedia(
+    asset: MediaAssetDoc,
+    pics: PeakPyramid | null,
+    tampon: AudioBuffer | null,
+    video: VideoSource | null,
+  ): void;
 }
 
 export function useEditeur(): [EtatEditeur, ActionsEditeur] {
@@ -85,6 +93,9 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   const [enveloppe, setEnveloppe] = useState<ProjectDoc>(demoRef.current);
   const [pics, setPics] = useState<ReadonlyMap<string, PeakPyramid>>(() => new Map());
   const [tampons, setTampons] = useState<ReadonlyMap<string, AudioBuffer>>(() => new Map());
+  const [sourcesVideo, setSourcesVideo] = useState<ReadonlyMap<string, VideoSource>>(
+    () => new Map(),
+  );
 
   const [sequence, setSequence] = useState<SequenceDoc>(() => history.current());
   const [instantane, setInstantane] = useState(() => history.snapshot());
@@ -172,6 +183,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
         asset: MediaAssetDoc,
         nouveauxPics: PeakPyramid | null,
         tampon: AudioBuffer | null,
+        video: VideoSource | null,
       ) => {
         setEnveloppe((courante) => ({ ...courante, media: [...courante.media, asset] }));
         if (nouveauxPics !== null) {
@@ -179,6 +191,9 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
         }
         if (tampon !== null) {
           setTampons((courants) => new Map(courants).set(asset.id, tampon));
+        }
+        if (video !== null) {
+          setSourcesVideo((courantes) => new Map(courantes).set(asset.id, video));
         }
       },
       chargerDocument: (doc: ProjectDoc) => {
@@ -203,6 +218,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
     document,
     pics,
     tampons,
+    sourcesVideo,
     sequence,
     selection,
     tete,

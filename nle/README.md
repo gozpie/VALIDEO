@@ -33,14 +33,19 @@ L'**import audio et la lecture du son** : un fichier importé est décodé par l
 navigateur, sa forme d'onde vient des vrais échantillons, et il se lit — l'horloge
 audio commandant la tête de lecture.
 
+Le **démultiplexage MP4/MOV et le décodage WebCodecs** : cadence et codec exacts,
+et l'image de la tête de lecture affichée dans le Moniteur Programme.
+
 La **persistance** : enregistrement, sauvegarde automatique, instantanés et
 reprise après une session interrompue.
 
 ## Ce qui n'existe pas encore
 
-La **lecture vidéo** — démultiplexeur, décodage, composition GPU — et donc
-l'image dans les moniteurs et les vignettes. L'**export**. Les **effets** et
-l'**étalonnage**. L'interface le dit explicitement plutôt que de le simuler.
+La **lecture vidéo temps réel** : l'image affichée est une image fixe à la
+position courante ; il manque le décodage anticipé, le cache d'images et la
+synchronisation de l'image sur l'horloge audio. La **composition** multicouche.
+Les **vignettes** de timeline. L'**export**. Les **effets** et l'**étalonnage**.
+L'interface le dit explicitement plutôt que de le simuler.
 
 ## Structure
 

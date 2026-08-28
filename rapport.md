@@ -474,3 +474,53 @@ n'existe pas encore.
 dans un vrai navigateur que la tête de lecture avance seule pendant la lecture,
 s'arrête réellement à la pause, et progresse à une vitesse cohérente avec la
 cadence de la séquence.
+
+---
+
+## 2026-08-28 — Démultiplexeur MP4 et décodage vidéo
+
+### Objectif
+
+WebCodecs ne démultiplexe pas : le décodeur attend des morceaux déjà extraits du
+conteneur. Sans démultiplexeur, aucun décodage n'est possible. C'est la pièce
+manquante que signale la section 901-1000.
+
+### Modifications
+
+**`nle/packages/demux`** — démultiplexeur ISO BMFF, c'est-à-dire MP4 et MOV. Il
+construit l'index des échantillons de chaque piste : position, taille,
+horodatages de décodage et de présentation, caractère image clé. Il ne connaît du
+fichier que sa taille et la possibilité d'en lire une tranche, donc un fichier de
+plusieurs centaines de gigaoctets n'est jamais chargé en mémoire.
+
+Il applique les listes d'édition, ce qui est le détail qui sépare un
+démultiplexeur juste d'un démultiplexeur approximatif : avec des images B, les
+ignorer décale toute la piste vidéo de deux images par rapport au son.
+
+Ses horodatages sont vérifiés comme identiques à ceux que ffprobe lit sur les
+mêmes fichiers.
+
+**`nle/apps/web`** — l'import vidéo passe désormais par ce démultiplexeur, ce qui
+donne la cadence exacte et le codec réel, là où un élément vidéo ne donnait
+qu'une durée approchée. Le Moniteur Programme affiche l'image exacte de la tête
+de lecture, décodée par WebCodecs.
+
+### Deux bugs réels, tous deux sur le décodeur
+
+1. Mon mécanisme d'attente supposait une image par appel de décodage. Un décodeur
+   émet par rafales : les images surnuméraires n'étaient jamais libérées et la
+   bonne était parfois perdue.
+2. Les demandes concurrentes corrompaient l'état du décodeur, qui retient la
+   position atteinte dans le groupe d'images. Elles sont maintenant sérialisées.
+
+### Limite assumée
+
+C'est un affichage d'image fixe, pas une lecture temps réel : il manque le
+décodage anticipé, le cache d'images et la synchronisation de l'image sur
+l'horloge audio. Un saut long coûte le décodage d'un groupe d'images complet.
+
+### Vérifications
+
+462 tests unitaires et 19 tests de bout en bout. L'un d'eux vérifie image par
+image que l'horodatage de l'image affichée correspond exactement à la position de
+la tête de lecture.

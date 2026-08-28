@@ -23,7 +23,12 @@ function libelleFlux(asset: MediaAssetDoc): string {
   const v = asset.videoStreams[0];
   const a = asset.audioStreams[0];
   const morceaux: string[] = [];
-  if (v !== undefined) morceaux.push(`${v.width}×${v.height}`);
+  if (v !== undefined) {
+    const cadence = v.frameRate.n / v.frameRate.d;
+    morceaux.push(`${v.width}×${v.height}`);
+    morceaux.push(`${cadence.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')} i/s`);
+    if (v.codec !== 'inconnu') morceaux.push(v.codec);
+  }
   if (a !== undefined)
     morceaux.push(
       `${a.channels} ch · ${(a.sampleRate / 1000).toFixed(a.sampleRate % 1000 === 0 ? 0 : 1)} kHz`,
@@ -46,7 +51,7 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
         const resultat = await importerFichier(fichier, {
           cadenceParDefaut: etat.sequence.timebase.rate,
         });
-        actions.ajouterMedia(resultat.asset, resultat.pics, resultat.tampon);
+        actions.ajouterMedia(resultat.asset, resultat.pics, resultat.tampon, resultat.video);
         messages.push(...resultat.avertissements);
       }
       definirAvertissements(messages);
@@ -143,9 +148,13 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
                     ? 'illisible'
                     : etat.tampons.has(asset.id)
                       ? 'décodé · lisible'
-                      : etat.pics.has(asset.id)
-                        ? 'décodé'
-                        : 'à analyser'}
+                      : etat.sourcesVideo.has(asset.id)
+                        ? etat.sourcesVideo.get(asset.id)?.infos.decodable === true
+                          ? 'démuxé · décodable'
+                          : 'démuxé · proxy requis'
+                        : etat.pics.has(asset.id)
+                          ? 'décodé'
+                          : 'à analyser'}
                 </td>
                 <td>
                   <button

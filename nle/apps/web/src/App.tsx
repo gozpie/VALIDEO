@@ -36,6 +36,7 @@ import type { Outil } from './store.js';
 import { PanneauMedias } from './panels/PanneauMedias.js';
 import { PanneauProjet } from './panels/PanneauProjet.js';
 import { Moniteur } from './panels/Moniteur.js';
+import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { usePersistance } from './persistance.js';
 import { TransportAudio } from './playback/transport.js';
@@ -78,6 +79,12 @@ export function App(): React.JSX.Element {
   tamponsRef.current = etat.tampons;
   const mediasRef = useRef(new Map(etat.document.media.map((m) => [m.id, m])));
   mediasRef.current = new Map(etat.document.media.map((m) => [m.id, m]));
+
+  /** Cadence d'un média, pour convertir une position de timeline en position source. */
+  const cadenceMedia = useCallback((mediaId: string): number => {
+    const media = mediasRef.current.get(mediaId);
+    return media === undefined ? 0 : media.duration.base.rate.n / media.duration.base.rate.d;
+  }, []);
 
   const persistance = usePersistance({
     document: etat.document,
@@ -406,10 +413,13 @@ export function App(): React.JSX.Element {
 
       <div className="espace-travail">
         <Moniteur titre="Moniteur Source" />
-        <Moniteur
-          titre="Moniteur Programme"
-          tete={timecode(etat.tete)}
+        <MoniteurProgramme
+          sequence={etat.sequence}
+          tete={etat.tete}
+          tempsCode={timecode(etat.tete)}
           duree={timecode(duree)}
+          sources={etat.sourcesVideo}
+          mediaCadence={cadenceMedia}
           enLecture={vitesse !== 0}
         />
 

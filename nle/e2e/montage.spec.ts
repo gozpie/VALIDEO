@@ -390,3 +390,53 @@ test('la lecture avance à une vitesse cohérente avec la cadence', async ({ pag
   expect(secondes).toBeGreaterThan(0.4);
   expect(secondes).toBeLessThan(2.5);
 });
+
+test('le moniteur affiche l’image EXACTE de la tête de lecture (§22, §901-1000)', async ({
+  page,
+}) => {
+  // VP9 en MP4 : même démultiplexeur que pour H.264, mais décodable par les
+  // navigateurs dépourvus de codecs propriétaires.
+  const fixture = new URL('../fixtures/generated/vp9_25.mp4', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+
+  const media = page.locator('tr[data-test="ligne-media"]');
+  // Le démultiplexeur donne la cadence et le codec EXACTS, là où un élément
+  // vidéo ne donnerait qu'une durée approchée.
+  await expect(media).toContainText('25 i/s');
+  await expect(media).toContainText('vp09');
+  await expect(media).toContainText('démuxé · décodable');
+
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+  await expect(ligne(page, 'vp9_25.mp4')).toBeVisible();
+
+  const toile = page.getByTestId('image-programme');
+  const tc = page.locator('.barre-etat .mono').first();
+
+  // On place la tête sur des images précises et on vérifie que l'horodatage de
+  // l'image décodée correspond EXACTEMENT, à l'image près.
+  await page.locator('.timeline-toile canvas').click({ position: { x: 40, y: 10 } });
+  await page.keyboard.press('Home');
+
+  for (const image of [0, 7, 12, 30, 49]) {
+    await page.keyboard.press('Home');
+    for (let i = 0; i < image; i += 1) await page.keyboard.press('ArrowRight');
+    await expect(tc).toHaveText(
+      `01:00:${String(Math.floor(image / 25)).padStart(2, '0')}:${String(image % 25).padStart(2, '0')}`,
+    );
+    // 1 image à 25 i/s = 40 000 µs.
+    await expect(toile).toHaveAttribute('data-pts', String(image * 40000));
+  }
+});
+
+test('un média vidéo non décodable est annoncé, pas affiché en erreur', async ({ page }) => {
+  // Ce navigateur de test n'a pas les codecs propriétaires : le H.264 doit être
+  // démultiplexé correctement mais annoncé comme nécessitant un proxy (§60).
+  const fixture = new URL('../fixtures/generated/cfr_25.mp4', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+
+  const media = page.locator('tr[data-test="ligne-media"]');
+  await expect(media).toContainText('avc1');
+  await expect(media).toContainText('25 i/s');
+  // Démultiplexé sans problème ; c'est le DÉCODAGE que ce navigateur refuse.
+  await expect(media).toContainText('démuxé');
+});

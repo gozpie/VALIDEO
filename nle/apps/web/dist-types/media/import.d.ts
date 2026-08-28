@@ -22,6 +22,7 @@
  */
 import type { MediaAssetDoc } from '@valideo/project-model';
 import type { PeakPyramid } from '@valideo/audio-engine';
+import { VideoSource } from './video-source.js';
 export interface MediaImporte {
     readonly asset: MediaAssetDoc;
     /** Pyramide de pics, uniquement pour les fichiers dont l audio a ete decode. */
@@ -35,6 +36,8 @@ export interface MediaImporte {
      * que la lecture demandera un decodage a la demande.
      */
     readonly tampon: AudioBuffer | null;
+    /** Source video demultiplexee, quand le fichier est un MP4 ou un MOV. */
+    readonly video: VideoSource | null;
     /** Ce qui n a pas pu etre determine, a signaler sans dramatiser. */
     readonly avertissements: readonly string[];
 }

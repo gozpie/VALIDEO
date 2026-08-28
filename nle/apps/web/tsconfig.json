@@ -50,6 +50,9 @@
     },
     {
       "path": "../../packages/playback"
+    },
+    {
+      "path": "../../packages/demux"
     }
   ]
 }

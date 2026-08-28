@@ -38,6 +38,9 @@
       "path": "./packages/playback"
     },
     {
+      "path": "./packages/demux"
+    },
+    {
       "path": "./apps/web"
     }
   ]

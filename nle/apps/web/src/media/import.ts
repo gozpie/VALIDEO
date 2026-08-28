@@ -25,6 +25,7 @@ import { newMediaId } from '@valideo/shared';
 import type { PeakPyramid } from '@valideo/audio-engine';
 import { buildPeaks } from '@valideo/audio-engine';
 import { approximate, rational } from '@valideo/time-core';
+import { VideoSource } from './video-source.js';
 
 export interface MediaImporte {
   readonly asset: MediaAssetDoc;
@@ -39,6 +40,8 @@ export interface MediaImporte {
    * que la lecture demandera un decodage a la demande.
    */
   readonly tampon: AudioBuffer | null;
+  /** Source video demultiplexee, quand le fichier est un MP4 ou un MOV. */
+  readonly video: VideoSource | null;
   /** Ce qui n a pas pu etre determine, a signaler sans dramatiser. */
   readonly avertissements: readonly string[];
 }
@@ -166,14 +169,14 @@ export async function importerFichier(
 ): Promise<MediaImporte> {
   const avertissements: string[] = [];
   const famille = familleDe(fichier);
-  const cadence = options.cadenceParDefaut ?? { n: 25, d: 1 };
+  const cadenceDemandee = options.cadenceParDefaut ?? { n: 25, d: 1 };
   const base = assetVide(fichier);
 
   if (famille === 'audio') {
     const contexte = options.contexteAudio ?? new OfflineAudioContext(1, 1, 48000);
     try {
       const decode = await decoderAudio(fichier, contexte);
-      const images = Math.round((decode.secondes * cadence.n) / cadence.d);
+      const images = Math.round((decode.secondes * cadenceDemandee.n) / cadenceDemandee.d);
       if (decode.tampon === null) {
         avertissements.push(
           `« ${fichier.name} » est trop volumineux une fois décodé pour rester en mémoire : sa forme d’onde est disponible, mais pas sa lecture directe.`,
@@ -182,7 +185,7 @@ export async function importerFichier(
       return {
         asset: {
           ...base,
-          duration: { frames: images, base: { rate: cadence, mode: 'NDF' } },
+          duration: { frames: images, base: { rate: cadenceDemandee, mode: 'NDF' } },
           audioStreams: [
             {
               index: 0,
@@ -202,6 +205,7 @@ export async function importerFichier(
         },
         pics: decode.pics,
         tampon: decode.tampon,
+        video: null,
         avertissements,
       };
     } catch (cause) {
@@ -209,6 +213,7 @@ export async function importerFichier(
         asset: { ...base, status: 'unreadable' },
         pics: null,
         tampon: null,
+        video: null,
         avertissements: [
           `« ${fichier.name} » n’a pas pu être décodé par le navigateur.`,
           cause instanceof Error ? cause.message : String(cause),
@@ -218,25 +223,71 @@ export async function importerFichier(
   }
 
   if (famille === 'video') {
+    // On tente d'abord le DÉMULTIPLEXAGE : il donne la cadence exacte, le codec
+    // réel et la définition codée, là où un élément vidéo ne donnerait qu'une
+    // durée approchée et aucune cadence fiable.
+    const ouverture = await VideoSource.ouvrir(fichier);
+    if (ouverture.ok) {
+      const { source, infos } = ouverture.value;
+      avertissements.push(...ouverture.value.avertissements);
+      const images = infos.nombreImages;
+      return {
+        asset: {
+          ...base,
+          duration: { frames: images, base: { rate: infos.cadence, mode: 'NDF' } },
+          videoStreams: [
+            {
+              index: 0,
+              codec: infos.codec,
+              profile: null,
+              level: null,
+              width: infos.largeur,
+              height: infos.hauteur,
+              frameRate: infos.cadence,
+              variableFrameRate: false,
+              pixelAspect: { n: 1, d: 1 },
+              bitDepth: 8,
+              pixelFormat: 'inconnu',
+              colorSpace: {
+                primaries: 'bt709',
+                transfer: 'bt709',
+                matrix: 'bt709',
+                range: 'limited',
+              },
+              hasAlpha: false,
+              alphaMode: null,
+              fieldOrder: 'progressive',
+            },
+          ],
+          analysisStatus: 'done',
+        },
+        pics: null,
+        tampon: null,
+        video: source,
+        avertissements,
+      };
+    }
+
+    // Conteneur non pris en charge par notre démultiplexeur (Matroska, MXF...) :
+    // on se rabat sur ce que le navigateur veut bien dire, en l'annonçant.
     const meta = await metadonneesVideo(fichier);
     if (meta === null) {
       return {
         asset: { ...base, status: 'unreadable' },
         pics: null,
         tampon: null,
-        avertissements: [
-          `« ${fichier.name} » n’a pas pu être lu par le navigateur ; une analyse serveur est nécessaire.`,
-        ],
+        video: null,
+        avertissements: [`« ${fichier.name} » n’a pas pu être lu : ${ouverture.error.message}`],
       };
     }
     avertissements.push(
-      'La cadence exacte, le codec et le timecode d’un fichier vidéo ne sont pas accessibles au navigateur seul : ils seront complétés par l’analyse serveur.',
+      `Le conteneur de « ${fichier.name} » n’est pas démultiplexé par VALIDEO : durée et définition proviennent du navigateur, la cadence est supposée.`,
     );
-    const images = Math.round((meta.secondes * cadence.n) / cadence.d);
+    const images = Math.round((meta.secondes * cadenceDemandee.n) / cadenceDemandee.d);
     return {
       asset: {
         ...base,
-        duration: { frames: images, base: { rate: cadence, mode: 'NDF' } },
+        duration: { frames: images, base: { rate: cadenceDemandee, mode: 'NDF' } },
         videoStreams: [
           {
             index: 0,
@@ -245,7 +296,7 @@ export async function importerFichier(
             level: null,
             width: meta.largeur,
             height: meta.hauteur,
-            frameRate: cadence,
+            frameRate: cadenceDemandee,
             variableFrameRate: false,
             pixelAspect: { n: 1, d: 1 },
             bitDepth: 8,
@@ -264,6 +315,7 @@ export async function importerFichier(
       },
       pics: null,
       tampon: null,
+      video: null,
       avertissements,
     };
   }
@@ -274,12 +326,13 @@ export async function importerFichier(
       asset: {
         ...base,
         duration: {
-          frames: Math.round((5 * cadence.n) / cadence.d),
-          base: { rate: cadence, mode: 'NDF' },
+          frames: Math.round((5 * cadenceDemandee.n) / cadenceDemandee.d),
+          base: { rate: cadenceDemandee, mode: 'NDF' },
         },
       },
       pics: null,
       tampon: null,
+      video: null,
       avertissements,
     };
   }
@@ -288,6 +341,7 @@ export async function importerFichier(
     asset: { ...base, status: 'unreadable' },
     pics: null,
     tampon: null,
+    video: null,
     avertissements: [`Le type de « ${fichier.name} » n’est pas reconnu.`],
   };
 }

@@ -500,11 +500,76 @@ pause, et progresse à une vitesse cohérente avec la cadence de la séquence.
 
 **Total : 444 tests unitaires + 17 tests de bout en bout.**
 
+### Étape 16 — `@valideo/demux` : le démultiplexeur MP4 (§901-1000, §66)
+
+**WebCodecs ne démultiplexe pas.** `VideoDecoder` attend des morceaux déjà
+extraits du conteneur, avec leur horodatage et leur description de codec. Sans
+démultiplexeur, aucun décodage n'est possible — c'est la pièce que §901-1000
+signale explicitement comme manquante dans les approches naïves.
+
+- **Lecture par plages** : le démultiplexeur ne connaît du fichier que sa taille
+  et la possibilité d'en lire une tranche. Un fichier de 400 Go n'est jamais
+  chargé en mémoire (§66) — un test le vérifie en comptant les octets réellement
+  lus.
+- **Index d'échantillons complet** : `stts`, `ctts`, `stsc`, `stsz`/`stz2`,
+  `stco`/`co64`, `stss`. Les tables MP4 sont compressées par répétition et
+  regroupées en *chunks* ; il faut les déplier pour savoir où commence chaque
+  image.
+- **Chaînes de codec WebCodecs** construites depuis `avcC`, `hvcC` et `vpcC` :
+  `avc1.640028`, `vp09.00.20.08`.
+- **Listes d'édition (`elst`)** — le détail qui sépare un démultiplexeur juste
+  d'un démultiplexeur approximatif. Avec des images B, les décalages de
+  composition sont positifs et le premier horodatage vaut deux images au lieu de
+  zéro. L'ignorer **décale toute la piste vidéo de deux images par rapport au
+  son**.
+- Les fichiers **fragmentés** sont détectés et signalés, pas silencieusement
+  mal indexés.
+
+**Validé contre ffprobe** : les horodatages de présentation produits sont
+**identiques** à ceux que ffprobe lit sur les mêmes fichiers — H.264 avec images
+B, VP9, ProRes en MOV, fichier avec piste de timecode. 18 tests.
+
+### Étape 17 — Décodage WebCodecs et image dans le Moniteur Programme
+
+La chaîne est complète : **fichier → démultiplexeur → `EncodedVideoChunk` →
+`VideoDecoder` → `VideoFrame` → canvas**.
+
+- L'import d'une vidéo passe désormais par **notre démultiplexeur** : on obtient
+  la **cadence exacte** (12800/512 = exactement 25, et 24000/1001 reste
+  24000/1001), le **codec réel** et la définition codée — là où un élément vidéo
+  ne donnait qu'une durée approchée et aucune cadence fiable.
+- Le Moniteur Programme affiche l'image **exacte** de la tête de lecture. Un test
+  de bout en bout le vérifie image par image : à la position *n*, l'horodatage
+  de l'image décodée vaut exactement *n* × 40 000 µs.
+- Un codec que le navigateur ne décode pas est **annoncé** — « démuxé · proxy
+  requis » — et non affiché comme une erreur (§60).
+
+**Deux bugs réels, tous deux dans la gestion du décodeur :**
+
+1. Mon mécanisme d'attente supposait **une image par appel à `decode()`**. Un
+   décodeur émet par rafales, sans correspondance un-pour-un : les images
+   surnuméraires n'étaient jamais libérées et la bonne était parfois perdue.
+   Remplacé par un collecteur.
+2. Les demandes concurrentes **corrompaient l'état du décodeur** — un décodeur
+   porte la position atteinte dans le groupe d'images. Elles sont maintenant
+   sérialisées.
+
+**Limite assumée et mesurée** : chaque demande repart de l'image clé qui précède.
+Une reprise incrémentale semblait économique, mais elle rendait muette la demande
+suivante quand la cible avait déjà été franchie. C'est un **affichage d'image
+fixe**, pas une lecture temps réel : il manque le décodage anticipé, le cache
+d'images et la synchronisation de l'image sur l'horloge audio. Un saut d'un
+groupe d'images complet prend visiblement plus de temps qu'un pas d'une image —
+c'est inhérent, et c'est ce que le cache résoudra.
+
+**Total : 462 tests unitaires + 19 tests de bout en bout.**
+
 ## NEXT
 
-1. Démultiplexeur MP4 et premier décodeur WebCodecs (§901-1000, §22).
-2. Branchement du service d'analyse ffprobe sur l'import (§9).
-3. Génération de proxies (§11) et caches (§53).
+1. Cache d'images décodées et décodage anticipé, pour passer de l'image fixe à
+   la lecture temps réel (§22, §120, §121).
+2. Graphe de rendu et composition multicouche (§23).
+3. Branchement du service d'analyse ffprobe sur l'import (§9).
 
 ## BLOCKED
 

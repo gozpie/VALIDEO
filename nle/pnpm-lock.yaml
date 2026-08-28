@@ -63,6 +63,9 @@ importers:
       '@valideo/command-system':
         specifier: workspace:*
         version: link:../../packages/command-system
+      '@valideo/demux':
+        specifier: workspace:*
+        version: link:../../packages/demux
       '@valideo/keyboard':
         specifier: workspace:*
         version: link:../../packages/keyboard
@@ -120,6 +123,12 @@ importers:
         version: link:../time-core
 
   packages/command-system:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/demux:
     dependencies:
       '@valideo/shared':
         specifier: workspace:*

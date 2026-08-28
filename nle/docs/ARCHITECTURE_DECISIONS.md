@@ -581,3 +581,76 @@ joué à l'endroit : ce serait faux, et inaudible comme erreur.
 **Conséquences.** L'interface affiche le nombre de clips non joués et leurs
 raisons. §1003 respectée jusque dans le moteur audio, pas seulement dans
 l'interface.
+
+---
+
+## ADR-036 — Le démultiplexeur ne connaît du fichier que « taille » et « lire une plage »
+
+**Contexte.** §66 exige de ne jamais charger un fichier entier en mémoire, et
+§62 de ne dépendre d'aucun fournisseur de stockage.
+
+**Décision.** Toute l'interface est `RangeReader` : une taille, une méthode
+`lire(offset, longueur)`. Trois implémentations couvrent fichier local, mémoire
+et test.
+
+**Conséquences.** Le même code fonctionne sur un `File`, sur OPFS et sur une
+requête HTTP par plage d'octets. Un test compte les octets réellement lus et
+vérifie qu'indexer un fichier n'en lit qu'une fraction.
+
+---
+
+## ADR-037 — Les listes d'édition sont appliquées
+
+**Contexte.** Avec des images B, les décalages de composition (`ctts` version 0)
+sont positifs : le premier horodatage de présentation vaut deux images au lieu
+de zéro. Le conteneur corrige cela par une liste d'édition (`elst`).
+
+**Décision.** `elst` est lue et appliquée aux horodatages, segments vides
+compris.
+
+**Conséquences.** Les horodatages produits sont **identiques** à ceux de
+ffprobe, ce qu'un test vérifie sur trois fichiers. Sans cela, toute la piste
+vidéo serait décalée de deux images par rapport au son — le genre d'erreur qu'on
+ne découvre qu'au montage fin, quand il est trop tard.
+
+Effet de bord assumé : le premier `dts` devient négatif, exactement comme dans
+FFmpeg. C'est correct, et le test l'énonce.
+
+---
+
+## ADR-038 — Un décodeur émet par rafales, et ne supporte pas les demandes concurrentes
+
+**Contexte.** Deux bugs successifs sur la même API.
+
+**Décision.**
+
+1. Les images sorties du décodeur sont **collectées**, puis on choisit celle
+   dont l'horodatage précède la cible au plus près. Attendre « la prochaine
+   image » après chaque `decode()` est faux : il n'y a pas de correspondance
+   un-pour-un.
+2. Les demandes de décodage sont **sérialisées** par une file à une voie. Un
+   décodeur porte un état — la position atteinte dans le groupe d'images — que
+   deux appels concurrents corrompent.
+
+**Conséquences.** L'image affichée correspond exactement à la tête de lecture,
+vérifié image par image en bout en bout. Les images non retenues sont libérées
+immédiatement (§57).
+
+---
+
+## ADR-039 — Chaque demande repart de l'image clé, en attendant un cache
+
+**Contexte.** Une reprise incrémentale — « j'ai déjà décodé jusqu'à l'image 7,
+je continue » — semble économique.
+
+**Décision.** On repart toujours de l'image clé qui précède la cible.
+
+**Pourquoi.** L'approche incrémentale rendait la demande suivante **muette**
+quand la cible avait déjà été franchie : le décodeur n'avait plus rien à
+émettre, et l'affichage restait sur l'image précédente. Le gain ne valait pas ce
+défaut.
+
+**Conséquences.** Un saut d'un groupe d'images complet coûte le décodage de ce
+groupe. C'est acceptable pour un affichage d'image fixe, et ce sera résolu par
+le cache d'images du moteur temps réel — pas par une astuce sur l'état du
+décodeur.

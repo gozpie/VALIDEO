@@ -2,6 +2,7 @@ import type { Command } from '@valideo/command-system';
 import type { AppError } from '@valideo/shared';
 import type { MediaAssetDoc, ProjectDoc, SequenceDoc } from '@valideo/project-model';
 import type { PeakPyramid } from '@valideo/audio-engine';
+import type { VideoSource } from './media/video-source.js';
 import type { TimelineContext } from '@valideo/timeline-model';
 export type Outil = 'selection' | 'trackSelect' | 'ripple' | 'rolling' | 'razor' | 'slip' | 'slide' | 'rateStretch' | 'hand';
 export interface EtatEditeur {
@@ -25,6 +26,8 @@ export interface EtatEditeur {
     readonly pics: ReadonlyMap<string, PeakPyramid>;
     /** Tampons audio décodés, conservés pour la lecture. Jamais persistés. */
     readonly tampons: ReadonlyMap<string, AudioBuffer>;
+    /** Sources vidéo démultiplexées, prêtes à décoder. Jamais persistées. */
+    readonly sourcesVideo: ReadonlyMap<string, VideoSource>;
 }
 export interface ActionsEditeur {
     executer(commande: Command<SequenceDoc>): boolean;
@@ -42,7 +45,7 @@ export interface ActionsEditeur {
     chargerDocument(doc: ProjectDoc): void;
     signalerErreur(erreur: AppError): void;
     /** Ajoute un média analysé au projet, avec ses pics et son tampon éventuels. */
-    ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null, tampon: AudioBuffer | null): void;
+    ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null, tampon: AudioBuffer | null, video: VideoSource | null): void;
 }
 export declare function useEditeur(): [EtatEditeur, ActionsEditeur];
 /** Cadence de la séquence, en flottant, pour l affichage seul. */

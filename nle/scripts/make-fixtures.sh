@@ -84,6 +84,16 @@ ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=1" \
   -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc \
   "$OUT/hdr_pq.mp4"
 
+# --- Pour le démultiplexeur et WebCodecs (§901-1000) --------------------------
+# VP9 dans un conteneur MP4 : même démultiplexeur que pour H.264, mais décodable
+# par les navigateurs sans codecs propriétaires (Chromium de test, notamment).
+ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=2" \
+  -c:v libvpx-vp9 -pix_fmt yuv420p -b:v 300k -g 25 "$OUT/vp9_25.mp4"
+
+# H.264 avec images B et un GOP court : le cas qui piège les index d'échantillons.
+ffmpeg $Q -f lavfi -i "${SRC}:rate=25:duration=2" \
+  -c:v libx264 -pix_fmt yuv420p -g 12 -bf 2 "$OUT/h264_gop12.mp4"
+
 # --- Fichier corrompu (§106) --------------------------------------------------
 head -c 2048 "$OUT/cfr_25.mp4" > "$OUT/broken.mp4"
 
