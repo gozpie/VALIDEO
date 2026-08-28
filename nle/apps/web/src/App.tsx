@@ -17,9 +17,11 @@ import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboar
 import type { KeyContext } from '@valideo/keyboard';
 import {
   addEditCommand,
+  changeSpeedCommand,
   copyClips,
   deleteClipsCommand,
   extractCommand,
+  findClip,
   pasteCommand,
   liftCommand,
   nextEditPoint,
@@ -47,6 +49,8 @@ import { PanneauProjet } from './panels/PanneauProjet.js';
 import { Moniteur } from './panels/Moniteur.js';
 import { MoniteurProgramme } from './panels/MoniteurProgramme.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
+import { DialogueVitesse } from './panels/DialogueVitesse.js';
+import type { ReglagesVitesse } from './panels/DialogueVitesse.js';
 import { usePersistance } from './persistance.js';
 import { TransportAudio } from './playback/transport.js';
 
@@ -191,6 +195,19 @@ export function App(): React.JSX.Element {
    * une ref et non un etat -- rien a l'ecran n'en depend.
    */
   const pressePapiers = useRef<ClipboardContent | null>(null);
+
+  /** Clip dont la boite « Vitesse et duree » est ouverte, s il y en a une. */
+  const [clipVitesse, setClipVitesse] = useState<string | null>(null);
+
+  /**
+   * Le clip est relu dans la séquence COURANTE à chaque rendu, pas capturé à
+   * l'ouverture : si une annulation le fait disparaître pendant que la boîte
+   * est ouverte, elle se referme au lieu de rester sur un clip fantôme.
+   */
+  const clipSelectionneVitesse = useMemo(() => {
+    if (clipVitesse === null) return null;
+    return findClip(etat.sequence, clipVitesse)?.clip ?? null;
+  }, [clipVitesse, etat.sequence]);
 
   const pistesAffectees = useMemo(
     () => etat.sequence.tracks.filter((t) => t.targeted && !t.locked).map((t) => t.id),
@@ -396,6 +413,24 @@ export function App(): React.JSX.Element {
               etat.contexte,
             ),
           );
+          return true;
+        }
+        case 'edit.speedDuration': {
+          // Un seul clip : « vitesse et durée » demande une durée résultante,
+          // qui n'a pas de sens commun à plusieurs clips de longueurs
+          // différentes. On le dit plutôt que de traiter le premier venu.
+          if (etat.selection.size !== 1) {
+            actions.signalerErreur(
+              erreurMontage(
+                etat.selection.size === 0
+                  ? 'Aucun clip sélectionné.'
+                  : 'La vitesse se règle sur un seul clip à la fois.',
+                'Sélectionnez un clip',
+              ),
+            );
+            return true;
+          }
+          setClipVitesse([...etat.selection][0] ?? null);
           return true;
         }
         case 'edit.addEdit':
@@ -773,6 +808,23 @@ export function App(): React.JSX.Element {
                 : 'Enregistré'}
         </span>
       </footer>
+
+      {clipSelectionneVitesse !== null && (
+        <DialogueVitesse
+          clip={clipSelectionneVitesse}
+          contexte={etat.contexte}
+          onFermer={() => setClipVitesse(null)}
+          onAppliquer={(reglages: ReglagesVitesse) => {
+            actions.executer(
+              changeSpeedCommand(
+                { clipId: clipSelectionneVitesse.id, ...reglages },
+                etat.contexte,
+              ),
+            );
+            setClipVitesse(null);
+          }}
+        />
+      )}
     </div>
   );
 }

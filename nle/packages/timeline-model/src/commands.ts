@@ -224,3 +224,13 @@ export function pasteCommand(
     apply: (seq) => clip.pasteClips(seq, contenu, options, ctx),
   });
 }
+
+export function changeSpeedCommand(
+  options: ops.SpeedOptions,
+  ctx: TimelineContext,
+): SequenceCommand {
+  return command({
+    label: 'Vitesse et durée',
+    apply: (seq) => ops.changeSpeed(seq, options, ctx),
+  });
+}

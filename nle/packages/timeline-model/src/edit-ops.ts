@@ -26,7 +26,14 @@ import {
   previousEditPoint,
 } from './query.js';
 import type { TimelineContext } from './source.js';
-import { handleAfter, handleBefore, shiftedSourceIn, sourceFramesUsed } from './source.js';
+import {
+  handleAfter,
+  handleBefore,
+  shiftedSourceIn,
+  sourceFramesUsed,
+  sourceOut,
+  toTimelineFrames,
+} from './source.js';
 import {
   clearRange,
   closeGap,
@@ -723,6 +730,88 @@ export function rateStretch(
   const next = { ...sequence, tracks };
   // Le clip peut avoir grandi : on verifie qu il n ecrase pas son voisin.
   return finalize(next);
+}
+
+export interface SpeedOptions {
+  readonly clipId: string;
+  /** Nouvelle vitesse. 1/1 = 100 %. Doit etre strictement positive. */
+  readonly speed: { readonly n: number; readonly d: number };
+  readonly reverse?: boolean;
+  readonly frameSampling?: ClipDoc['frameSampling'];
+  /** Vrai pour decaler les clips suivants du changement de duree. */
+  readonly ripple?: boolean;
+}
+
+/**
+ * Change la vitesse d un clip (section 38).
+ *
+ * La difference avec `rateStretch` est le sens de la contrainte. Ici c est la
+ * VITESSE qui est donnee et la duree qui s ajuste ; la, c est la duree qui est
+ * donnee et la vitesse qui s ajuste. La portion de source consommee est
+ * conservee dans les deux cas : ralentir un plan ne doit pas se mettre a piocher
+ * des images que le monteur n avait pas choisies.
+ *
+ * Inverser la lecture deplace le point d entree. Notre modele consomme les
+ * images en DESCENDANT depuis `sourceIn` quand `reverse` est vrai ; pour rejouer
+ * exactement le meme materiau a l envers, l entree doit donc passer a l ancienne
+ * sortie. Sans cet ajustement, inverser un plan montrerait tout autre chose.
+ */
+export function changeSpeed(
+  sequence: SequenceDoc,
+  options: SpeedOptions,
+  ctx: TimelineContext,
+): EditResult {
+  const found = requireClip(sequence, options.clipId);
+  if (!found.ok) return found;
+  const { clip, track } = found.value;
+
+  const speed = rational(options.speed.n, options.speed.d);
+  if (speed.n <= 0) {
+    return err(
+      appError('EDIT_REJECTED', 'La vitesse doit être strictement positive.', {
+        action: 'Pour un arrêt sur image, figez une image plutôt que de mettre la vitesse à zéro',
+      }),
+    );
+  }
+
+  const utilisees = sourceFramesUsed(clip, ctx);
+  if (utilisees <= 0) return err(rejected("Ce clip n'utilise aucune image source."));
+
+  const reverse = options.reverse ?? clip.reverse;
+  // On calcule la nouvelle duree sur un clip PORTANT DEJA la nouvelle vitesse :
+  // `toTimelineFrames` lit la vitesse dans le clip qu on lui passe.
+  const projete: ClipDoc = { ...clip, speed: { n: speed.n, d: speed.d } };
+  const duration = Math.max(1, toTimelineFrames(projete, utilisees, ctx));
+
+  // Inversion : l entree passe a l ancienne sortie, et reciproquement.
+  const sourceIn = reverse === clip.reverse ? clip.sourceIn : sourceOut(clip, ctx);
+
+  const modifs: Partial<ClipDoc> = {
+    speed: { n: speed.n, d: speed.d },
+    duration,
+    reverse,
+    sourceIn,
+    ...(options.frameSampling === undefined ? {} : { frameSampling: options.frameSampling }),
+  };
+
+  let tracks = mapTrack(sequence.tracks, track.id, (t) => updateClip(t, clip.id, modifs));
+
+  if (options.ripple === true) {
+    // Le decalage s applique aux clips qui COMMENCENT apres celui-ci, sur sa
+    // piste seule : etendre le ripple aux pistes synchronisees decalerait un
+    // son qui n a aucune raison de suivre un changement de vitesse video.
+    const delta = duration - clip.duration;
+    if (delta !== 0) {
+      tracks = mapTrack(tracks, track.id, (t) => ({
+        ...t,
+        clips: t.clips.map((c) =>
+          c.id !== clip.id && c.start >= clipEnd(clip) ? { ...c, start: c.start + delta } : c,
+        ),
+      }));
+    }
+  }
+
+  return finalize({ ...sequence, tracks });
 }
 
 // ------------------------------------------------------- Liaison A/V (§80)

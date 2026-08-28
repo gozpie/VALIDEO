@@ -4,6 +4,7 @@ import { TIMEBASES, rational } from '@valideo/time-core';
 import { abundantSource, boundedSource, layout, makeContext, makeSequence } from './fixtures.js';
 import { checkSequence, findClip, gaps, sequenceDuration } from './query.js';
 import {
+  changeSpeed,
   linkClips,
   rateStretch,
   setWorkArea,
@@ -429,5 +430,68 @@ describe('zone de travail (§78)', () => {
   it('ramène une position négative à zéro', () => {
     const a = unwrap(setWorkArea(base(), { in: -5, out: 20 }));
     expect(a.workAreaIn).toBe(0);
+  });
+});
+
+describe('vitesse et durée (§38)', () => {
+  it('ralentir à 50 % double la durée sans piocher plus de source', () => {
+    const seq = threeInARow();
+    const next = unwrap(
+      changeSpeed(seq, { clipId: 'b', speed: { n: 1, d: 2 }, ripple: true }, ctx),
+    );
+    const b = findClip(next, 'b')!.clip;
+    expect(b.duration).toBe(200);
+    expect(b.speed).toEqual({ n: 1, d: 2 });
+    // La portion de source consommée est inchangée : 100 images.
+    expect(sourceFramesUsed(b, ctx)).toBe(100);
+    expect(sourceOut(b, ctx)).toBe(2100);
+  });
+
+  it('accélérer à 200 % raccourcit et laisse un trou sans ripple', () => {
+    const next = unwrap(changeSpeed(threeInARow(), { clipId: 'b', speed: { n: 2, d: 1 } }, ctx));
+    expect(layout(next, 'v1')).toBe('a[0,100) b[100,150) c[200,300)');
+  });
+
+  it('avec ripple, les clips suivants suivent le changement de durée', () => {
+    const next = unwrap(
+      changeSpeed(threeInARow(), { clipId: 'b', speed: { n: 2, d: 1 }, ripple: true }, ctx),
+    );
+    expect(layout(next, 'v1')).toBe('a[0,100) b[100,150) c[150,250)');
+  });
+
+  it('inverser la lecture rejoue exactement le même matériau', () => {
+    const seq = threeInARow();
+    const avant = findClip(seq, 'b')!.clip;
+    const next = unwrap(changeSpeed(seq, { clipId: 'b', speed: { n: 1, d: 1 }, reverse: true }, ctx));
+    const b = findClip(next, 'b')!.clip;
+    expect(b.reverse).toBe(true);
+    // Le clip couvrait [2000,2100) ; à l'envers il doit couvrir la même plage.
+    expect(sourceOut(avant, ctx)).toBe(2100);
+    expect(b.sourceIn).toBe(2100);
+    expect(sourceOut(b, ctx)).toBe(2000);
+  });
+
+  it('refuse une vitesse nulle et propose l’arrêt sur image', () => {
+    const r = changeSpeed(threeInARow(), { clipId: 'b', speed: { n: 0, d: 1 } }, ctx);
+    expect(isErr(r)).toBe(true);
+    if (isErr(r)) expect(r.error.action).toContain('arrêt sur image');
+  });
+
+  it('refuse un ralenti qui écraserait le voisin plutôt que de le recouvrir', () => {
+    // Sans ripple, ralentir b à 25 % lui donnerait 400 images : il mordrait
+    // sur c. On refuse au lieu d'écraser un plan que personne n'a désigné.
+    const r = changeSpeed(threeInARow(), { clipId: 'b', speed: { n: 1, d: 4 } }, ctx);
+    expect(isErr(r)).toBe(true);
+  });
+
+  it('conserve l’échantillonnage d’images demandé', () => {
+    const next = unwrap(
+      changeSpeed(
+        threeInARow(),
+        { clipId: 'b', speed: { n: 1, d: 2 }, frameSampling: 'blend', ripple: true },
+        ctx,
+      ),
+    );
+    expect(findClip(next, 'b')?.clip.frameSampling).toBe('blend');
   });
 });

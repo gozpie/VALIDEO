@@ -732,3 +732,41 @@ test('coller par insertion décale la suite au lieu de l’écraser (§91)', asy
   expect(await debutDe(page, 'A002_contrechamp')).toBe('01:00:09:11');
   await expect(page.locator('.barre-etat .alerte')).toHaveCount(0);
 });
+
+test('la boîte Vitesse et durée change réellement la vitesse (§38)', async ({ page }) => {
+  await page.locator('.timeline-toile canvas').click({ position: { x: 5, y: 60 } });
+  await selectionnerClip(page, 2, 0.05);
+  // Un plan lié : deux clips sélectionnés, ce que la boîte refuse.
+  await page.keyboard.press('Control+r');
+  await expect(page.locator('.barre-etat .alerte')).toContainText('un seul clip');
+
+  // On sélectionne l'ambiance de A2, qui n'est liée à rien.
+  await selectionnerClip(page, 4, 0.4);
+  await expect(page.locator('.barre-etat')).toContainText('1 sélectionné');
+  await page.keyboard.press('Control+r');
+
+  const boite = page.locator('.modale');
+  await expect(boite).toBeVisible();
+  // La durée affichée est celle du clip : 825 images.
+  await expect(page.getByTestId('vitesse-duree')).toHaveValue('825');
+
+  // Taper dans un champ ne doit PAS armer un outil de montage : sans cette
+  // garantie, saisir « 0,25 » ou un nom déclencherait la lame et le ripple.
+  await page.getByTestId('vitesse-pourcent').press('c');
+  await expect(page.locator('.timeline-outils button.outil.actif')).toHaveText('V');
+
+  await page.getByTestId('vitesse-pourcent').fill('200');
+  // Les deux champs sont liés : la durée suit immédiatement.
+  await expect(page.getByTestId('vitesse-duree')).toHaveValue('413');
+
+  await boite.locator('button.principal').click();
+  await expect(boite).toHaveCount(0);
+  await expect(historique(page)).toContainText(['Vitesse et durée']);
+
+  // Ce que la boîte ne sait pas faire est écrit, pas caché.
+  await selectionnerClip(page, 4, 0.2);
+  await page.keyboard.press('Control+r');
+  await expect(page.locator('.modale')).toContainText('hauteur du son : indisponible');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.modale')).toHaveCount(0);
+});
