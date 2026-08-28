@@ -9,8 +9,8 @@
  * simuler (§1003) : lire de la vidéo, afficher des vignettes, afficher des
  * formes d'onde, exporter.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { formatTimecode, parseTimecodeEntry } from '@valideo/time-core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { formatTimecode, parseTimecodeEntry, rational } from '@valideo/time-core';
 import { DEFAULT_KEYMAP, KeyResolver, ShuttleController } from '@valideo/keyboard';
 import type { KeyContext } from '@valideo/keyboard';
 import {
@@ -38,6 +38,7 @@ import { PanneauProjet } from './panels/PanneauProjet.js';
 import { Moniteur } from './panels/Moniteur.js';
 import { PanneauInfo } from './panels/PanneauInfo.js';
 import { usePersistance } from './persistance.js';
+import { TransportAudio } from './playback/transport.js';
 
 const OUTILS: readonly { id: Outil; libelle: string; touche: string; titre: string }[] = [
   { id: 'selection', libelle: 'V', touche: 'V', titre: 'Sélection' },
@@ -69,6 +70,14 @@ export function App(): React.JSX.Element {
   const [defilementVertical, definirDefilementVertical] = useState(0);
   const [shuttle] = useState(() => new ShuttleController());
   const [vitesse, definirVitesse] = useState(0);
+  const [clipsMuets, definirClipsMuets] = useState<readonly string[]>([]);
+
+  // Références lues par le transport : il vit hors du cycle de rendu React et
+  // ne doit pas être recréé à chaque import de média.
+  const tamponsRef = useRef(etat.tampons);
+  tamponsRef.current = etat.tampons;
+  const mediasRef = useRef(new Map(etat.document.media.map((m) => [m.id, m])));
+  mediasRef.current = new Map(etat.document.media.map((m) => [m.id, m]));
 
   const persistance = usePersistance({
     document: etat.document,
@@ -78,6 +87,28 @@ export function App(): React.JSX.Element {
   });
 
   const base = useMemo(() => timebaseDeSequence(etat.sequence), [etat.sequence]);
+
+  /**
+   * Transport audio. L'horloge audio est maître (§22) : la tête de lecture est
+   * DÉRIVÉE de `AudioContext.currentTime`, jamais incrémentée à la main.
+   */
+  const transportRef = useRef<TransportAudio | null>(null);
+  if (transportRef.current === null) {
+    transportRef.current = new TransportAudio({
+      tampon: (mediaId) => tamponsRef.current.get(mediaId) ?? null,
+      cadenceSource: (mediaId) => {
+        const media = mediasRef.current.get(mediaId);
+        return media === undefined
+          ? null
+          : rational(media.duration.base.rate.n, media.duration.base.rate.d);
+      },
+      surFin: () => {
+        shuttle.stop();
+        definirVitesse(0);
+      },
+    });
+  }
+  const transport = transportRef.current;
   const duree = useMemo(() => sequenceDuration(etat.sequence), [etat.sequence]);
   const resolveur = useMemo(
     () =>
@@ -244,13 +275,43 @@ export function App(): React.JSX.Element {
     return () => window.removeEventListener('keydown', surTouche);
   }, [executerAction, resolveur]);
 
-  // Le shuttle déplace la tête de lecture image par image, sans son ni image :
-  // c'est une navigation réelle, pas une lecture simulée.
+  /**
+   * Lecture.
+   *
+   * À vitesse 1, le son est joué et c'est l'horloge audio qui commande : la tête
+   * de lecture se contente de LIRE la position du transport à chaque image
+   * d'écran. Aux autres vitesses, aucun son n'est produit -- Web Audio ne sait
+   * pas rejouer un tampon à l'envers, et au-delà de quelques fois la vitesse
+   * nominale le son n'apporte plus rien (§32) -- et la tête avance alors sur
+   * l'horloge du navigateur, ce que l'interface signale.
+   */
   useEffect(() => {
-    if (vitesse === 0) return undefined;
+    if (vitesse === 0) {
+      transport.arreter();
+      transport.placer(etat.tete);
+      definirClipsMuets([]);
+      return undefined;
+    }
+
+    let id = 0;
+
+    if (vitesse === 1) {
+      void transport.demarrer(etat.sequence, etat.tete, duree).then(() => {
+        definirClipsMuets(transport.etat().ignores.map((i) => `${i.raison}`));
+      });
+      const suivre = (): void => {
+        actions.definirTete(Math.min(duree, Math.round(transport.position())));
+        id = requestAnimationFrame(suivre);
+      };
+      id = requestAnimationFrame(suivre);
+      return () => {
+        cancelAnimationFrame(id);
+        transport.arreter();
+      };
+    }
+
     let dernier = performance.now();
     let brut = etat.tete;
-    let id = 0;
     const pas = (maintenant: number): void => {
       const dt = (maintenant - dernier) / 1000;
       dernier = maintenant;
@@ -266,6 +327,8 @@ export function App(): React.JSX.Element {
     };
     id = requestAnimationFrame(pas);
     return () => cancelAnimationFrame(id);
+    // Volontairement déclenché par le seul changement de vitesse : relancer le
+    // transport à chaque déplacement de tête le ferait bégayer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vitesse]);
 
@@ -343,7 +406,12 @@ export function App(): React.JSX.Element {
 
       <div className="espace-travail">
         <Moniteur titre="Moniteur Source" />
-        <Moniteur titre="Moniteur Programme" tete={timecode(etat.tete)} duree={timecode(duree)} />
+        <Moniteur
+          titre="Moniteur Programme"
+          tete={timecode(etat.tete)}
+          duree={timecode(duree)}
+          enLecture={vitesse !== 0}
+        />
 
         <section className="panneau">
           <div className="panneau-entete">
@@ -433,9 +501,22 @@ export function App(): React.JSX.Element {
             >
               Enregistrer
             </button>
+            <span className="sep" />
+            <button
+              type="button"
+              className={vitesse !== 0 ? 'actif' : ''}
+              onClick={() => executerAction('playback.togglePlay')}
+              title="Lecture / Pause (Espace)"
+              data-test="lecture"
+            >
+              {vitesse !== 0 ? '⏸' : '▶'}
+            </button>
             <span className="espace" style={{ flex: 1 }} />
             {vitesse !== 0 && (
-              <span className="mono">{vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}</span>
+              <span className="mono" data-test="etat-lecture">
+                {vitesse > 0 ? `▶ ${vitesse}×` : `◀ ${-vitesse}×`}
+                {vitesse === 1 ? ' · son' : ' · sans son'}
+              </span>
             )}
           </div>
 
@@ -463,6 +544,11 @@ export function App(): React.JSX.Element {
           {etat.selection.size} sélectionné{etat.selection.size > 1 ? 's' : ''}
         </span>
         <span className="espace" />
+        {clipsMuets.length > 0 && (
+          <span className="alerte" title={clipsMuets.join('\n')}>
+            {clipsMuets.length} clip(s) non joué(s)
+          </span>
+        )}
         {persistance.erreur !== null && (
           <span className="alerte" title={persistance.erreur.detail ?? ''}>
             {persistance.erreur.message}

@@ -48,6 +48,8 @@ export interface EtatEditeur {
   readonly document: ProjectDoc;
   /** Pyramides de pics des médias dont l'audio a été décodé, par identifiant. */
   readonly pics: ReadonlyMap<string, PeakPyramid>;
+  /** Tampons audio décodés, conservés pour la lecture. Jamais persistés. */
+  readonly tampons: ReadonlyMap<string, AudioBuffer>;
 }
 
 export interface ActionsEditeur {
@@ -65,8 +67,8 @@ export interface ActionsEditeur {
   /** Remplace le document courant, à l'ouverture ou après une reprise. */
   chargerDocument(doc: ProjectDoc): void;
   signalerErreur(erreur: AppError): void;
-  /** Ajoute un média analysé au projet, avec ses pics quand ils existent. */
-  ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null): void;
+  /** Ajoute un média analysé au projet, avec ses pics et son tampon éventuels. */
+  ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null, tampon: AudioBuffer | null): void;
 }
 
 export function useEditeur(): [EtatEditeur, ActionsEditeur] {
@@ -82,6 +84,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   const history = historyRef.current;
   const [enveloppe, setEnveloppe] = useState<ProjectDoc>(demoRef.current);
   const [pics, setPics] = useState<ReadonlyMap<string, PeakPyramid>>(() => new Map());
+  const [tampons, setTampons] = useState<ReadonlyMap<string, AudioBuffer>>(() => new Map());
 
   const [sequence, setSequence] = useState<SequenceDoc>(() => history.current());
   const [instantane, setInstantane] = useState(() => history.snapshot());
@@ -165,10 +168,17 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
       basculerAccrochage: () => setAccrochage((v) => !v),
       effacerErreur: () => setDerniereErreur(null),
       signalerErreur: (erreur: AppError) => setDerniereErreur(erreur),
-      ajouterMedia: (asset: MediaAssetDoc, nouveauxPics: PeakPyramid | null) => {
+      ajouterMedia: (
+        asset: MediaAssetDoc,
+        nouveauxPics: PeakPyramid | null,
+        tampon: AudioBuffer | null,
+      ) => {
         setEnveloppe((courante) => ({ ...courante, media: [...courante.media, asset] }));
         if (nouveauxPics !== null) {
           setPics((courants) => new Map(courants).set(asset.id, nouveauxPics));
+        }
+        if (tampon !== null) {
+          setTampons((courants) => new Map(courants).set(asset.id, tampon));
         }
       },
       chargerDocument: (doc: ProjectDoc) => {
@@ -192,6 +202,7 @@ export function useEditeur(): [EtatEditeur, ActionsEditeur] {
   const etat: EtatEditeur = {
     document,
     pics,
+    tampons,
     sequence,
     selection,
     tete,

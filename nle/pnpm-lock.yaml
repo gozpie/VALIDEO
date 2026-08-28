@@ -69,6 +69,9 @@ importers:
       '@valideo/media-engine':
         specifier: workspace:*
         version: link:../../packages/media-engine
+      '@valideo/playback':
+        specifier: workspace:*
+        version: link:../../packages/playback
       '@valideo/project-model':
         specifier: workspace:*
         version: link:../../packages/project-model
@@ -142,6 +145,21 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+
+  packages/playback:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      '@valideo/timeline-model':
+        specifier: workspace:*
+        version: link:../timeline-model
 
   packages/project-model:
     dependencies:

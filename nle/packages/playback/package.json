@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/playback",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Planification de la lecture : horloge audio maitre et segments a programmer.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@valideo/shared": "workspace:*",
+    "@valideo/time-core": "workspace:*",
+    "@valideo/project-model": "workspace:*",
+    "@valideo/timeline-model": "workspace:*"
+  }
+}

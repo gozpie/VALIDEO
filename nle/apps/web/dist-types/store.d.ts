@@ -23,6 +23,8 @@ export interface EtatEditeur {
     readonly document: ProjectDoc;
     /** Pyramides de pics des médias dont l'audio a été décodé, par identifiant. */
     readonly pics: ReadonlyMap<string, PeakPyramid>;
+    /** Tampons audio décodés, conservés pour la lecture. Jamais persistés. */
+    readonly tampons: ReadonlyMap<string, AudioBuffer>;
 }
 export interface ActionsEditeur {
     executer(commande: Command<SequenceDoc>): boolean;
@@ -39,8 +41,8 @@ export interface ActionsEditeur {
     /** Remplace le document courant, à l'ouverture ou après une reprise. */
     chargerDocument(doc: ProjectDoc): void;
     signalerErreur(erreur: AppError): void;
-    /** Ajoute un média analysé au projet, avec ses pics quand ils existent. */
-    ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null): void;
+    /** Ajoute un média analysé au projet, avec ses pics et son tampon éventuels. */
+    ajouterMedia(asset: MediaAssetDoc, pics: PeakPyramid | null, tampon: AudioBuffer | null): void;
 }
 export declare function useEditeur(): [EtatEditeur, ActionsEditeur];
 /** Cadence de la séquence, en flottant, pour l affichage seul. */

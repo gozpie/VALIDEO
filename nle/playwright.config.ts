@@ -11,7 +11,9 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   reporter: [['list']],
+  // Les attributs de test du projet sont `data-test`, pas `data-testid`.
   use: {
+    testIdAttribute: 'data-test',
     baseURL: 'http://localhost:4188',
     viewport: { width: 1600, height: 1000 },
     launchOptions: { executablePath: '/opt/pw-browsers/chromium' },

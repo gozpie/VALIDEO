@@ -30,8 +30,24 @@ export interface MediaImporte {
   readonly asset: MediaAssetDoc;
   /** Pyramide de pics, uniquement pour les fichiers dont l audio a ete decode. */
   readonly pics: PeakPyramid | null;
+  /**
+   * Tampon audio decode, conserve pour la lecture.
+   *
+   * `null` au-dela du budget memoire : une heure de stereo a 48 kHz occupe
+   * 1,4 Go en flottants 32 bits. On garde alors la pyramide de pics -- qui
+   * suffit a l affichage et ne coute que quelques mega-octets -- et on signale
+   * que la lecture demandera un decodage a la demande.
+   */
+  readonly tampon: AudioBuffer | null;
   /** Ce qui n a pas pu etre determine, a signaler sans dramatiser. */
   readonly avertissements: readonly string[];
+}
+
+/** Budget memoire pour un tampon decode. Au-dela, on ne le conserve pas. */
+export const BUDGET_TAMPON_OCTETS = 256 * 1024 * 1024;
+
+export function tailleDecodee(tampon: AudioBuffer): number {
+  return tampon.length * tampon.numberOfChannels * 4;
 }
 
 const EXT_AUDIO = new Set(['wav', 'mp3', 'aac', 'm4a', 'flac', 'ogg', 'opus', 'aiff', 'aif']);
@@ -85,13 +101,20 @@ function assetVide(fichier: File): MediaAssetDoc {
 async function decoderAudio(
   fichier: File,
   contexte: BaseAudioContext,
-): Promise<{ pics: PeakPyramid; canaux: number; frequence: number; secondes: number }> {
+): Promise<{
+  pics: PeakPyramid;
+  tampon: AudioBuffer | null;
+  canaux: number;
+  frequence: number;
+  secondes: number;
+}> {
   const octets = await fichier.arrayBuffer();
   const tampon = await contexte.decodeAudioData(octets);
   const canaux: Float32Array[] = [];
   for (let c = 0; c < tampon.numberOfChannels; c += 1) canaux.push(tampon.getChannelData(c));
   return {
     pics: buildPeaks(canaux, tampon.sampleRate),
+    tampon: tailleDecodee(tampon) <= BUDGET_TAMPON_OCTETS ? tampon : null,
     canaux: tampon.numberOfChannels,
     frequence: tampon.sampleRate,
     secondes: tampon.duration,
@@ -151,6 +174,11 @@ export async function importerFichier(
     try {
       const decode = await decoderAudio(fichier, contexte);
       const images = Math.round((decode.secondes * cadence.n) / cadence.d);
+      if (decode.tampon === null) {
+        avertissements.push(
+          `« ${fichier.name} » est trop volumineux une fois décodé pour rester en mémoire : sa forme d’onde est disponible, mais pas sa lecture directe.`,
+        );
+      }
       return {
         asset: {
           ...base,
@@ -173,12 +201,14 @@ export async function importerFichier(
           analysisStatus: 'done',
         },
         pics: decode.pics,
+        tampon: decode.tampon,
         avertissements,
       };
     } catch (cause) {
       return {
         asset: { ...base, status: 'unreadable' },
         pics: null,
+        tampon: null,
         avertissements: [
           `« ${fichier.name} » n’a pas pu être décodé par le navigateur.`,
           cause instanceof Error ? cause.message : String(cause),
@@ -193,6 +223,7 @@ export async function importerFichier(
       return {
         asset: { ...base, status: 'unreadable' },
         pics: null,
+        tampon: null,
         avertissements: [
           `« ${fichier.name} » n’a pas pu être lu par le navigateur ; une analyse serveur est nécessaire.`,
         ],
@@ -232,6 +263,7 @@ export async function importerFichier(
         ],
       },
       pics: null,
+      tampon: null,
       avertissements,
     };
   }
@@ -247,6 +279,7 @@ export async function importerFichier(
         },
       },
       pics: null,
+      tampon: null,
       avertissements,
     };
   }
@@ -254,6 +287,7 @@ export async function importerFichier(
   return {
     asset: { ...base, status: 'unreadable' },
     pics: null,
+    tampon: null,
     avertissements: [`Le type de « ${fichier.name} » n’est pas reconnu.`],
   };
 }

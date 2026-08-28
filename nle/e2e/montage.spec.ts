@@ -338,3 +338,55 @@ test('la forme d’onde est réellement dessinée à partir des échantillons (�
   // n'a pas de fichier derrière lui.
   expect(await pixelsClairs(A2)).toBeLessThan(apres / 4);
 });
+
+test('la lecture avance sur l’horloge audio (§22)', async ({ page }) => {
+  const fixture = new URL('../fixtures/generated/audio_enveloppe.wav', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+  // « décodé · lisible » signifie que le tampon audio est en mémoire.
+  await expect(page.locator('tr[data-test="ligne-media"]')).toContainText('décodé · lisible');
+
+  const A3 = 5;
+  await page.locator('.entete-piste').nth(A3).locator('button').first().click();
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+  await expect(ligne(page, 'audio_enveloppe.wav')).toBeVisible();
+
+  const tc = page.locator('.barre-etat .mono').first();
+  await expect(tc).toHaveText('01:00:00:00');
+
+  await page.getByTestId('lecture').click();
+  await expect(page.getByTestId('etat-lecture')).toContainText('· son');
+
+  // L'horloge audio doit faire avancer la tête toute seule.
+  await page.waitForTimeout(900);
+  const pendant = await tc.innerText();
+  expect(pendant).not.toBe('01:00:00:00');
+
+  await page.getByTestId('lecture').click();
+  await expect(page.getByTestId('etat-lecture')).toHaveCount(0);
+
+  // Et elle s'arrête vraiment : la position ne bouge plus.
+  const arret = await tc.innerText();
+  await page.waitForTimeout(500);
+  expect(await tc.innerText()).toBe(arret);
+});
+
+test('la lecture avance à une vitesse cohérente avec la cadence', async ({ page }) => {
+  const fixture = new URL('../fixtures/generated/audio_enveloppe.wav', import.meta.url).pathname;
+  await page.locator('input[data-test="import-medias"]').setInputFiles(fixture);
+  await expect(page.locator('tr[data-test="ligne-media"]')).toContainText('décodé · lisible');
+  await page.locator('.entete-piste').nth(5).locator('button').first().click();
+  await page.getByTitle('Poser à la tête de lecture (overwrite)').click();
+
+  const tc = page.locator('.barre-etat .mono').first();
+  await page.getByTestId('lecture').click();
+  await page.waitForTimeout(1200);
+  const texte = await tc.innerText();
+  await page.getByTestId('lecture').click();
+
+  // 01:00:0S:FF — à 25 i/s, 1,2 s de lecture donne entre 0,5 s et 2 s écoulées.
+  const m = /^01:00:(\d\d):(\d\d)$/.exec(texte.trim());
+  expect(m, `timecode inattendu : ${texte}`).not.toBeNull();
+  const secondes = Number(m?.[1] ?? 0) + Number(m?.[2] ?? 0) / 25;
+  expect(secondes).toBeGreaterThan(0.4);
+  expect(secondes).toBeLessThan(2.5);
+});

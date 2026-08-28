@@ -26,9 +26,21 @@ export interface MediaImporte {
     readonly asset: MediaAssetDoc;
     /** Pyramide de pics, uniquement pour les fichiers dont l audio a ete decode. */
     readonly pics: PeakPyramid | null;
+    /**
+     * Tampon audio decode, conserve pour la lecture.
+     *
+     * `null` au-dela du budget memoire : une heure de stereo a 48 kHz occupe
+     * 1,4 Go en flottants 32 bits. On garde alors la pyramide de pics -- qui
+     * suffit a l affichage et ne coute que quelques mega-octets -- et on signale
+     * que la lecture demandera un decodage a la demande.
+     */
+    readonly tampon: AudioBuffer | null;
     /** Ce qui n a pas pu etre determine, a signaler sans dramatiser. */
     readonly avertissements: readonly string[];
 }
+/** Budget memoire pour un tampon decode. Au-dela, on ne le conserve pas. */
+export declare const BUDGET_TAMPON_OCTETS: number;
+export declare function tailleDecodee(tampon: AudioBuffer): number;
 export declare function extensionDe(nom: string): string;
 export type FamilleMedia = 'audio' | 'video' | 'image' | 'inconnu';
 export declare function familleDe(fichier: {

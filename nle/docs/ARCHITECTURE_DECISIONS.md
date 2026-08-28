@@ -535,3 +535,49 @@ le viewport partagé.
 ancrage du zoom, bornage du défilement — se calcule enfin sur la vue réelle.
 Le bug était invisible tant qu'on ne regardait que le rendu, qui utilisait la
 bonne largeur : seuls les calculs *dérivés* étaient faux.
+
+---
+
+## ADR-033 — La position de lecture est dérivée de l'horloge audio, jamais incrémentée
+
+**Contexte.** §22 l'énonce : « AUDIO EST L'HORLOGE MAÎTRE. La vidéo doit se
+synchroniser sur l'audio. » La tentation est d'avancer un compteur dans une
+boucle d'animation.
+
+**Décision.** `TransportAudio.position()` calcule
+`imageDépart + (ctx.currentTime − ctxDépart) × cadence`. Aucun compteur n'est
+incrémenté ; la boucle d'animation se contente de **lire** cette position.
+
+**Conséquences.** Pas de dérive possible : `requestAnimationFrame` suit l'écran,
+`AudioContext.currentTime` suit la carte son, et seule la seconde est la vérité
+pour la synchronisation. Quand le décodeur vidéo arrivera, il se calera sur la
+même horloge sans rien changer ici.
+
+---
+
+## ADR-034 — La lecture se programme par fenêtre glissante
+
+**Contexte.** Programmer toute une séquence d'un coup créerait des milliers de
+nœuds Web Audio pour une heure de montage, et rendrait tout changement coûteux.
+
+**Décision.** On programme ~2 secondes d'avance, réapprovisionnées toutes les
+250 ms.
+
+**Conséquences.** Le coût est constant quelle que soit la longueur de la
+séquence. Un segment dont l'instant est déjà passé n'est **pas rattrapé** : le
+jouer en retard s'entendrait comme un décalage, l'ignorer est silencieux.
+
+---
+
+## ADR-035 — Ce que le moteur ne sait pas jouer, il ne le joue pas
+
+**Contexte.** Un clip en lecture inversée, un média non décodé, une cadence
+source inconnue : plusieurs cas où le moteur pourrait « faire quelque chose ».
+
+**Décision.** Chacun de ces cas produit un `SegmentIgnore` **avec sa raison**,
+et rien n'est joué. En particulier, un clip en lecture inversée n'est **pas**
+joué à l'endroit : ce serait faux, et inaudible comme erreur.
+
+**Conséquences.** L'interface affiche le nombre de clips non joués et leurs
+raisons. §1003 respectée jusque dans le moteur audio, pas seulement dans
+l'interface.

@@ -29,12 +29,18 @@ magnétique, zoom autour du pointeur, navigation JKL et saisie de timecode.
 L'**analyse média** : ffprobe sur de vrais fichiers, cadences exactes, timecode
 drop-frame, détection de cadence variable, alpha, colorimétrie HDR.
 
+L'**import audio et la lecture du son** : un fichier importé est décodé par le
+navigateur, sa forme d'onde vient des vrais échantillons, et il se lit — l'horloge
+audio commandant la tête de lecture.
+
+La **persistance** : enregistrement, sauvegarde automatique, instantanés et
+reprise après une session interrompue.
+
 ## Ce qui n'existe pas encore
 
-La **lecture** — décodage, horloge audio, composition GPU — et donc les
-moniteurs, les vignettes et les formes d'onde à l'écran. L'**export**. Les
-**effets** et l'**étalonnage**. L'interface le dit explicitement plutôt que de
-le simuler.
+La **lecture vidéo** — démultiplexeur, décodage, composition GPU — et donc
+l'image dans les moniteurs et les vignettes. L'**export**. Les **effets** et
+l'**étalonnage**. L'interface le dit explicitement plutôt que de le simuler.
 
 ## Structure
 

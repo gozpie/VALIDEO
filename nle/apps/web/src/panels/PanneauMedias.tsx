@@ -46,7 +46,7 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
         const resultat = await importerFichier(fichier, {
           cadenceParDefaut: etat.sequence.timebase.rate,
         });
-        actions.ajouterMedia(resultat.asset, resultat.pics);
+        actions.ajouterMedia(resultat.asset, resultat.pics, resultat.tampon);
         messages.push(...resultat.avertissements);
       }
       definirAvertissements(messages);
@@ -141,9 +141,11 @@ export function PanneauMedias({ etat, actions, timecode }: ProprietesMedias): Re
                 <td style={{ color: 'var(--texte-doux)' }}>
                   {asset.status !== 'online'
                     ? 'illisible'
-                    : etat.pics.has(asset.id)
-                      ? 'décodé'
-                      : 'à analyser'}
+                    : etat.tampons.has(asset.id)
+                      ? 'décodé · lisible'
+                      : etat.pics.has(asset.id)
+                        ? 'décodé'
+                        : 'à analyser'}
                 </td>
                 <td>
                   <button

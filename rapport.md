@@ -432,3 +432,45 @@ un aplat uni vaut mieux qu'une courbe inventée.
 clairs de la piste avant et après l'import, et vérifie qu'une piste audio sans
 média décodé n'en reçoit aucun : c'est la preuve que la courbe vient bien des
 échantillons.
+
+---
+
+## 2026-08-28 — Lecture audio : l'horloge audio est maître
+
+### Objectif
+
+Étape suivante de la section 1002 : le moteur de lecture, en commençant par ce
+que la section 22 désigne comme l'horloge maître, le son.
+
+### Modifications
+
+**`nle/packages/playback`** — planificateur pur qui répond, pour une fenêtre de
+timeline donnée, à la seule question difficile : quels morceaux de quels fichiers
+jouer, à quel instant, à partir de quel endroit du fichier et à quel gain.
+
+**`nle/apps/web/src/playback/transport.ts`** — transport réel. Le point
+structurant est que la position de lecture n'est jamais incrémentée à la main :
+elle est dérivée de l'horloge du contexte audio, la seule qui avance au rythme
+réel de la carte son. Incrémenter un compteur dans une boucle d'animation
+donnerait une dérive immédiate, puisque cette boucle suit l'écran et non le son.
+
+La lecture est programmée par fenêtre glissante de quelques secondes, ce qui rend
+le coût indépendant de la longueur de la séquence.
+
+### Ce que le moteur refuse de jouer, et le dit
+
+Un clip sans média, un clip en lecture inversée, un média de cadence inconnue ou
+trop volumineux pour tenir en mémoire ne sont pas joués, et la raison est
+affichée. En particulier, un clip inversé n'est pas joué à l'endroit : ce serait
+faux, et inaudible comme erreur.
+
+Les moniteurs annoncent désormais « Son lu, image non décodée » au lieu de
+« Lecture indisponible » : le son est réel, l'image demande un démultiplexeur qui
+n'existe pas encore.
+
+### Vérifications
+
+444 tests unitaires et 17 tests de bout en bout. Deux de ces derniers vérifient
+dans un vrai navigateur que la tête de lecture avance seule pendant la lecture,
+s'arrête réellement à la pause, et progresse à une vitesse cohérente avec la
+cadence de la séquence.

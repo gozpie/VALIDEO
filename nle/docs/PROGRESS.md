@@ -451,9 +451,58 @@ média décodé n'en reçoit aucun. C'est la preuve que la courbe vient des
 
 **Total : 424 tests unitaires + 15 tests de bout en bout.**
 
+### Étape 15 — `@valideo/playback` : l'horloge audio est maître (§22, §32)
+
+**Ça joue.** Un fichier audio importé se lit réellement, et c'est le son qui
+commande la tête de lecture.
+
+Le point qui compte : la position de lecture n'est **jamais incrémentée à la
+main**. Elle est **dérivée de `AudioContext.currentTime`**, la seule horloge qui
+avance au rythme réel de la carte son. Incrémenter une position dans une boucle
+d'animation donnerait une dérive immédiate — `requestAnimationFrame` suit
+l'écran, pas le son, et les deux horloges ne sont jamais au même rythme.
+
+- **Planificateur pur** (`packages/playback`) : pour une fenêtre de timeline, il
+  répond à la seule question difficile — quels morceaux de quels fichiers jouer,
+  à quel instant, à partir de quel endroit du fichier, à quel gain. Toute la
+  conversion timeline → source passe par le rationnel exact ; une erreur d'une
+  image s'entendrait comme un décalage image/son.
+- **Entrée au bon endroit** : lancer la lecture au milieu d'un plan entre dans le
+  fichier à la bonne seconde, sans reprendre le clip depuis son début.
+- **Fenêtre glissante** : on ne programme que quelques secondes d'avance,
+  réapprovisionnées régulièrement — pas des milliers de nœuds pour une heure de
+  montage.
+- **Mute et solo** respectés, le solo primant sur tout ; gain de clip converti
+  des décibels vers un facteur linéaire.
+- **Vitesse** : un clip à 200 % consomme bien deux fois plus de source.
+
+**Ce que le moteur REFUSE de jouer, et le dit** (§1003) :
+
+| Cas | Comportement |
+|---|---|
+| Clip sans média | ignoré, signalé |
+| **Lecture inversée** | ignorée — Web Audio ne sait pas lire un tampon à l'envers, et le jouer à l'endroit serait faux et inaudible comme erreur |
+| Cadence source inconnue | ignoré, signalé |
+| Volume automatisé par keyframes | **joué** au gain de départ, avec un avertissement |
+| Segment déjà passé | non rattrapé — le jouer en retard s'entendrait |
+| Fichier trop gros pour tenir en mémoire | forme d'onde conservée, lecture directe refusée et signalée |
+
+**Les moniteurs disent maintenant la vérité** : « Son lu · image non décodée ».
+Le son est réel ; l'image demande un démultiplexeur et un décodeur qui n'existent
+pas, et le panneau reste vide plutôt que d'afficher une mire.
+
+Aux vitesses de shuttle autres que 1×, aucun son n'est produit et l'interface
+affiche « sans son » — plutôt qu'un artefact.
+
+20 tests unitaires + 2 tests de bout en bout qui vérifient, dans un vrai
+navigateur, que la tête avance seule pendant la lecture, s'arrête vraiment à la
+pause, et progresse à une vitesse cohérente avec la cadence de la séquence.
+
+**Total : 444 tests unitaires + 17 tests de bout en bout.**
+
 ## NEXT
 
-1. Moteur de lecture : démuxeur, WebCodecs, horloge audio maître (§22, §901-1000).
+1. Démultiplexeur MP4 et premier décodeur WebCodecs (§901-1000, §22).
 2. Branchement du service d'analyse ffprobe sur l'import (§9).
 3. Génération de proxies (§11) et caches (§53).
 

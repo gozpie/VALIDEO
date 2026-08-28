@@ -21,7 +21,8 @@
     "@valideo/media-engine": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@valideo/storage": "workspace:*"
+    "@valideo/storage": "workspace:*",
+    "@valideo/playback": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
