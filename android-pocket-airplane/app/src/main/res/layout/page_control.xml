@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Page d'accueil réduite à l'essentiel : le bouton, et une phrase qui dit ce qui va se passer.
+  Les mesures et le diagnostic vivent sur les autres pages : ici, rien à lire, un geste à faire.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:paddingHorizontal="32dp">
+
+    <FrameLayout
+        android:layout_width="292dp"
+        android:layout_height="292dp"
+        android:background="@drawable/bg_power_ring">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPower"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:layout_gravity="center"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/power_off"
+            android:textSize="17sp"
+            app:cornerRadius="120dp"
+            app:icon="@drawable/ic_airplane"
+            app:iconGravity="top"
+            app:iconPadding="14dp"
+            app:iconSize="52dp" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/textPhase"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:gravity="center"
+        android:alpha="0.65"
+        android:textAppearance="?attr/textAppearanceBodyMedium" />
+</LinearLayout>

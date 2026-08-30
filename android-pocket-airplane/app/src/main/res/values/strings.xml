@@ -38,18 +38,18 @@
     <string name="title_settings">Réglages de détection</string>
     <string name="title_journal">Journal</string>
     <string name="switch_service">Activer la surveillance</string>
-    <string name="switch_require_proximity">Exiger le capteur de proximité (téléphone contre le tissu)</string>
-    <string name="switch_require_darkness">Exiger l\'obscurité (capteur de luminosité)</string>
-    <string name="label_enter_delay">Délai avant activation : %1$.1f s</string>
-    <string name="label_exit_delay">Délai avant désactivation : %1$.1f s</string>
-    <string name="label_head_down_threshold">Seuil « tête en bas » : %1$.1f m/s²</string>
-    <string name="button_test_enable">Tester : activer</string>
-    <string name="button_test_disable">Tester : désactiver</string>
+    <string name="switch_require_proximity">Vérifier le contact avec le tissu</string>
+    <string name="switch_require_darkness">Vérifier qu’il fait sombre</string>
+    <string name="label_enter_delay">Couper après %1$.0f s dans la poche</string>
+    <string name="label_exit_delay">Rétablir après %1$.0f s</string>
+    <string name="label_head_down_threshold">Inclinaison nécessaire : %1$s</string>
+    <string name="button_test_enable">Tester : couper</string>
+    <string name="button_test_disable">Tester : rétablir</string>
     <string name="button_clear_journal">Vider le journal</string>
     <string name="button_open_airplane_settings">Ouvrir les réglages du mode avion</string>
 
-    <string name="status_method_ok">Méthode de bascule : %1$s</string>
-    <string name="status_method_missing">Aucune méthode de bascule disponible.\n\nAndroid interdit aux applications tierces de basculer le mode avion. Deux solutions :\n• appareil rooté (aucune action nécessaire, l\'application utilisera su) ;\n• depuis un PC, une seule fois :\nadb shell pm grant com.gozpie.pocketairplane android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="status_method_ok">Méthode : %1$s</string>
+    <string name="status_method_missing">Aucune méthode disponible : le mode avion ne pourra pas être basculé.</string>
     <string name="status_sensors">Capteurs — orientation : %1$s · proximité : %2$s · luminosité : %3$s</string>
     <string name="status_live">Gravité Y : %1$s · Proximité : %2$s · Luminosité : %3$s</string>
     <string name="status_phase">Détection : %1$s · Mode avion : %2$s</string>
@@ -59,5 +59,23 @@
     <string name="value_far">dégagé</string>
     <string name="value_unknown">—</string>
     <string name="journal_empty">Aucun événement enregistré.</string>
-    <string name="warning_no_proximity">Sans capteur de proximité, l\'orientation est échantillonnée en continu : la consommation de batterie augmente.</string>
+    <string name="warning_no_proximity">Sans cette vérification, la batterie se vide plus vite.</string>
+
+    <!-- Écran refondu : bouton central et pages balayables -->
+    <string name="power_off">Activer</string>
+    <string name="power_on">Activé</string>
+    <string name="power_in_pocket">Dans la poche</string>
+    <string name="hint_swipe_settings">Réglages et journal : faites glisser ›</string>
+    <string name="section_detection">Réglages</string>
+    <string name="section_journal">Journal</string>
+    <string name="hint_threshold">Plus la valeur est basse, plus le téléphone doit être franchement tête en bas.</string>
+    <string name="warning_proximity_unavailable">Ce téléphone n’a pas de capteur utilisable pour ça. L’inclinaison suffira.</string>
+    <string name="section_about">Détails techniques</string>
+    <string name="state_idle">Appuyez pour activer</string>
+    <string name="state_watching">Rangez votre téléphone tête en bas</string>
+    <string name="state_in_pocket">Mode avion activé</string>
+    <string name="state_no_method">Impossible de basculer le mode avion sur ce téléphone</string>
+    <string name="tilt_slight">légère</string>
+    <string name="tilt_medium">moyenne</string>
+    <string name="tilt_strong">franche</string>
 </resources>

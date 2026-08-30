@@ -1,226 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!--
+  Trois pages balayables : contrôle, réglages, journal. Le contrôle occupe l'écran d'accueil ;
+  le reste se glisse vers la droite, hors du chemin de l'usage quotidien.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:fitsSystemWindows="true">
 
-    <LinearLayout
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/pager"
         android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Indicateur de page : trois points, mis à jour au balayage. -->
+    <LinearLayout
+        android:id="@+id/dots"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="20dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+        <View
+            android:id="@+id/dot0"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginHorizontal="5dp"
+            android:background="@drawable/dot" />
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchService"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/switch_service" />
+        <View
+            android:id="@+id/dot1"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginHorizontal="5dp"
+            android:background="@drawable/dot" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/title_status"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                <TextView
-                    android:id="@+id/textMethod"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textIsSelectable="true" />
-
-                <TextView
-                    android:id="@+id/textSensors"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" />
-
-                <TextView
-                    android:id="@+id/textPhase"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-                <TextView
-                    android:id="@+id/textLive"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonAirplaneSettings"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/button_open_airplane_settings" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/title_settings"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switchProximity"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/switch_require_proximity" />
-
-                <TextView
-                    android:id="@+id/textProximityWarning"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/warning_no_proximity"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:visibility="gone" />
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switchDarkness"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/switch_require_darkness" />
-
-                <TextView
-                    android:id="@+id/labelEnterDelay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp" />
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/sliderEnterDelay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:stepSize="0.5"
-                    android:valueFrom="0.5"
-                    android:valueTo="15.0" />
-
-                <TextView
-                    android:id="@+id/labelExitDelay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/sliderExitDelay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:stepSize="0.5"
-                    android:valueFrom="0.5"
-                    android:valueTo="15.0" />
-
-                <TextView
-                    android:id="@+id/labelThreshold"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/sliderThreshold"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:stepSize="0.5"
-                    android:valueFrom="-9.5"
-                    android:valueTo="-1.0" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/title_journal"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonTestEnable"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="4dp"
-                        android:layout_weight="1"
-                        android:text="@string/button_test_enable" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonTestDisable"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="1"
-                        android:text="@string/button_test_disable" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/textJournal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:fontFamily="monospace"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textIsSelectable="true" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonClearJournal"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:text="@string/button_clear_journal" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        <View
+            android:id="@+id/dot2"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginHorizontal="5dp"
+            android:background="@drawable/dot" />
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

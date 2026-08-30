@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Le journal est la seule trace exploitable d'un essai en poche : on ne peut pas regarder l'écran
+  pendant que le téléphone y est. Il occupe donc une page entière, en police à chasse fixe.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="16dp"
+        android:text="@string/section_journal"
+        android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+
+    <!-- Mesures brutes : leur place est ici, avec le reste du diagnostic. -->
+    <TextView
+        android:id="@+id/textLive"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:alpha="0.6"
+        android:textAppearance="?attr/textAppearanceBodySmall" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonTestEnable"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="@string/button_test_enable" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonTestDisable"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:text="@string/button_test_disable" />
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Widget.Material3.CardView.Filled"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/textJournal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="16dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textIsSelectable="true" />
+        </ScrollView>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonClearJournal"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="@string/button_clear_journal" />
+</LinearLayout>

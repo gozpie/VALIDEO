@@ -1,5 +1,54 @@
 # Rapport de modifications
 
+## 2026-08-30 — Refonte de l'interface : bouton central, pages balayables, thème sombre (étape 3)
+
+### Objectif
+Une interface grand public : un geste évident à l'ouverture, aucun jargon en façade, et un fond
+sombre pour une application qu'on consulte souvent dans la pénombre, juste avant de ranger le
+téléphone.
+
+### Modifications
+- `activity_main.xml` : trois pages dans un `ViewPager2` — contrôle, réglages, journal — avec trois
+  points indicateurs. On glisse pour aller aux réglages ; l'accueil ne sert qu'à démarrer.
+- `page_control.xml` (nouveau) : un bouton circulaire de 240 dp cerclé d'un anneau, et **une seule
+  phrase** sous lui. Le bouton porte l'état par sa couleur et son libellé : « Activer » (gris),
+  « Activé » (violet), « Dans la poche » (tertiaire). Rien d'autre à lire.
+- `page_settings.xml` (nouveau) : les deux vérifications et les trois curseurs, puis le détail
+  technique — méthode de bascule, capteurs, raccourci vers les réglages système — relégué en bas
+  sous « Détails techniques ».
+- `page_journal.xml` (nouveau) : les mesures brutes rejoignent le journal et les boutons d'essai,
+  là où elles servent vraiment.
+- `themes.xml` : `Theme.Material3.Dark` en toutes circonstances, barres système forcées en sombre
+  via `WindowInsetsController` — sans quoi la barre de navigation restait blanche sous un écran
+  noir quand le système est en thème clair.
+- `AndroidManifest.xml` : portrait verrouillé. En paysage, le bouton mangeait l'écran et la phrase
+  d'état passait sous les dialogues système ; l'application n'a rien à y gagner.
+- Vocabulaire revu pour un public non technique : « Inclinaison nécessaire : moyenne » au lieu d'un
+  seuil en m/s², « Couper après 3 s dans la poche », « Vérifier qu'il fait sombre ». Les axes
+  d'accéléromètre et le nom de la permission ne paraissent plus sur l'écran d'accueil.
+- Le réglage de proximité est grisé, avec sa raison, quand l'appareil n'a pas de capteur utilisable
+  (cas du Galaxy S23) : un interrupteur que le service ignore ferait croire à une panne.
+
+### Deux pièges traités
+Curseurs et pager glissent tous deux à l'horizontale. Première tentative : couper
+`ViewPager2.isUserInputEnabled` pendant le glissement d'un curseur. **Mauvaise idée** — vérifiée sur
+l'appareil : si le geste est annulé au lieu d'être relâché, `onStopTrackingTouch` n'est jamais
+appelé et la navigation reste bloquée définitivement. Remplacé par
+`requestDisallowInterceptTouchEvent`, que le framework remet à zéro en fin de geste, annulation
+comprise.
+
+L'affichage bord à bord imposé par `targetSdk 35` faisait passer les points indicateurs sous la
+barre de navigation : `fitsSystemWindows` posé sur la racine.
+
+### Validation
+`BUILD SUCCESSFUL`, 18 tests au vert. Interface vérifiée sur le Galaxy S23 par captures : page de
+contrôle, page de réglages avec le curseur de proximité grisé, navigation entre les pages,
+thème sombre et barres système sombres.
+
+### Reste à faire
+- Le seuil d'obscurité reste figé à 8 lx, sans réglage.
+- Étape suivante à arbitrer : Shizuku, repli « Ne pas déranger », ou réglages avancés.
+
 ## 2026-08-30 — Le capteur de proximité du Galaxy bloquait la détection (étape 1, suite)
 
 ### Objectif

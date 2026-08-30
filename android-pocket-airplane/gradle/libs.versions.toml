@@ -2,6 +2,7 @@
 agp = "8.7.3"
 kotlin = "2.0.21"
 coreKtx = "1.15.0"
+viewpager2 = "1.1.0"
 appcompat = "1.7.0"
 material = "1.12.0"
 lifecycle = "2.8.7"
@@ -11,6 +12,7 @@ junit = "4.13.2"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version.ref = "viewpager2" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PocheAvion" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!--
+      Thème sombre en toutes circonstances : l'application se consulte d'un coup d'œil, souvent
+      dans la pénombre juste avant de ranger le téléphone. Un fond clair éblouirait.
+    -->
+    <style name="Theme.PocheAvion" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Sans ça, le fond de fenêtre par défaut réapparaît en clair derrière les barres
+             système, que l'affichage bord à bord d'Android 15 rend transparentes. -->
+        <item name="android:windowBackground">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>
