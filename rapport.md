@@ -45,6 +45,12 @@ barre de navigation : `fitsSystemWindows` posé sur la racine.
 contrôle, page de réglages avec le curseur de proximité grisé, navigation entre les pages,
 thème sombre et barres système sombres.
 
+### Correctif après essai
+Le bouton affichait « Activer » à l'arrêt et « Activé » en marche : deux mots qui ne diffèrent que
+par leur dernière lettre, indistinguables d'un coup d'œil — ce qui est pourtant le seul usage de
+cet écran. Le bouton porte désormais un état sans ambiguïté possible, « Arrêté » ou « En marche »,
+et l'action passe dans la phrase en dessous (« Appuyez pour démarrer »).
+
 ### Reste à faire
 - Le seuil d'obscurité reste figé à 8 lx, sans réglage.
 - Étape suivante à arbitrer : Shizuku, repli « Ne pas déranger », ou réglages avancés.

@@ -62,8 +62,8 @@
     <string name="warning_no_proximity">Sans cette vérification, la batterie se vide plus vite.</string>
 
     <!-- Écran refondu : bouton central et pages balayables -->
-    <string name="power_off">Activer</string>
-    <string name="power_on">Activé</string>
+    <string name="power_off">Arrêté</string>
+    <string name="power_on">En marche</string>
     <string name="power_in_pocket">Dans la poche</string>
     <string name="hint_swipe_settings">Réglages et journal : faites glisser ›</string>
     <string name="section_detection">Réglages</string>
@@ -71,7 +71,7 @@
     <string name="hint_threshold">Plus la valeur est basse, plus le téléphone doit être franchement tête en bas.</string>
     <string name="warning_proximity_unavailable">Ce téléphone n’a pas de capteur utilisable pour ça. L’inclinaison suffira.</string>
     <string name="section_about">Détails techniques</string>
-    <string name="state_idle">Appuyez pour activer</string>
+    <string name="state_idle">Appuyez pour démarrer</string>
     <string name="state_watching">Rangez votre téléphone tête en bas</string>
     <string name="state_in_pocket">Mode avion activé</string>
     <string name="state_no_method">Impossible de basculer le mode avion sur ce téléphone</string>
