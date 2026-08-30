@@ -43,7 +43,7 @@ class PocketSensorMonitor(
 
     private val gravitySensor: Sensor? = wakeUpOrDefault(Sensor.TYPE_GRAVITY)
     private val accelerometerSensor: Sensor? = wakeUpOrDefault(Sensor.TYPE_ACCELEROMETER)
-    private val proximitySensor: Sensor? = wakeUpOrDefault(Sensor.TYPE_PROXIMITY)
+    private val proximitySensor: Sensor? = selectProximitySensor()
     private val lightSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
     /** Capteur effectivement utilisé pour l'orientation. */
@@ -232,6 +232,24 @@ class PocketSensorMonitor(
     /** Préfère la variante « wake-up » du capteur, qui continue d'émettre écran éteint. */
     private fun wakeUpOrDefault(type: Int): Sensor? =
         sensorManager.getDefaultSensor(type, true) ?: sensorManager.getDefaultSensor(type)
+
+    /**
+     * Choisit un capteur de proximité qui mesure vraiment une distance.
+     *
+     * `getDefaultSensor(TYPE_PROXIMITY)` ne convient pas : certains constructeurs exposent sous ce
+     * type un capteur de geste (paume, dalle tactile) qui ne signale rien dans une poche. Retenir
+     * un tel capteur bloquerait la détection en silence — cf. [ProximitySensorFilter].
+     */
+    private fun selectProximitySensor(): Sensor? {
+        val chosen = sensorManager.usableProximitySensor()
+        if (chosen == null) {
+            val candidates = sensorManager.getSensorList(Sensor.TYPE_PROXIMITY).orEmpty()
+            if (candidates.isNotEmpty()) {
+                Log.i(TAG, "Aucun capteur de proximité exploitable : ${candidates.joinToString { it.name }}")
+            }
+        }
+        return chosen
+    }
 
     private companion object {
         const val TAG = "PocketSensorMonitor"

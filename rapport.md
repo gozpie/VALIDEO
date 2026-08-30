@@ -1,5 +1,61 @@
 # Rapport de modifications
 
+## 2026-08-30 — Le capteur de proximité du Galaxy bloquait la détection (étape 1, suite)
+
+### Objectif
+Essai sur un Galaxy S23 : la détection ne se déclenchait jamais, sans message d'erreur. Trouver la
+cause et faire en sorte qu'aucun utilisateur n'ait à la deviner.
+
+### Diagnostic
+`getDefaultSensor(TYPE_PROXIMITY)` retournait « Palm Proximity Sensor version 2 », un capteur
+Samsung de détection de paume. Samsung l'expose sous le type standard `android.sensor.proximity(8)`
+et réserve le capteur physique (`STK33911 Proximity`) à un type propriétaire protégé par la
+permission `com.samsung.permission.SSENSOR`, inaccessible aux applications tierces.
+
+Le capteur de paume ne réagit pas au tissu d'une poche. L'application attendait donc un signal qui
+n'arrivait jamais : la fenêtre d'échantillonnage de l'orientation ne s'ouvrait pas, et rien
+n'indiquait pourquoi. Contourner demandait de décocher « Exiger le capteur de proximité » — encore
+fallait-il savoir que le capteur annoncé « présent » ne servait à rien.
+
+### Modifications
+- `detection/ProximitySensorFilter.kt` (nouveau) : écarte les capteurs dont le nom porte un marqueur
+  de geste (`palm`, `touch`, `grip`, `iris`, `gesture`) et préfère, parmi ceux qui restent, la
+  variante à réveil matériel. Logique pure, sans dépendance Android, donc testable sur la JVM.
+- `detection/SensorSelection.kt` (nouveau) : `SensorManager.usableProximitySensor()`, point d'entrée
+  unique partagé par la détection et l'interface.
+- `detection/PocketSensorMonitor.kt` : utilise cette sélection au lieu de `getDefaultSensor`, et
+  journalise les capteurs rejetés pour rendre diagnosticable un appareil inconnu.
+- `ui/MainActivity.kt` : l'état des capteurs passait par son propre `getDefaultSensor` et annonçait
+  « proximité : présent » pour un capteur que la détection écartait. Deux sources de vérité qui se
+  contredisaient ; l'écran suit désormais la même règle.
+
+Aucun garde-fou nouveau n'était nécessaire : `PocketAirplaneService` calculait déjà
+`requireProximity = config.requireProximity && hasProximitySensor()`. Il suffisait que la
+disponibilité dise la vérité pour que le repli en orientation seule se fasse de lui-même.
+
+### Validation
+Compilation et tests : `BUILD SUCCESSFUL`, 18 tests au vert (9 sur la machine à états, 9 nouveaux
+sur le filtre, écrits à partir des noms relevés par `adb shell dumpsys sensorservice` sur le S23).
+
+Sur l'appareil, données remises à zéro pour repartir des préférences par défaut
+(`requireProximity = true`), puis surveillance activée :
+
+    I/PocketSensorMonitor: Aucun capteur de proximité exploitable : Palm Proximity Sensor version 2
+    11:36:59 + 0x0000005b ... (gravity, PocketSensorMonitor)
+
+L'application s'abonne à la seule gravité, l'écran annonce « proximité : absent », et le repli en
+orientation seule est automatique malgré la préférence restée active.
+
+Le cycle complet avait été validé auparavant sur le même appareil, proximité désactivée à la main :
+mise en poche à 11:10:21 (mode avion activé), sortie à 11:11:20 (désactivé), via
+`write_secure_settings`.
+
+### Reste à faire
+- Le seuil d'obscurité est figé à 8 lx, sans réglage, contrairement aux trois autres paramètres.
+- Sans capteur de proximité, l'orientation est échantillonnée en continu sous wake lock : la
+  consommation augmente. C'est le compromis assumé, mais il pèse sur le choix de l'étape 2.
+- Étape 2 à arbitrer : Shizuku, repli « Ne pas déranger », ou réglages avancés.
+
 ## 2026-08-30 — Correction de la compilation Android (étape 1, suite)
 
 ### Objectif

@@ -19,6 +19,7 @@ import com.gozpie.pocketairplane.data.Prefs
 import com.gozpie.pocketairplane.databinding.ActivityMainBinding
 import com.gozpie.pocketairplane.detection.DetectionConfig
 import com.gozpie.pocketairplane.detection.PocketStateMachine
+import com.gozpie.pocketairplane.detection.usableProximitySensor
 import com.gozpie.pocketairplane.service.PocketAirplaneService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -187,13 +188,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         val sensorManager = getSystemService(SENSOR_SERVICE) as android.hardware.SensorManager
-        fun label(type: Int) = getString(
-            if (sensorManager.getDefaultSensor(type) != null) R.string.value_present else R.string.value_absent,
-        )
+        fun label(present: Boolean) =
+            getString(if (present) R.string.value_present else R.string.value_absent)
+        // La proximité passe par le même tri que la détection : annoncer « présent » un capteur
+        // que le moniteur écarte (capteur de geste déguisé) laisserait croire à une panne.
+        fun label(type: Int) = label(sensorManager.getDefaultSensor(type) != null)
         binding.textSensors.text = getString(
             R.string.status_sensors,
             label(android.hardware.Sensor.TYPE_ACCELEROMETER),
-            label(android.hardware.Sensor.TYPE_PROXIMITY),
+            label(sensorManager.usableProximitySensor() != null),
             label(android.hardware.Sensor.TYPE_LIGHT),
         )
     }
