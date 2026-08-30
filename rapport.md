@@ -1,5 +1,37 @@
 # Rapport de modifications
 
+## 2026-08-30 — Correction de la compilation Android (étape 1, suite)
+
+### Objectif
+Exécuter la compilation Android complète, restée invérifiable lors de l'étape précédente, et
+corriger ce qu'elle révèle.
+
+### Modifications
+- `app/src/main/res/drawable/ic_airplane.xml` : la balise ouvrante `<vector>` n'était jamais
+  fermée. Faute du `>` final, `aapt2` lisait l'élément `<path>` suivant comme un attribut de
+  `vector` et refusait le fichier. Ajout du chevron manquant.
+
+### Validation
+Compilation et tests exécutés sur un poste disposant du SDK Android (JDK 21, SDK 35, AGP 8.7.3,
+Gradle 8.14.3) :
+
+    ./gradlew assembleDebug testDebugUnitTest
+
+`BUILD SUCCESSFUL`. L'APK de débogage est produit (`app-debug.apk`, 6,0 Mo) et les 9 tests
+unitaires de `PocketStateMachineTest` passent. Le reste du code Kotlin compile sans erreur.
+
+Ce défaut ne pouvait pas être détecté à l'étape précédente : `dl.google.com` y était bloqué, donc
+aucune compilation des ressources n'avait jamais été lancée. C'était le seul défaut du projet.
+
+### Reste à faire pour clore l'étape 1
+Installation sur l'appareil et essai en conditions réelles, qui demandent un téléphone branché :
+
+    adb install -r app/build/outputs/apk/debug/app-debug.apk
+    adb shell pm grant com.gozpie.pocketairplane.debug android.permission.WRITE_SECURE_SETTINGS
+
+Puis vérifier dans le journal de l'application que la mise en poche et la sortie sont bien
+détectées, et ajuster les seuils à chaud si la détection se révèle trop ou pas assez sensible.
+
 ## 2026-08-28 — Application Android « Poche Avion » (étape 1)
 
 ### Objectif
