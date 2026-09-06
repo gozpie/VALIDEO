@@ -17,14 +17,21 @@ Le cœur du projet s’appuie sur une base MySQL et une arborescence de fichiers
 - **Dessins/annotations** au-dessus de la vidéo (canvas), sauvegardés en SVG.
 - Navigation rapide : clic sur un commentaire pour revenir au timecode.
 
-### 3) API / Endpoints principaux
+### 3) Messagerie client (module `messagerie/`)
+- Discussion **temps réel** entre l'équipe et les clients, façon messagerie instantanée.
+- Le client accède à sa conversation par un **lien unique**, sans compte à créer.
+- Envoi fiable : file d'attente hors ligne, renvoi automatique, aucun doublon.
+- Accusés de lecture, compteurs de non-lus, interface responsive (mobile / bureau).
+- Installation et réglages : voir `messagerie/README.md`.
+
+### 4) API / Endpoints principaux
 - `add_comment.php` : enregistre un commentaire horodaté.
 - `draw_handler.php` : enregistre un dessin (SVG) lié à un commentaire.
 - `get_drawings.php` / `get_markers_and_drawings.php` : expose les marqueurs et dessins d’une vidéo.
 - `delete_comment.php` : supprime un commentaire et ses dessins associés.
 - `delete_entity.php` : supprime une vidéo, un projet ou un client (avec nettoyage disque).
 
-### 4) Sécurité et sessions
+### 5) Sécurité et sessions
 - Les actions sensibles utilisent un **token de session** pour limiter les appels non autorisés.
 
 > Remarque : certaines pages (ex. `upload_page.php`, `visualization.php`, éventuelle page de login) sont référencées dans le code et peuvent compléter le workflow, mais ne figurent pas forcément dans ce dépôt.
@@ -40,6 +47,8 @@ Le cœur du projet s’appuie sur une base MySQL et une arborescence de fichiers
 - **Lecteur vidéo custom** : `player/valideo-player.js` + `player/valideo-player.css`.
 - **Outils de dessin** et interaction commentaires : `draw_tool.js`.
 - **Gestion UI** (renommage, partage, suppression) : `gallery_video.js`.
+- **Messagerie** : `messagerie/messagerie.js` + `messagerie/messagerie.css` (transport long-poll,
+  file d'envoi persistée, rendu optimiste).
 
 ## Flux d’utilisation (haut niveau)
 

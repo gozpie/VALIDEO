@@ -95,6 +95,7 @@ if ($fps <= 0) $fps = 25;
       <a class="tab" href="upload_page.php">Upload</a>
       <a class="tab" href="index.php">Visualisation</a>
       <a class="tab isActive" href="#">Commentaires</a>
+      <a class="tab" href="messages.php">Messages</a>
     </nav>
   </div>
 </header>
