@@ -1,0 +1,46 @@
+# Espace de travail Python (uv). Chaque application/worker Python est un membre.
+[tool.uv.workspace]
+members = ["apps/api"]
+
+[dependency-groups]
+dev = [
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.2",
+    "jsonschema==4.26.0",
+    "types-jsonschema==4.26.0.20261006",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF", "PTH", "ASYNC"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ass_api"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+
+# boto3 ne fournit pas de stubs de types ; ses appels sont encapsulés dans core/health.py.
+[[tool.mypy.overrides]]
+module = ["boto3", "botocore.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: nécessite PostgreSQL, Redis et MinIO réels (ASS_RUN_INTEGRATION=1)"]
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]

@@ -1,0 +1,27 @@
+[project]
+name = "ass-api"
+version = "0.1.0"
+description = "API HTTP d'AI Scene Studio (FastAPI)."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic==1.20.0",
+    "boto3==1.43.120",
+    "fastapi==0.161.1",
+    "psycopg[binary]==3.3.6",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
+    "redis==8.1.0",
+    "sqlalchemy==2.1.5",
+    "structlog==26.1.0",
+    "uvicorn[standard]==0.54.0",
+]
+
+[dependency-groups]
+dev = ["httpx==0.28.1"]
+
+[build-system]
+requires = ["hatchling==1.33.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ass_api"]
