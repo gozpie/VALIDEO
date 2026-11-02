@@ -54,3 +54,9 @@ Le cœur du projet s’appuie sur une base MySQL et une arborescence de fichiers
 - **Stockage local** des vidéos dans `uploads/`.
 
 Si tu veux, je peux fournir un modèle de schéma SQL ou un guide d’installation pas à pas.
+
+## AI Scene Studio (nouveau projet)
+
+Le dossier [`ai-scene-studio/`](ai-scene-studio/README.md) contient une nouvelle plateforme de conception
+d'images et vidéos IA à partir d'une scène 3D persistante (monorepo Next.js / FastAPI). Elle est indépendante
+de l'application PHP ci-dessus. Démarrage : `cd ai-scene-studio && cp .env.example .env && docker compose up --build --wait`.
