@@ -27,3 +27,4 @@ htmlcov/
 
 # Données locales
 .data/
+next-env.d.ts

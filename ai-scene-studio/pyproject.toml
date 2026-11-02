@@ -21,7 +21,7 @@ line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF", "PTH", "ASYNC"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF", "PTH", "ASYNC", "T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["ass_api"]

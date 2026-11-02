@@ -21,11 +21,11 @@ class Settings(BaseSettings):
     )
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
 
-    s3_endpoint_url: str = "http://localhost:9000"
+    s3_endpoint_url: str = "http://localhost:8333"
     s3_region: str = "us-east-1"
     s3_bucket: str = "ass-media"
-    s3_access_key_id: SecretStr = SecretStr("minioadmin")
-    s3_secret_access_key: SecretStr = SecretStr("minioadmin")
+    s3_access_key_id: SecretStr = SecretStr("dev-access-key")
+    s3_secret_access_key: SecretStr = SecretStr("dev-secret-key-change-me")
 
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000"]
@@ -64,8 +64,8 @@ class Settings(BaseSettings):
             return self
         insecure = {
             "database_url": ":ass@" in self.database_url.get_secret_value(),
-            "s3_access_key_id": self.s3_access_key_id.get_secret_value() == "minioadmin",
-            "s3_secret_access_key": self.s3_secret_access_key.get_secret_value() == "minioadmin",
+            "s3_access_key_id": self.s3_access_key_id.get_secret_value() == "dev-access-key",
+            "s3_secret_access_key": "change-me" in self.s3_secret_access_key.get_secret_value(),
         }
         if any(insecure.values()):
             fields = ", ".join(name for name, bad in insecure.items() if bad)
