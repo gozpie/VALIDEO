@@ -1,0 +1,7 @@
+packages:
+  - 'apps/web'
+  - 'packages/*'
+
+# Seules ces dépendances sont autorisées à exécuter des scripts d'installation.
+onlyBuiltDependencies:
+  - esbuild

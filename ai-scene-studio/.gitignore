@@ -1,0 +1,29 @@
+# Dépendances
+node_modules/
+.venv/
+
+# Builds
+dist/
+.next/
+out/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Tests
+coverage/
+playwright-report/
+test-results/
+.coverage
+htmlcov/
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+
+# Données locales
+.data/
