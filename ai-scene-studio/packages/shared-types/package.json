@@ -1,0 +1,14 @@
+{
+  "name": "@ass/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrats de données partagés (entités, statuts de jobs, erreurs API).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

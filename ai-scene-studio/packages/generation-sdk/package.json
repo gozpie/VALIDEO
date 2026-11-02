@@ -1,0 +1,17 @@
+{
+  "name": "@ass/generation-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrat ProviderAdapter et appariement des capacit\u00e9s des fournisseurs IA.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ass/shared-types": "workspace:*"
+  }
+}
