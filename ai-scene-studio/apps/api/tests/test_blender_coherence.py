@@ -58,6 +58,11 @@ def run_blender(
             "--rm",
             "--platform",
             "linux/amd64",
+            # Utilisateur de l'hôte : le dossier de travail monté reste accessible.
+            "--user",
+            f"{os.getuid()}:{os.getgid()}",
+            "-e",
+            "HOME=/work",
             "-v",
             f"{work}:/work",
             "-v",
