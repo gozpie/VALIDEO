@@ -1,6 +1,6 @@
 # Limites connues
 
-## Fonctionnelles (phase 1 en cours)
+## Fonctionnelles (phase 1)
 
 - Interface volontairement sobre : connexion, workspaces, membres et invitations, projets, séquences et plans
   (création, renommage des séquences, ordre par boutons ↑/↓, suppression). Non exposés à l'écran bien que
@@ -32,4 +32,3 @@
   transformations, le cadrage, les focales et le timing seront testés.
 - **Génération IA** : un générateur probabiliste ne garantit pas la fidélité géométrique ; un seed identique ne
   garantit pas la reproductibilité chez un fournisseur distant.
-- **CI** : le workflow GitHub Actions est écrit et ses étapes ont été exécutées localement, mais il n'a pas encore tourné sur GitHub.

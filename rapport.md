@@ -111,3 +111,16 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : livrable de la phase 1 — l'utilisateur crée et retrouve ses projets depuis le navigateur.
 - **Vérifications** : `pnpm check` (58 tests TypeScript) ; build de production ; pile Docker complète reconstruite (`docker compose up --build --wait`, 6 services sains, `/health/ready` OK y compris S3) ; 81 tests d'intégration Python contre la pile (le test S3, impossible en phase 0, passe) ; 4 E2E Playwright contre les conteneurs ; contrôle visuel de la page projet.
 
+### Étape 1.7 — Clôture de la phase 1
+- **Vérifié** : premier passage du workflow GitHub Actions sur la branche avec le code de la phase 1 (run 41676773358) — TypeScript, Python (64 tests unitaires), pile Docker complète (81 tests d'intégration réels, dont S3), 4 E2E contre les conteneurs : tout au vert.
+- **Modifié** : `KNOWN_LIMITATIONS.md` (la CI tourne désormais sur GitHub), `CHANGELOG.md` (version 0.2.0).
+
+### Bilan de la phase 1
+- **Livrable** (« l'utilisateur peut créer et retrouver ses projets ») : atteint et couvert par un E2E qui crée workspace, projet, séquence et plans, recharge la page, se déconnecte, se reconnecte et retrouve le projet.
+- **Fonctionnalités** : connexion par session (Argon2id, cookie HttpOnly/SameSite/Secure, CSRF, limitation des échecs), workspaces avec rôles et isolation stricte, membres et invitations à usage unique, CRUD des projets, séquences et plans avec ordre, contrats TypeScript générés depuis l'OpenAPI, interface web.
+- **Commandes exécutées** : `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy …`, `uv run pytest apps/api`, `ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration`, `pnpm check`, `pnpm --filter @ass/web build`, `docker compose up --build --wait`, `pnpm test:e2e`, `gh run watch`.
+- **Tests réussis** : 64 unitaires et 81 d'intégration Python ; 58 TypeScript ; 4 E2E ; CI GitHub au vert. **Tests échoués** : aucun à la clôture (deux défauts trouvés en cours de route et corrigés : contrainte de cadence acceptant une colonne NULL, liste de tables oubliée dans un test).
+- **Limitations** : voir `KNOWN_LIMITATIONS.md` — pas d'envoi d'e-mail (lien d'invitation transmis par l'admin), pas de réinitialisation de mot de passe, certaines modifications disponibles dans l'API mais pas à l'écran, pas de déplacement d'un plan entre séquences, purge des sessions expirées à la présentation seulement.
+- **Risques restants** : limite d'échecs par e-mail permettant le blocage temporaire d'un compte par un tiers ; derrière un proxy, `FORWARDED_ALLOW_IPS` doit être configuré sinon la limite par IP devient commune ; front et API doivent partager le même site pour le cookie.
+- **Prochaine étape** : phase 2 (scène 3D éditable et persistante : viewport, primitives, sélection, gizmos, hiérarchie, inspector, undo/redo, import GLB, sauvegarde en révisions), après validation de la phase 1.
+
