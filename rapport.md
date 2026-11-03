@@ -93,3 +93,12 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : livrable de la phase 1 côté API — l'utilisateur crée et retrouve ses projets, séquences et plans, sans jamais voir ceux d'un autre workspace.
 - **Vérifications** : ruff, mypy strict ; 61 tests unitaires ; 80 tests d'intégration (PostgreSQL, Redis).
 
+### Étape 1.5 — Types TypeScript générés depuis l'API
+- **Ajouté** : `packages/api-client` — `openapi.json` versionné (exporté par `python -m ass_api.cli export-openapi`), `src/schema.gen.ts` généré par openapi-typescript (`scripts/render-types.ts`, rendu déterministe), client `createApiClient` basé sur openapi-fetch (cookies inclus, jeton CSRF mémorisé à chaque réponse de session et ajouté aux requêtes modifiantes, oublié à la déconnexion ou sur `401`), alias d'entités (`Workspace`, `Project`, `Shot`…).
+- **Ajouté** : tests de dérive — `apps/api/tests/test_openapi_contract.py` (le fichier versionné doit égaler l'OpenAPI de l'API) et `packages/api-client/test/contract.test.ts` (les types doivent égaler ceux régénérés) ; `test/client.test.ts` (gestion du jeton CSRF) ; commande `pnpm api:generate`.
+- **Modifié** : rôles et espaces colorimétriques exposés en énumérations (`Literal`) ; schéma `ProblemOut` déclaré pour toutes les réponses 4XX/5XX (au lieu du format FastAPI par défaut, qui n'est pas celui renvoyé) ; `@ass/shared-types` réexporte les entités de la phase 1 depuis `@ass/api-client` ; le test Python des énumérations compare désormais les `Literal` de l'API aux contraintes de la base.
+- **Corrigé** : le test unitaire de la liste des tables n'incluait pas `workspace_invitations` (oubli de l'étape 1.4, qui avait été vérifiée par les seuls tests d'intégration) ; `pnpm test` lancé package par package, car le cache Vitest partagé à la racine échouait aléatoirement en parallèle (`ENOTEMPTY`).
+- **Environnement** : Node 22 installé via nvm (le Mac avait Node 24, refusé par `engine-strict`).
+- **Objectif** : une seule source de vérité pour les contrats front/back, avant l'interface de l'étape 1.6.
+- **Vérifications** : `pnpm check` (format, lint, types, 51 tests TypeScript) ; ruff, mypy ; 64 tests unitaires et 80 tests d'intégration Python.
+

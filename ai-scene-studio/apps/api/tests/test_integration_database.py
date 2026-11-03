@@ -28,6 +28,7 @@ PHASE_1_TABLES = {
     "user_sessions",
     "workspaces",
     "workspace_members",
+    "workspace_invitations",
     "projects",
     "sequences",
     "shots",

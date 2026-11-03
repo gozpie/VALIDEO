@@ -44,7 +44,11 @@ techniques et sorties IA sont des **artefacts attachés à une révision** ; ils
    (`transpilePackages`) et Vitest : pas d'étape de build intermédiaire.
 4. **Temps en frames entières, fps rationnel** : évaluation déterministe, aucune dérive flottante.
 5. **Convention d'axes glTF** (Y-up, −Z avant, mètres) : aucune conversion côté navigateur ; une seule conversion documentée vers Blender.
-6. **Les contrats API seront générés depuis l'OpenAPI de FastAPI** à partir de la phase 1 ; `shared-types` documente d'ici là la forme cible.
+6. **Les contrats API sont générés depuis l'OpenAPI de FastAPI** : `packages/api-client/openapi.json` (versionné)
+   → `src/schema.gen.ts` (openapi-typescript) → client typé (openapi-fetch). Deux tests empêchent toute dérive :
+   côté Python, le fichier versionné doit égaler l'OpenAPI de l'API ; côté TypeScript, les types doivent égaler
+   ceux régénérés depuis ce fichier. `shared-types` réexporte ces types et ne garde la forme cible que pour les
+   entités pas encore servies.
 7. **Stockage S3 générique** : seul l'API S3 standard est utilisée ; SeaweedFS en local (MinIO n'est plus distribué en image publique).
 8. **Jobs** : machine à états unique (`queued → preparing → running → processing → completed`, plus `failed` et `cancelled`),
    jamais de retour d'un état terminal. Relancer une opération crée un nouveau job, avec une clé d'idempotence.

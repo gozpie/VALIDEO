@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/playwright-report/**',
       '**/test-results/**',
       '**/next-env.d.ts',
+      'packages/api-client/src/schema.gen.ts',
       '.venv/**',
     ],
   },

@@ -8,3 +8,5 @@ pnpm-lock.yaml
 .venv
 **/*.py
 packages/scene-schema/schema/*.json
+packages/api-client/openapi.json
+packages/api-client/src/schema.gen.ts

@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import Field, model_validator
@@ -22,11 +22,10 @@ from ass_api.core.pagination import (
 )
 from ass_api.db.models import MAX_RESOLUTION, Project
 from ass_api.db.session import get_db
-from ass_api.routes.schemas import Description, Name
+from ass_api.routes.schemas import ColorSpace, Description, Name
 
 router = APIRouter(tags=["projects"])
 DbDep = Annotated[Session, Depends(get_db)]
-ColorSpace = Literal["srgb", "rec709", "acescg", "linear_rec709"]
 
 
 class Fps(ApiModel):
@@ -70,22 +69,24 @@ class ProjectOut(ApiModel):
     description: str
     fps: Fps
     resolution: Resolution
-    color_space: str
+    color_space: ColorSpace
     created_at: datetime
     updated_at: datetime
 
 
 def project_out(project: Project) -> ProjectOut:
-    return ProjectOut(
-        id=project.id,
-        workspace_id=project.workspace_id,
-        name=project.name,
-        description=project.description,
-        fps=Fps(numerator=project.fps_numerator, denominator=project.fps_denominator),
-        resolution=Resolution(width=project.resolution_width, height=project.resolution_height),
-        color_space=project.color_space,
-        created_at=project.created_at,
-        updated_at=project.updated_at,
+    return ProjectOut.model_validate(
+        {
+            "id": project.id,
+            "workspace_id": project.workspace_id,
+            "name": project.name,
+            "description": project.description,
+            "fps": {"numerator": project.fps_numerator, "denominator": project.fps_denominator},
+            "resolution": {"width": project.resolution_width, "height": project.resolution_height},
+            "color_space": project.color_space,
+            "created_at": project.created_at,
+            "updated_at": project.updated_at,
+        }
     )
 
 

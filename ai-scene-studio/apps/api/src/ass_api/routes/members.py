@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
@@ -13,22 +13,22 @@ from ass_api.auth.permissions import Role, workspace_access
 from ass_api.core.api_model import ApiModel
 from ass_api.db.models import User, WorkspaceMember
 from ass_api.db.session import get_db
+from ass_api.routes.schemas import InvitableRole, RoleName
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/members", tags=["members"])
 DbDep = Annotated[Session, Depends(get_db)]
-AssignableRole = Literal["admin", "editor", "viewer"]
 
 
 class MemberOut(ApiModel):
     user_id: uuid.UUID
     email: str
     display_name: str
-    role: str
+    role: RoleName
     created_at: datetime
 
 
 class MemberRoleIn(ApiModel):
-    role: AssignableRole
+    role: InvitableRole
 
 
 def _member(
@@ -47,12 +47,14 @@ def _member(
 
 
 def _out(member: WorkspaceMember, user: User) -> MemberOut:
-    return MemberOut(
-        user_id=user.id,
-        email=user.email,
-        display_name=user.display_name,
-        role=member.role,
-        created_at=member.created_at,
+    return MemberOut.model_validate(
+        {
+            "user_id": user.id,
+            "email": user.email,
+            "display_name": user.display_name,
+            "role": member.role,
+            "created_at": member.created_at,
+        }
     )
 
 

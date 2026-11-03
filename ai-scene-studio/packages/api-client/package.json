@@ -1,0 +1,22 @@
+{
+  "name": "@ass/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types et client HTTP de l'API, générés depuis son contrat OpenAPI.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "tsx scripts/generate-types.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "tsx": "4.23.15"
+  }
+}

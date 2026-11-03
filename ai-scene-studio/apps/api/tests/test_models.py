@@ -1,25 +1,16 @@
 """Modèle de données (sans base) : tables attendues, clés, suppressions en cascade, contrats TS."""
 
-import re
-from pathlib import Path
+from typing import get_args
 
 import pytest
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 
 from ass_api.db.base import Base
-from ass_api.db.models import COLOR_SPACES, WORKSPACE_ROLES
+from ass_api.db.models import COLOR_SPACES, INVITABLE_ROLES, WORKSPACE_ROLES
+from ass_api.routes.schemas import ColorSpace, InvitableRole, RoleName
 
-ROOT = Path(__file__).resolve().parents[3]
-ENTITIES_TS = ROOT / "packages/shared-types/src/entities.ts"
 TABLES = Base.metadata.tables
-
-
-def _ts_union(type_name: str) -> tuple[str, ...]:
-    source = ENTITIES_TS.read_text(encoding="utf-8")
-    match = re.search(rf"export type {type_name} =([^;]+);", source)
-    assert match, f"type {type_name} introuvable dans entities.ts"
-    return tuple(re.findall(r"'([a-z_0-9]+)'", match.group(1)))
 
 
 def _foreign_key(table: str, column: str) -> ForeignKeyConstraint:
@@ -35,6 +26,7 @@ def test_phase_1_tables() -> None:
         "user_sessions",
         "workspaces",
         "workspace_members",
+        "workspace_invitations",
         "projects",
         "sequences",
         "shots",
@@ -42,7 +34,16 @@ def test_phase_1_tables() -> None:
 
 
 @pytest.mark.parametrize(
-    "table", ["users", "user_sessions", "workspaces", "projects", "sequences", "shots"]
+    "table",
+    [
+        "users",
+        "user_sessions",
+        "workspaces",
+        "workspace_invitations",
+        "projects",
+        "sequences",
+        "shots",
+    ],
 )
 def test_primary_key_is_uuid(table: str) -> None:
     (column,) = TABLES[table].primary_key.columns
@@ -57,6 +58,8 @@ def test_primary_key_is_uuid(table: str) -> None:
         ("workspaces", "owner_id", "RESTRICT"),
         ("workspace_members", "workspace_id", "CASCADE"),
         ("workspace_members", "user_id", "CASCADE"),
+        ("workspace_invitations", "workspace_id", "CASCADE"),
+        ("workspace_invitations", "invited_by_id", "SET NULL"),
         ("projects", "workspace_id", "CASCADE"),
         ("sequences", "project_id", "CASCADE"),
         ("shots", "sequence_id", "CASCADE"),
@@ -76,9 +79,8 @@ def test_order_is_unique_per_parent_and_deferred(table: str, parent: str) -> Non
     assert order.initially == "DEFERRED"
 
 
-def test_roles_match_shared_types() -> None:
-    assert _ts_union("WorkspaceRole") == WORKSPACE_ROLES
-
-
-def test_color_spaces_match_shared_types() -> None:
-    assert _ts_union("ColorSpace") == COLOR_SPACES
+def test_api_enums_match_database_checks() -> None:
+    # Les types TypeScript sont générés depuis l'OpenAPI, donc depuis ces Literal.
+    assert get_args(RoleName) == WORKSPACE_ROLES
+    assert get_args(InvitableRole) == INVITABLE_ROLES
+    assert get_args(ColorSpace) == COLOR_SPACES

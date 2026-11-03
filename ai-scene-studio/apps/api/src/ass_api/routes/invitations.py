@@ -7,7 +7,7 @@ utilisée répond ``404`` sans distinction.
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Literal
+from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
@@ -26,7 +26,7 @@ from ass_api.core.config import Settings, get_settings
 from ass_api.db.models import User, Workspace, WorkspaceInvitation, WorkspaceMember
 from ass_api.db.session import get_db
 from ass_api.routes.auth import SessionOut, UserOut, set_session_cookie
-from ass_api.routes.schemas import DisplayName, Email
+from ass_api.routes.schemas import DisplayName, Email, InvitableRole
 
 router = APIRouter(tags=["invitations"])
 logger = structlog.get_logger("ass_api.invitations")
@@ -37,13 +37,13 @@ TokenPath = Annotated[str, Path(min_length=20, max_length=100)]
 
 class InvitationIn(ApiModel):
     email: Email
-    role: Literal["admin", "editor", "viewer"]
+    role: InvitableRole
 
 
 class InvitationOut(ApiModel):
     id: uuid.UUID
     email: str
-    role: str
+    role: InvitableRole
     created_at: datetime
     expires_at: datetime
 
@@ -57,7 +57,7 @@ class CreatedInvitationOut(InvitationOut):
 class InvitationPreviewOut(ApiModel):
     workspace_name: str
     email: str
-    role: str
+    role: InvitableRole
     expires_at: datetime
     account_exists: bool
 
@@ -186,12 +186,14 @@ def _pending(
 def preview_invitation(token: TokenPath, db: DbDep) -> InvitationPreviewOut:
     invitation, workspace = _pending(db, token)
     exists = db.scalars(select(User.id).where(User.email == invitation.email)).first() is not None
-    return InvitationPreviewOut(
-        workspace_name=workspace.name,
-        email=invitation.email,
-        role=invitation.role,
-        expires_at=invitation.expires_at,
-        account_exists=exists,
+    return InvitationPreviewOut.model_validate(
+        {
+            "workspace_name": workspace.name,
+            "email": invitation.email,
+            "role": invitation.role,
+            "expires_at": invitation.expires_at,
+            "account_exists": exists,
+        }
     )
 
 

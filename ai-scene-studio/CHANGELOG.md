@@ -23,8 +23,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   consultation et acceptation avec création de compte), CRUD des projets, séquences et plans avec insertion à
   une position, réordonnancement complet et recompactage à la suppression ; migration `0003`.
 
+- Étape 1.5 : `@ass/api-client` — contrat OpenAPI versionné, types générés (openapi-typescript), client typé
+  (openapi-fetch) gérant cookie et jeton CSRF ; commandes `export-openapi` et `pnpm api:generate` ; tests de dérive
+  Python et TypeScript ; erreurs documentées en « problem details » dans l'OpenAPI.
+
 ### Modifié
 
+- `@ass/shared-types` réexporte les entités de la phase 1 depuis `@ass/api-client`.
+- Rôles et espaces colorimétriques typés en énumérations dans l'OpenAPI.
+- `pnpm test` exécute les packages l'un après l'autre (le cache Vitest partagé échouait en parallèle).
 - Les erreurs HTTP conservent les en-têtes de l'exception (`Retry-After`…).
 - `infrastructure/migrations/env.py` : enregistre les modèles et accepte une URL de base fournie par les tests.
 

@@ -40,19 +40,20 @@ Les valeurs par défaut de l'API correspondent à cet environnement local : aucu
 
 ## Commandes
 
-| Commande                                                                                   | Effet                                                                 |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `./scripts/check-all.sh`                                                                   | Format, lint, typecheck et tests unitaires (TS et Python)             |
-| `pnpm check`                                                                               | Format, lint, typecheck et tests côté TypeScript                      |
-| `pnpm test` / `pnpm typecheck` / `pnpm lint` / `pnpm format`                               | Tâches TypeScript sur tous les packages                               |
-| `pnpm schema:generate`                                                                     | Regénère le JSON Schema de scène après modification du schéma         |
-| `pnpm test:e2e`                                                                            | Playwright (construit et démarre le web, ou cible `E2E_BASE_URL`)     |
-| `uv run pytest apps/api`                                                                   | Tests Python (l'intégration est ignorée sans `ASS_RUN_INTEGRATION=1`) |
-| `uv run ruff check . && uv run ruff format .`                                              | Lint et format Python                                                 |
-| `uv run mypy apps/api/src apps/api/tests infrastructure/migrations`                        | Typage Python strict                                                  |
-| `uv run alembic -c infrastructure/migrations/alembic.ini revision --autogenerate -m "..."` | Nouvelle migration                                                    |
-| `uv run python -m ass_api.cli ensure-bucket`                                               | Crée le bucket S3 s'il n'existe pas                                   |
-| `uv run python -m ass_api.cli create-user --email … --display-name …`                      | Crée un compte (mot de passe demandé ; `--password-stdin` possible)   |
+| Commande                                                                                   | Effet                                                                           |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `./scripts/check-all.sh`                                                                   | Format, lint, typecheck et tests unitaires (TS et Python)                       |
+| `pnpm check`                                                                               | Format, lint, typecheck et tests côté TypeScript                                |
+| `pnpm test` / `pnpm typecheck` / `pnpm lint` / `pnpm format`                               | Tâches TypeScript sur tous les packages                                         |
+| `pnpm api:generate`                                                                        | Regénère `openapi.json` et les types TypeScript après une modification de l'API |
+| `pnpm schema:generate`                                                                     | Regénère le JSON Schema de scène après modification du schéma                   |
+| `pnpm test:e2e`                                                                            | Playwright (construit et démarre le web, ou cible `E2E_BASE_URL`)               |
+| `uv run pytest apps/api`                                                                   | Tests Python (l'intégration est ignorée sans `ASS_RUN_INTEGRATION=1`)           |
+| `uv run ruff check . && uv run ruff format .`                                              | Lint et format Python                                                           |
+| `uv run mypy apps/api/src apps/api/tests infrastructure/migrations`                        | Typage Python strict                                                            |
+| `uv run alembic -c infrastructure/migrations/alembic.ini revision --autogenerate -m "..."` | Nouvelle migration                                                              |
+| `uv run python -m ass_api.cli ensure-bucket`                                               | Crée le bucket S3 s'il n'existe pas                                             |
+| `uv run python -m ass_api.cli create-user --email … --display-name …`                      | Crée un compte (mot de passe demandé ; `--password-stdin` possible)             |
 
 ## Variables d'environnement
 
@@ -94,4 +95,5 @@ Web : `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`), figée au build.
 | `CERTIFICATE_VERIFY_FAILED` pendant `docker build` derrière un proxy d'entreprise | `docker build --secret id=extra_ca,src=/chemin/ca.pem …` (voir DEPLOYMENT.md)                                     |
 | Playwright ne trouve pas de navigateur                                            | `pnpm --filter @ass/web exec playwright install chromium`                                                         |
 | `pnpm install` refuse la version de Node                                          | Utiliser Node 22 (`nvm use`) ; `engine-strict` est activé                                                         |
+| Le test « contrat OpenAPI » ou « types générés » échoue                           | Lancer `pnpm api:generate` et commiter `openapi.json` et `schema.gen.ts`                                          |
 | Le test « JSON Schema à jour » échoue                                             | Lancer `pnpm schema:generate` et commiter le fichier                                                              |

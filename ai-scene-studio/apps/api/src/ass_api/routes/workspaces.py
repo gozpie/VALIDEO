@@ -21,7 +21,7 @@ from ass_api.core.pagination import (
 )
 from ass_api.db.models import Workspace, WorkspaceMember
 from ass_api.db.session import get_db
-from ass_api.routes.schemas import WorkspaceName
+from ass_api.routes.schemas import RoleName, WorkspaceName
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 DbDep = Annotated[Session, Depends(get_db)]
@@ -35,20 +35,22 @@ class WorkspaceOut(ApiModel):
     id: uuid.UUID
     name: str
     owner_id: uuid.UUID
-    role: str
+    role: RoleName
     created_at: datetime
     updated_at: datetime
 
 
 def _out(workspace: Workspace, role: Role | str) -> WorkspaceOut:
     label = role.label if isinstance(role, Role) else role
-    return WorkspaceOut(
-        id=workspace.id,
-        name=workspace.name,
-        owner_id=workspace.owner_id,
-        role=label,
-        created_at=workspace.created_at,
-        updated_at=workspace.updated_at,
+    return WorkspaceOut.model_validate(
+        {
+            "id": workspace.id,
+            "name": workspace.name,
+            "owner_id": workspace.owner_id,
+            "role": label,
+            "created_at": workspace.created_at,
+            "updated_at": workspace.updated_at,
+        }
     )
 
 

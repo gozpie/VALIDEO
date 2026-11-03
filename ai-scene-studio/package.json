@@ -14,10 +14,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm -r run test",
+    "test": "pnpm -r --workspace-concurrency=1 run test",
     "test:e2e": "pnpm --filter @ass/web run test:e2e",
     "schema:generate": "pnpm --filter @ass/scene-schema run generate",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test",
+    "api:generate": "uv run python -m ass_api.cli export-openapi packages/api-client/openapi.json && pnpm --filter @ass/api-client run generate"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

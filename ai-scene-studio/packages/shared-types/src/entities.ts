@@ -1,64 +1,26 @@
 /**
  * Contrats des entités persistées, tels qu'exposés par l'API (JSON, dates ISO 8601 UTC).
- * Les identifiants sont des UUID stables. Le backend (Pydantic/SQLAlchemy) est la référence
- * d'implémentation ; ces types seront générés depuis l'OpenAPI à partir de la phase 1.
+ * Les identifiants sont des UUID stables. Le backend (Pydantic/SQLAlchemy) est la référence :
+ * les entités déjà servies par l'API sont réexportées depuis `@ass/api-client` (types générés).
  */
 export type Uuid = string;
 export type IsoDateTime = string;
 
-export type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer';
+// Entités de la phase 1 : générées depuis le contrat OpenAPI de l'API (source unique).
+export type {
+  ColorSpace,
+  Fps,
+  Member as WorkspaceMember,
+  Project,
+  Resolution,
+  Sequence,
+  Shot,
+  User,
+  Workspace,
+  WorkspaceRole,
+} from '@ass/api-client';
 
-export interface User {
-  id: Uuid;
-  email: string;
-  displayName: string;
-  createdAt: IsoDateTime;
-}
-
-export interface Workspace {
-  id: Uuid;
-  name: string;
-  createdAt: IsoDateTime;
-}
-
-export interface WorkspaceMember {
-  workspaceId: Uuid;
-  userId: Uuid;
-  role: WorkspaceRole;
-}
-
-export type ColorSpace = 'srgb' | 'rec709' | 'acescg' | 'linear_rec709';
-
-export interface Project {
-  id: Uuid;
-  workspaceId: Uuid;
-  name: string;
-  description: string;
-  fps: { numerator: number; denominator: number };
-  resolution: { width: number; height: number };
-  colorSpace: ColorSpace;
-  createdAt: IsoDateTime;
-  updatedAt: IsoDateTime;
-}
-
-export interface Sequence {
-  id: Uuid;
-  projectId: Uuid;
-  name: string;
-  orderIndex: number;
-}
-
-export interface Shot {
-  id: Uuid;
-  sequenceId: Uuid;
-  name: string;
-  orderIndex: number;
-  durationFrames: number;
-  sceneId: Uuid;
-  activeCameraId: Uuid | null;
-  activeRevisionId: Uuid | null;
-}
-
+// Entités des phases suivantes : forme cible, remplacée par les types générés à leur implémentation.
 export interface Scene {
   id: Uuid;
   projectId: Uuid;

@@ -7,9 +7,32 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = structlog.get_logger("ass_api.errors")
+
+
+class ProblemFieldError(BaseModel):
+    path: str
+    message: str
+
+
+class ProblemOut(BaseModel):
+    """Forme documentée de toutes les erreurs (``application/problem+json``)."""
+
+    type: str
+    title: str
+    status: int
+    detail: str
+    requestId: str  # noqa: N815 (nom JSON du contrat)
+    errors: list[ProblemFieldError] | None = None
+
+
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    "4XX": {"model": ProblemOut, "description": "Erreur client (problem details)"},
+    "5XX": {"model": ProblemOut, "description": "Erreur serveur (problem details)"},
+}
 
 
 def _problem(

@@ -3,6 +3,10 @@
 Base URL locale : `http://localhost:8000`. OpenAPI : `/openapi.json`, interface `/docs`
 (désactivées en production).
 
+Contrat versionné : [`packages/api-client/openapi.json`](packages/api-client/openapi.json), dont sont générés
+les types et le client TypeScript `@ass/api-client` (`createApiClient({ baseUrl })` : cookies inclus, jeton CSRF
+mémorisé et ajouté automatiquement). Après toute modification de l'API : `pnpm api:generate`.
+
 ## Conventions
 
 - JSON UTF-8 ; propriétés en **camelCase** dans les payloads métier (à partir de la phase 1) ; dates ISO 8601 UTC ; identifiants UUID.

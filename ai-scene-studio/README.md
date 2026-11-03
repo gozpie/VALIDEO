@@ -28,6 +28,7 @@ Développement sans conteneur pour l'API et le web : voir [DEVELOPMENT.md](DEVEL
 apps/web/                 Next.js (App Router), React, Tailwind — interface
 apps/api/                 FastAPI, SQLAlchemy, Alembic — API HTTP
 packages/scene-schema/    Format canonique de scène v1 (Zod) + JSON Schema
+packages/api-client/      Contrat OpenAPI versionné, types générés et client HTTP typé
 packages/shared-types/    Contrats des entités, statuts de jobs, erreurs API
 packages/generation-sdk/  Contrat ProviderAdapter et appariement des capacités IA
 packages/scene-engine/    (phase 2) Scène canonique ↔ Three.js

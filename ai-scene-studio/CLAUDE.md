@@ -45,6 +45,7 @@ uv run pytest apps/api                                    # unitaires (intégrat
 docker compose up -d --wait postgres redis storage
 ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration
 uv run alembic -c infrastructure/migrations/alembic.ini revision --autogenerate -m "..."
+pnpm api:generate                                         # après toute modification de l'API
 ```
 
 Les tests d'intégration de base de données créent puis suppriment leur propre base temporaire : ils ne

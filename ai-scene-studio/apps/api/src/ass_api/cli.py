@@ -2,8 +2,10 @@
 
 import argparse
 import getpass
+import json
 import re
 import sys
+from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
@@ -11,7 +13,7 @@ from sqlalchemy import select
 
 from ass_api.auth.passwords import WeakPasswordError, hash_password
 from ass_api.auth.sessions import normalize_email
-from ass_api.core.config import get_settings
+from ass_api.core.config import Settings, get_settings
 from ass_api.db.models import User
 from ass_api.db.session import create_session_factory
 
@@ -79,6 +81,22 @@ def create_user(args: argparse.Namespace) -> int:
     return 0
 
 
+def openapi_document() -> str:
+    """Contrat OpenAPI de l'API, sérialisé de façon stable (source des types TypeScript)."""
+    from ass_api.main import (
+        create_app,  # import local : évite de construire l'app pour les autres commandes
+    )
+
+    spec = create_app(Settings(environment="development")).openapi()
+    return json.dumps(spec, indent=2, ensure_ascii=False) + "\n"
+
+
+def export_openapi(args: argparse.Namespace) -> int:
+    Path(args.output).write_text(openapi_document(), encoding="utf-8")
+    print(f"OpenAPI écrit dans {args.output}")  # noqa: T201
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ass_api.cli")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -94,6 +112,10 @@ def main(argv: list[str] | None = None) -> int:
         "--password-stdin", action="store_true", help="lit le mot de passe sur l'entrée standard"
     )
     user_parser.set_defaults(handler=create_user)
+
+    openapi_parser = commands.add_parser("export-openapi", help="écrit le contrat OpenAPI")
+    openapi_parser.add_argument("output")
+    openapi_parser.set_defaults(handler=export_openapi)
 
     args = parser.parse_args(argv)
     result: int = args.handler(args)
