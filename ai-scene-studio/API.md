@@ -137,6 +137,22 @@ height }, colorSpace, createdAt, updatedAt }` ; séquence `{ id, projectId, name
 rationnelle (1 à 1000 i/s) ; la résolution va de 1 à 16384 px. Les listes de séquences et de plans ne sont pas
 paginées (elles restent courtes et doivent être affichées en entier pour être réordonnées).
 
+## Scènes et révisions (étape 2.2)
+
+| Méthode et chemin                                                           | Rôle minimal | Effet                                                                               |
+| --------------------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| `GET /shots/{id}/scene`                                                     | `viewer`     | `{ shotId, sceneId, headRevision, snapshot }` (`null` si rien n'est enregistré)     |
+| `POST /shots/{id}/scene/revisions` `{ baseRevisionId, message?, snapshot }` | `editor`     | `201 { created: true, revision }` ; `200 { created: false }` si identique à la tête |
+| `GET /shots/{id}/scene/revisions`                                           | `viewer`     | 100 révisions les plus récentes, de la plus récente à la plus ancienne              |
+| `GET /scene-revisions/{id}`                                                 | `viewer`     | révision et son snapshot                                                            |
+
+- `snapshot` est le document canonique (SCENE_SCHEMA.md), validé par le serveur (structure + intégrité) : `422`
+  avec les chemins fautifs (`snapshot.nodes.1.parentId`…) ; `NaN`/`Infinity` refusés ; 5 Mo maximum (`413`).
+- **Concurrence optimiste** : `baseRevisionId` doit être la tête actuelle (`null` pour la première révision) ; sinon
+  `409` (« rechargez »), rien n'est écrasé. `sceneId` est fixé à la première révision et ne change plus.
+- Révisions **immuables** : le snapshot canonique (clés triées) est stocké en S3 sous
+  `workspaces/<workspace>/scenes/<sha256>.json` ; la base garde l'empreinte, la taille, l'auteur et le parent.
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`

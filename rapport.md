@@ -139,3 +139,10 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Objectif** : lever la limite connue « intégrité de scène côté Python » avant tout enregistrement de scène.
 - **Vérifications** : 27 tests Python et 54 tests TypeScript de validation.
 
+### Étape 2.2 — Scènes et révisions immuables
+- **Ajouté** : tables `scenes` et `scene_revisions` (migration `0004`, clé étrangère circulaire créée après les deux tables) ; `core/storage.py` (client S3 générique : existence, écriture idempotente, lecture, flux) ; `routes/scenes.py` — lecture de la scène d'un plan, enregistrement d'une révision (validation serveur, sérialisation canonique, empreinte SHA-256, snapshot écrit en S3 sous le préfixe du workspace, jamais écrasé), concurrence optimiste par `baseRevisionId` (`409` si la tête a changé), enregistrement identique sans nouvelle révision, historique et lecture d'une révision ; corps lu par le serveur (taille bornée `413`, `NaN` refusé) ; erreurs de scène en `422` avec chemins.
+- **Modifié** : `@ass/api-client` (types `SceneState`, `SceneRevision`, `SaveRevisionResult`), `@ass/shared-types` (formes cibles `Scene`/`SceneRevision` remplacées par les types générés).
+- **Tests** : `test_integration_scenes.py` (9 tests : scène absente, enregistrement et rechargement à l'identique, objet S3 présent, enregistrement identique, historique et parent, conflit, `sceneId` stable, scène invalide, `NaN`, corps trop gros, rôles et isolation, cascade à la suppression du plan).
+- **Objectif** : rendre la scène persistante et versionnée avant l'éditeur.
+- **Vérifications** : ruff, mypy ; 94 tests unitaires et 90 tests d'intégration Python (PostgreSQL, Redis, S3) ; `pnpm check`.
+

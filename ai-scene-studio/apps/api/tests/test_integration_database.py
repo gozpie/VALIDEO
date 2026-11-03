@@ -32,6 +32,8 @@ PHASE_1_TABLES = {
     "projects",
     "sequences",
     "shots",
+    "scenes",
+    "scene_revisions",
 }
 
 

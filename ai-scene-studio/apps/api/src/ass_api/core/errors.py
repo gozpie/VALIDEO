@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from ass_api.scenes.validation import SceneValidationError
+
 logger = structlog.get_logger("ass_api.errors")
 
 
@@ -72,6 +74,11 @@ def register_error_handlers(app: FastAPI) -> None:
             for err in exc.errors()
         ]
         return _problem(request, 422, "Requête invalide", "Validation échouée", errors)
+
+    @app.exception_handler(SceneValidationError)
+    async def _scene_error(request: Request, exc: SceneValidationError) -> JSONResponse:
+        errors = [{"path": issue.path, "message": issue.message} for issue in exc.issues]
+        return _problem(request, 422, "Scène invalide", str(exc), errors)
 
     @app.exception_handler(Exception)
     async def _unexpected_error(request: Request, exc: Exception) -> JSONResponse:

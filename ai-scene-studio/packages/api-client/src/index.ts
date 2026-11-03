@@ -20,6 +20,9 @@ export type Fps = Schemas['Fps'];
 export type Resolution = Schemas['Resolution'];
 export type Sequence = Schemas['SequenceOut'];
 export type Shot = Schemas['ShotOut'];
+export type SceneState = Schemas['SceneStateOut'];
+export type SceneRevision = Schemas['RevisionOut'];
+export type SaveRevisionResult = Schemas['SaveRevisionOut'];
 export type Problem = Schemas['ProblemOut'];
 export type Page<T> = { items: T[]; nextCursor: string | null };
 

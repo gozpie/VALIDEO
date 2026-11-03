@@ -7,8 +7,9 @@ Conventions :
 - l'ordre des séquences et des plans est unique par parent, contrôlé en fin de transaction
   (``DEFERRABLE INITIALLY DEFERRED``) pour permettre les réordonnancements en une transaction.
 
-La table ``scenes`` et la colonne ``shots.active_scene_revision_id`` arrivent en phase 2,
-avec les révisions de scène qu'elles référencent.
+Scènes (phase 2) : une scène par plan, des révisions immuables dont le snapshot JSON est stocké
+en S3 (clé dérivée de son SHA-256). La révision active d'un plan (``active_scene_revision_id`` du
+cahier des charges) est ``scenes.head_revision_id``.
 """
 
 import uuid
@@ -240,3 +241,50 @@ class Shot(Base):
     fps_denominator: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = _created_at()
     updated_at: Mapped[datetime] = _updated_at()
+
+
+class Scene(Base):
+    """Scène d'un plan. Son identifiant est le ``sceneId`` du document canonique."""
+
+    __tablename__ = "scenes"
+    __table_args__ = (CheckConstraint("schema_version >= 1", name="schema_version_positive"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    shot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Référence circulaire (révision → scène) : contrainte créée après les deux tables.
+    head_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("scene_revisions.id", ondelete="SET NULL", use_alter=True), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+
+class SceneRevision(Base):
+    """Révision immuable : jamais modifiée après création (seule la cascade l'efface)."""
+
+    __tablename__ = "scene_revisions"
+    __table_args__ = (
+        CheckConstraint("length(snapshot_hash) = 64", name="snapshot_hash_sha256"),
+        CheckConstraint("size_bytes > 0", name="size_positive"),
+        Index("ix_scene_revisions_scene_id_created_at", "scene_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    scene_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False
+    )
+    parent_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("scene_revisions.id", ondelete="SET NULL"), nullable=True
+    )
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    snapshot_key: Mapped[str] = mapped_column(String(300), nullable=False)
+    snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    message: Mapped[str] = mapped_column(String(500), nullable=False, server_default="")
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()

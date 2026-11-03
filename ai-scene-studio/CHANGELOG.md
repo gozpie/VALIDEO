@@ -8,6 +8,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 - Étape 2.1 : validation serveur des scènes (structure par JSON Schema embarqué, norme des quaternions, intégrité
   identique à TypeScript), cas invalides partagés TypeScript/Python, sérialisation canonique pour l'empreinte.
+- Étape 2.2 : scènes et révisions immuables (migration `0004`), stockage S3 adressé par contenu, concurrence
+  optimiste (`409`), historique, lecture d'une révision ; module `core/storage.py`.
 
 ## [0.2.0] — 2026-11-03 — Phase 1 : projets persistants
 

@@ -12,6 +12,7 @@ from ass_api.core.config import Settings, get_settings
 from ass_api.core.errors import ERROR_RESPONSES, register_error_handlers
 from ass_api.core.logging import configure_logging
 from ass_api.core.middleware import RequestContextMiddleware
+from ass_api.core.storage import ObjectStorage
 from ass_api.db.session import create_session_factory
 from ass_api.routes import (
     auth,
@@ -19,6 +20,7 @@ from ass_api.routes import (
     invitations,
     members,
     projects,
+    scenes,
     sequences,
     shots,
     workspaces,
@@ -37,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine, app.state.session_factory = create_session_factory(settings)
         limiter = RedisRateLimiter.from_settings(settings)
         app.state.rate_limiter = limiter
+        app.state.storage = ObjectStorage.from_settings(settings)
         try:
             yield
         finally:
@@ -67,7 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(workspaces.router)
     app.include_router(members.router)
     app.include_router(invitations.router)
-    for router in (projects.router, sequences.router, shots.router):
+    for router in (projects.router, sequences.router, shots.router, scenes.router):
         app.include_router(router)
     return app
 

@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scene-revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Revision */
+        get: operations["get_revision_scene_revisions__revision_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sequences/{sequence_id}": {
         parameters: {
             query?: never;
@@ -247,6 +264,44 @@ export interface paths {
         head?: never;
         /** Update Shot */
         patch: operations["update_shot_shots__shot_id__patch"];
+        trace?: never;
+    };
+    "/shots/{shot_id}/scene": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scene */
+        get: operations["get_scene_shots__shot_id__scene_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shots/{shot_id}/scene/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Revisions
+         * @description Les 100 révisions les plus récentes, de la plus récente à la plus ancienne.
+         */
+        get: operations["list_revisions_shots__shot_id__scene_revisions_get"];
+        put?: never;
+        /** Save Revision */
+        post: operations["save_revision_shots__shot_id__scene_revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/workspaces": {
@@ -665,6 +720,91 @@ export interface components {
             height: number;
             /** Width */
             width: number;
+        };
+        /** RevisionOut */
+        RevisionOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyid */
+            createdById: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Parentrevisionid */
+            parentRevisionId: string | null;
+            /**
+             * Sceneid
+             * Format: uuid
+             */
+            sceneId: string;
+            /** Schemaversion */
+            schemaVersion: number;
+            /** Sizebytes */
+            sizeBytes: number;
+            /** Snapshothash */
+            snapshotHash: string;
+        };
+        /** RevisionWithSnapshotOut */
+        RevisionWithSnapshotOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyid */
+            createdById: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Parentrevisionid */
+            parentRevisionId: string | null;
+            /**
+             * Sceneid
+             * Format: uuid
+             */
+            sceneId: string;
+            /** Schemaversion */
+            schemaVersion: number;
+            /** Sizebytes */
+            sizeBytes: number;
+            /** Snapshot */
+            snapshot: {
+                [key: string]: unknown;
+            };
+            /** Snapshothash */
+            snapshotHash: string;
+        };
+        /** SaveRevisionOut */
+        SaveRevisionOut: {
+            /** Created */
+            created: boolean;
+            revision: components["schemas"]["RevisionOut"];
+        };
+        /** SceneStateOut */
+        SceneStateOut: {
+            headRevision: components["schemas"]["RevisionOut"] | null;
+            /** Sceneid */
+            sceneId: string | null;
+            /**
+             * Shotid
+             * Format: uuid
+             */
+            shotId: string;
+            /** Snapshot */
+            snapshot: {
+                [key: string]: unknown;
+            } | null;
         };
         /** SequenceIn */
         SequenceIn: {
@@ -1379,6 +1519,46 @@ export interface operations {
             };
         };
     };
+    get_revision_scene_revisions__revision_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionWithSnapshotOut"];
+                };
+            };
+        };
+    };
     get_sequence_sequences__sequence_id__get: {
         parameters: {
             query?: never;
@@ -1747,6 +1927,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShotOut"];
+                };
+            };
+        };
+    };
+    get_scene_shots__shot_id__scene_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneStateOut"];
+                };
+            };
+        };
+    };
+    list_revisions_shots__shot_id__scene_revisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"][];
+                };
+            };
+        };
+    };
+    save_revision_shots__shot_id__scene_revisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Baserevisionid */
+                    baseRevisionId: string | null;
+                    /**
+                     * Message
+                     * @default
+                     */
+                    message?: string;
+                    /** Snapshot */
+                    snapshot: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveRevisionOut"];
                 };
             };
         };

@@ -1964,6 +1964,261 @@
           }
         }
       }
+    },
+    "/shots/{shot_id}/scene": {
+      "get": {
+        "tags": [
+          "scenes"
+        ],
+        "summary": "Get Scene",
+        "operationId": "get_scene_shots__shot_id__scene_get",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneStateOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shots/{shot_id}/scene/revisions": {
+      "post": {
+        "tags": [
+          "scenes"
+        ],
+        "summary": "Save Revision",
+        "operationId": "save_revision_shots__shot_id__scene_revisions_post",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveRevisionOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "baseRevisionId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Baserevisionid"
+                  },
+                  "message": {
+                    "default": "",
+                    "maxLength": 500,
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "snapshot": {
+                    "additionalProperties": true,
+                    "title": "Snapshot",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "baseRevisionId",
+                  "snapshot"
+                ],
+                "title": "SaveRevisionIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "scenes"
+        ],
+        "summary": "List Revisions",
+        "description": "Les 100 révisions les plus récentes, de la plus récente à la plus ancienne.",
+        "operationId": "list_revisions_shots__shot_id__scene_revisions_get",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RevisionOut"
+                  },
+                  "title": "Response List Revisions Shots  Shot Id  Scene Revisions Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scene-revisions/{revision_id}": {
+      "get": {
+        "tags": [
+          "scenes"
+        ],
+        "summary": "Get Revision",
+        "operationId": "get_revision_scene_revisions__revision_id__get",
+        "parameters": [
+          {
+            "name": "revision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Revision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionWithSnapshotOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2637,6 +2892,224 @@
           "height"
         ],
         "title": "Resolution"
+      },
+      "RevisionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sceneId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sceneid"
+          },
+          "parentRevisionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentrevisionid"
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "title": "Schemaversion"
+          },
+          "snapshotHash": {
+            "type": "string",
+            "title": "Snapshothash"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "title": "Sizebytes"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "createdById": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdbyid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sceneId",
+          "parentRevisionId",
+          "schemaVersion",
+          "snapshotHash",
+          "sizeBytes",
+          "message",
+          "createdById",
+          "createdAt"
+        ],
+        "title": "RevisionOut"
+      },
+      "RevisionWithSnapshotOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sceneId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sceneid"
+          },
+          "parentRevisionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentrevisionid"
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "title": "Schemaversion"
+          },
+          "snapshotHash": {
+            "type": "string",
+            "title": "Snapshothash"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "title": "Sizebytes"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "createdById": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdbyid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Snapshot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sceneId",
+          "parentRevisionId",
+          "schemaVersion",
+          "snapshotHash",
+          "sizeBytes",
+          "message",
+          "createdById",
+          "createdAt",
+          "snapshot"
+        ],
+        "title": "RevisionWithSnapshotOut"
+      },
+      "SaveRevisionOut": {
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/RevisionOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created",
+          "revision"
+        ],
+        "title": "SaveRevisionOut"
+      },
+      "SceneStateOut": {
+        "properties": {
+          "shotId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Shotid"
+          },
+          "sceneId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sceneid"
+          },
+          "headRevision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevisionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shotId",
+          "sceneId",
+          "headRevision",
+          "snapshot"
+        ],
+        "title": "SceneStateOut"
       },
       "SequenceIn": {
         "properties": {
