@@ -300,3 +300,9 @@ Décisions de Pierre : Claude par l'abonnement (jeton du VPS copié dans le `.en
 - **Vérifié manuellement** : appel réel de Claude par le jeton d'abonnement du VPS (vision + sortie structurée) ; rendu de préparation Blender (images, profondeur, normales).
 - **Reste à faire dans la phase** : service `ai-worker` dans Docker, panneau IA de l'éditeur, test réel Higgsfield (après GO), ergonomie, esthétique.
 
+### Étape 5.2 — Workers IA (Docker et Mac)
+- **Ajouté** : image `infrastructure/docker/ai-worker.Dockerfile` (Python + FFmpeg + binaire natif officiel `claude` 2.1.317, sans Node à l'exécution, utilisateur non root, mises à jour automatiques désactivées) et service compose `ai-worker` (fournisseurs `simulation` et `claude`, jeton `CLAUDE_CODE_OAUTH_TOKEN` lu dans `.env`, quotas CPU / mémoire / processus).
+- **Ajouté** : `scripts/higgsfield-worker.sh` — worker Higgsfield lancé sur le Mac (Chrome, port 9222), relié à la pile Docker.
+- **Modifié** : `DEVELOPMENT.md` (workers IA, variables `CLAUDE_CODE_OAUTH_TOKEN`, `ASS_CLAUDE_PATH`, `ASS_FFMPEG_PATH`, `ASS_HIGGSFIELD_SCRIPTS_DIR`, `ASS_AI_PROVIDERS`).
+- **Vérifié** : génération réelle « prompt depuis la scène » par Claude Sonnet via le worker Docker — rendu Blender de préparation (image + profondeur), réponse structurée (prompt anglais, cadrage, lumière, conseils en français) en ~40 s, coût affiché « inclus dans l'abonnement » ; worker Higgsfield sur le Mac : disponibilité publiée (Chrome et onglet connectés). **Aucune génération Higgsfield lancée.**
+

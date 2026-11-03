@@ -38,6 +38,12 @@ pnpm --filter @ass/web dev                              # Web sur http://localho
 
 Les valeurs par défaut de l'API correspondent à cet environnement local : aucune variable n'est nécessaire.
 
+**Workers IA** : le service `ai-worker` (Docker) sert les fournisseurs `simulation` et `claude`. Claude
+utilise l'abonnement : mettre `CLAUDE_CODE_OAUTH_TOKEN` dans `.env` (fichier en `chmod 600`, jamais
+versionné). Higgsfield passe par le Chrome du Mac (port de débogage 9222, onglet higgsfield.ai connecté)
+et les scripts de `VALIDEO/tools/magnific_pipeline` (`ASS_HIGGSFIELD_SCRIPTS_DIR`) : lancer
+`./scripts/higgsfield-worker.sh` sur le Mac. Un fournisseur sans worker actif est signalé indisponible.
+
 ## Commandes
 
 | Commande                                                                                   | Effet                                                                           |
@@ -77,6 +83,10 @@ API (préfixe `ASS_`, voir `apps/api/src/ass_api/core/config.py`) :
 | `ASS_WEB_BASE_URL`                                      | `http://localhost:3000`                           | Base des liens d'invitation (`acceptUrl`)                                                    |
 | `ASS_ASSET_MAX_BYTES`                                   | `104857600`                                       | Taille maximale d'un asset envoyé (100 Mo)                                                   |
 | `ASS_LOGIN_FAILURE_WINDOW_SECONDS`                      | `900`                                             | Fenêtre de comptage des échecs                                                               |
+| `CLAUDE_CODE_OAUTH_TOKEN`                               | —                                                 | Jeton d'abonnement Claude du worker IA (secret, jamais transmis au navigateur)               |
+| `ASS_CLAUDE_PATH` / `ASS_FFMPEG_PATH`                   | `claude` / `ffmpeg`                               | Binaires utilisés par les workers                                                            |
+| `ASS_HIGGSFIELD_SCRIPTS_DIR`                            | `~/Desktop/TRANSFERT/--WORK--/GITHUB/VALIDEO/…`   | Scripts de la passerelle Chrome Higgsfield                                                   |
+| `ASS_AI_PROVIDERS`                                      | `simulation,claude`                               | Fournisseurs servis par un worker IA                                                         |
 
 Web : `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`), figée au build.
 

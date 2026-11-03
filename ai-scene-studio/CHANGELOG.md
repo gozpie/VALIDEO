@@ -4,6 +4,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 5.1 : socle IA — fournisseurs (simulation, Claude par l'abonnement, passerelle Higgsfield), capacités et
+  contraintes indicatives, jobs de génération (migration `0007`), rendu Blender de préparation (images, profondeur,
+  normales), estimation et confirmation exacte du coût, worker par fournisseur.
+- Étape 5.2 : service `ai-worker` (image Python + FFmpeg + `claude`) et script du worker Higgsfield sur le Mac.
+
 ## [0.5.0] — 2026-11-03 — Phase 4 : rendu technique (Blender)
 
 ### Ajouté

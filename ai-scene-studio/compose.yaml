@@ -108,6 +108,24 @@ services:
       - /tmp:size=${RENDER_WORKER_TMP:-4g}
     restart: unless-stopped
 
+  # Worker IA : simulation (FFmpeg) et Claude (abonnement, jeton CLAUDE_CODE_OAUTH_TOKEN du .env).
+  # Higgsfield passe par Chrome sur le Mac : worker lancé sur l'hôte (voir DEVELOPMENT.md).
+  ai-worker:
+    build: { context: ., dockerfile: infrastructure/docker/ai-worker.Dockerfile }
+    image: ai-scene-studio/ai-worker:dev
+    environment:
+      <<: *api-env
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    cpus: ${AI_WORKER_CPUS:-2}
+    mem_limit: ${AI_WORKER_MEMORY:-2g}
+    pids_limit: 256
+    tmpfs:
+      - /tmp:size=1g
+    restart: unless-stopped
+
   web:
     build:
       context: .
