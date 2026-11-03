@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // Sortie autonome uniquement pour l'image Docker (incompatible avec `next start`).
   ...(process.env['NEXT_OUTPUT'] === 'standalone' ? { output: 'standalone' as const } : {}),
   // Les packages internes sont publiés en TypeScript source.
-  transpilePackages: ['@ass/scene-schema', '@ass/shared-types'],
+  transpilePackages: ['@ass/api-client', '@ass/scene-schema', '@ass/shared-types'],
   async headers() {
     return [
       {

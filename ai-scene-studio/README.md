@@ -4,9 +4,9 @@ Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 0 terminée (environnement et contrats).** Aucune fonctionnalité métier n'est encore
-> disponible : pas d'authentification, de projets, d'éditeur 3D ni de génération IA. Voir
-> [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
+> **État : phase 1 livrée (projets persistants), en attente de validation.** Connexion, workspaces, membres
+> et invitations, projets, séquences et plans, avec isolation stricte entre workspaces. Pas encore d'éditeur
+> 3D ni de génération IA. Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
 
 ## Démarrage rapide
 
@@ -15,7 +15,11 @@ cd ai-scene-studio
 ./scripts/check-env.sh            # vérifie les outils (Node 22, pnpm 10, Python 3.13, uv, Docker)
 cp .env.example .env
 docker compose up --build --wait  # PostgreSQL, Redis, stockage S3, migrations, API, web
+docker compose exec api python -m ass_api.cli create-user --email vous@example.com --display-name "Vous"
 ```
+
+Puis se connecter sur http://localhost:3000/login. Les comptes suivants s'ajoutent par invitation depuis la
+page « Membres et invitations » d'un workspace.
 
 - Web : http://localhost:3000 (affiche l'état réel des services)
 - API : http://localhost:8000/health/ready, documentation OpenAPI sur http://localhost:8000/docs (hors production)
@@ -58,8 +62,8 @@ scripts/                  check-env.sh, check-all.sh
 
 | Phase | Livrable                                                             | État                                  |
 | ----- | -------------------------------------------------------------------- | ------------------------------------- |
-| 0     | Environnement reproductible, contrats                                | ✅ terminé (en attente de validation) |
-| 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | à faire                               |
+| 0     | Environnement reproductible, contrats                                | ✅ terminé                            |
+| 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | ✅ terminé (en attente de validation) |
 | 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | à faire                               |
 | 3     | Plan animé relisible (caméras, timeline, keyframes)                  | à faire                               |
 | 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                      | à faire                               |

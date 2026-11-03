@@ -62,6 +62,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [typescript, python]
+    env:
+      # Compte éphémère de la pile de CI (base détruite en fin de job).
+      E2E_EMAIL: e2e@example.test
+      E2E_PASSWORD: mot de passe e2e de la ci
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -80,6 +84,10 @@ jobs:
       - name: Construit et démarre la pile complète
         run: docker compose up --build --wait --wait-timeout 300
       - run: curl --fail --silent http://localhost:8000/health/ready
+      - name: Crée le compte de test E2E
+        run: >-
+          printf '%s\n' "$E2E_PASSWORD" | docker compose exec -T api
+          python -m ass_api.cli create-user --email "$E2E_EMAIL" --display-name E2E --password-stdin
       - run: uv sync --frozen
       - name: Tests d'intégration (PostgreSQL, Redis, S3 réels)
         run: ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration

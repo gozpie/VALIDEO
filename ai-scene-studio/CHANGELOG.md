@@ -27,8 +27,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   (openapi-fetch) gérant cookie et jeton CSRF ; commandes `export-openapi` et `pnpm api:generate` ; tests de dérive
   Python et TypeScript ; erreurs documentées en « problem details » dans l'OpenAPI.
 
+- Étape 1.6 : interface web — connexion (retour sûr vers la page demandée), workspaces (création, liste
+  paginée, renommage, suppression), membres et invitations (rôles, retrait, lien d'invitation, révocation),
+  acceptation d'invitation avec création de compte, projets (création avec cadence et résolution, description,
+  suppression), séquences et plans (création, renommage, ordre, suppression, durée affichée) ; E2E du parcours
+  complet contre la vraie pile ; compte E2E créé en CI.
+
 ### Modifié
 
+- Image web : copie du manifeste de `@ass/api-client`.
 - `@ass/shared-types` réexporte les entités de la phase 1 depuis `@ass/api-client`.
 - Rôles et espaces colorimétriques typés en énumérations dans l'OpenAPI.
 - `pnpm test` exécute les packages l'un après l'autre (le cache Vitest partagé échouait en parallèle).

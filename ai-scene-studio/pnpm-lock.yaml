@@ -35,6 +35,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ass/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@ass/scene-schema':
         specifier: workspace:*
         version: link:../../packages/scene-schema

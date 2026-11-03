@@ -102,3 +102,12 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : une seule source de vérité pour les contrats front/back, avant l'interface de l'étape 1.6.
 - **Vérifications** : `pnpm check` (format, lint, types, 51 tests TypeScript) ; ruff, mypy ; 64 tests unitaires et 80 tests d'intégration Python.
 
+### Étape 1.6 — Interface web
+- **Ajouté** : `apps/web` — `AuthProvider` (session lue au chargement, connexion, déconnexion), `RequireAuth` (redirection vers `/login?next=…`, chemin de retour limité aux chemins internes), en-tête avec utilisateur et déconnexion, composants de formulaire accessibles (libellés, `role="alert"`).
+- **Ajouté** : pages `/login`, `/workspaces` (création, liste paginée « Charger plus »), `/workspaces/[id]` (projets avec cadence et résolution prédéfinies, renommage admin, suppression owner avec confirmation), `/workspaces/[id]/members` (rôles, retrait, départ, lien d'invitation affiché une seule fois, révocation), `/invitations/[token]` (création de compte ou acceptation par le compte connecté), `/projects/[id]` (séquences et plans : création, renommage, ordre ↑/↓, suppression, durée en frames et en secondes, description et suppression du projet).
+- **Ajouté** : tests unitaires (`lib.test.ts` : ordre, chemin de retour, messages d'erreur, cadences ; `LoginForm.test.tsx`) et E2E `e2e/projects.spec.ts` (redirection, mauvais mot de passe, parcours complet avec rechargement et reconnexion) ; création du compte E2E dans la CI.
+- **Modifié** : image Docker web (manifeste de `@ass/api-client`), `next.config.ts` (`transpilePackages`), page d'accueil.
+- **Documentation** : `README.md` (premier compte, état), `TESTING.md` (E2E de la phase 1), `DEPLOYMENT.md` (front et API sur le même site pour le cookie `SameSite=Lax`), `KNOWN_LIMITATIONS.md` (fonctions de l'API non exposées à l'écran), `CHANGELOG.md`.
+- **Objectif** : livrable de la phase 1 — l'utilisateur crée et retrouve ses projets depuis le navigateur.
+- **Vérifications** : `pnpm check` (58 tests TypeScript) ; build de production ; pile Docker complète reconstruite (`docker compose up --build --wait`, 6 services sains, `/health/ready` OK y compris S3) ; 81 tests d'intégration Python contre la pile (le test S3, impossible en phase 0, passe) ; 4 E2E Playwright contre les conteneurs ; contrôle visuel de la page projet.
+

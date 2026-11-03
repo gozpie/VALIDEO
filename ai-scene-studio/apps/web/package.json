@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@ass/api-client": "workspace:*",
     "@ass/scene-schema": "workspace:*",
     "@ass/shared-types": "workspace:*",
     "next": "16.4.3",

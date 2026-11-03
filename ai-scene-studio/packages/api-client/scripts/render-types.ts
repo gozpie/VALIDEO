@@ -15,6 +15,7 @@ export async function renderTypes(): Promise<string> {
   const contract = JSON.parse(await readFile(CONTRACT_URL, 'utf8')) as Parameters<
     typeof openapiTS
   >[0];
-  const ast = await openapiTS(contract, { alphabetize: true });
+  // defaultNonNullable: false — un champ d'entrée doté d'une valeur par défaut reste facultatif.
+  const ast = await openapiTS(contract, { alphabetize: true, defaultNonNullable: false });
   return BANNER + astToString(ast);
 }

@@ -2,8 +2,11 @@
 
 ## Fonctionnelles (phase 1 en cours)
 
-- Pas d'écran tant que l'étape 1.6 n'est pas livrée : l'API couvre authentification, workspaces, membres,
-  invitations, projets, séquences et plans.
+- Interface volontairement sobre : connexion, workspaces, membres et invitations, projets, séquences et plans
+  (création, renommage des séquences, ordre par boutons ↑/↓, suppression). Non exposés à l'écran bien que
+  disponibles dans l'API : modification de la cadence et de la résolution d'un projet, de la durée et de la
+  cadence propre d'un plan, insertion à une position donnée. Pas de glisser-déposer.
+- Pas encore de règles ESLint spécifiques à Next.js et React (`@next/eslint-plugin-next`, `react-hooks`).
 - Pas d'inscription publique ni de réinitialisation de mot de passe : premier compte en ligne de commande,
   les suivants par invitation. **Aucun e-mail n'est envoyé** : l'admin reçoit le lien et le transmet lui-même ;
   il pourrait donc l'utiliser à la place de l'invité pour une adresse sans compte (le lien ne donne jamais accès
@@ -30,4 +33,3 @@
 - **Génération IA** : un générateur probabiliste ne garantit pas la fidélité géométrique ; un seed identique ne
   garantit pas la reproductibilité chez un fournisseur distant.
 - **CI** : le workflow GitHub Actions est écrit et ses étapes ont été exécutées localement, mais il n'a pas encore tourné sur GitHub.
-- ESLint n'intègre pas encore les règles spécifiques Next.js (`@next/eslint-plugin-next`) : à ajouter avec l'UI de la phase 2.

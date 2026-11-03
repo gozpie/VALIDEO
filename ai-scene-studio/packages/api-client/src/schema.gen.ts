@@ -436,7 +436,7 @@ export interface components {
              * Denominator
              * @default 1
              */
-            denominator: number;
+            denominator?: number;
             /** Numerator */
             numerator: number;
         };
@@ -591,19 +591,19 @@ export interface components {
              * @default srgb
              * @enum {string}
              */
-            colorSpace: "srgb" | "rec709" | "acescg" | "linear_rec709";
+            colorSpace?: "srgb" | "rec709" | "acescg" | "linear_rec709";
             /**
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * @default {
              *       "numerator": 24,
              *       "denominator": 1
              *     }
              */
-            fps: components["schemas"]["Fps"];
+            fps?: components["schemas"]["Fps"];
             /** Name */
             name: string;
             /**
@@ -612,7 +612,7 @@ export interface components {
              *       "height": 1080
              *     }
              */
-            resolution: components["schemas"]["Resolution"];
+            resolution?: components["schemas"]["Resolution"];
         };
         /** ProjectOut */
         ProjectOut: {
