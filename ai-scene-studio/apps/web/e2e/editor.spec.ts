@@ -1,34 +1,9 @@
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { EMAIL, PASSWORD, createShot } from './helpers';
 
 /** Éditeur 3D contre la vraie pile : ajout, déplacement, annuler/rétablir, import GLB, sauvegarde, rechargement. */
-const EMAIL = process.env['E2E_EMAIL'];
-const PASSWORD = process.env['E2E_PASSWORD'];
-const API_URL = process.env['E2E_API_URL'] ?? 'http://localhost:8000';
 const CUBE_GLB = fileURLToPath(new URL('../../../tests/fixtures/assets/cube.glb', import.meta.url));
-
-async function createShot(page: Page): Promise<string> {
-  await page.goto('/login');
-  await page.getByLabel('E-mail').fill(EMAIL ?? '');
-  await page.getByLabel('Mot de passe').fill(PASSWORD ?? '');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page).toHaveURL(/\/workspaces$/);
-  const session = await (await page.request.get(`${API_URL}/auth/session`)).json();
-  const headers = { 'X-CSRF-Token': session.csrfToken as string };
-  const post = async (path: string, data: object) => {
-    const response = await page.request.post(`${API_URL}${path}`, { data, headers });
-    expect(response.ok(), await response.text()).toBe(true);
-    return (await response.json()) as { id: string };
-  };
-  const workspace = await post('/workspaces', { name: `Éditeur E2E ${Date.now().toString(36)}` });
-  const project = await post(`/workspaces/${workspace.id}/projects`, { name: 'Pilote' });
-  const sequence = await post(`/projects/${project.id}/sequences`, { name: 'Ouverture' });
-  const shot = await post(`/sequences/${sequence.id}/shots`, {
-    name: 'Plan 1',
-    durationFrames: 48,
-  });
-  return shot.id;
-}
 
 test.describe('éditeur de scène 3D', () => {
   test.skip(!EMAIL || !PASSWORD, 'E2E_EMAIL et E2E_PASSWORD requis (compte de test)');

@@ -219,3 +219,21 @@ export function keyTransform(
     scene,
   );
 }
+
+/** Change l'interpolation des clés désignées (adaptée au type de valeur de chaque piste). */
+export function setKeysInterpolation(
+  scene: SceneDocument,
+  refs: KeyRef[],
+  interpolation: Interpolation,
+): SceneDocument {
+  const next = structuredClone(scene);
+  for (const track of next.animations) {
+    for (const key of track.keyframes) {
+      if (refs.some((r) => r.trackId === track.id && r.frame === key.frame)) {
+        key.interpolation = allowed(track.valueType, interpolation);
+        if (key.interpolation !== 'bezier') key.outHandle = null;
+      }
+    }
+  }
+  return next;
+}

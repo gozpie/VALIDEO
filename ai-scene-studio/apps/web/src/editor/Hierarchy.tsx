@@ -31,7 +31,7 @@ function Row({ entity, depth, filter }: { entity: Entity; depth: number; filter:
   const matches = filter === '' || entity.value.name.toLowerCase().includes(filter);
   const hasVisibility = entity.kind !== 'camera';
   const visible = entity.kind === 'camera' ? true : entity.value.visible;
-  const locked = entity.kind === 'node' && entity.value.locked;
+  const locked = entity.kind !== 'light' && entity.value.locked;
 
   return (
     <li>
@@ -91,7 +91,7 @@ function Row({ entity, depth, filter }: { entity: Entity; depth: number; filter:
               {visible ? '👁' : '—'}
             </button>
           )}
-          {canEdit && entity.kind === 'node' && (
+          {canEdit && entity.kind !== 'light' && (
             <button
               type="button"
               aria-label={`${locked ? 'Déverrouiller' : 'Verrouiller'} ${entity.value.name}`}

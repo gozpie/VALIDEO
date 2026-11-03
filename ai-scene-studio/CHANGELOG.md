@@ -12,6 +12,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   migration v1 → v2 et fixtures avant/après ; validation serveur à jour ; `evaluateFrame` (animation + contraintes) ;
   mouvements de caméra (dolly, truck, pedestal, pan, tilt, orbite).
 
+- Étapes 3.3–3.4 : éditeur — affichage de la scène évaluée à la frame courante, clé automatique des propriétés
+  animées, clés de transformation / visibilité / focale / ouverture / intensité, caméra active, visée et roulis,
+  mouvements de caméra, vue caméra (capteur et focale physiques, format de rendu) et vue double, trajectoire de
+  l'élément sélectionné ; timeline (lecture, pause, stop, pas à pas, boucle, règle de navigation, marqueurs, pistes
+  repliables, zoom, sélection multiple, déplacement, interpolation, copier-coller et suppression de clés) ; raccourcis
+  Espace, ←/→, Origine/Fin, K, ⌘C/⌘V.
+
 ### Modifié
 
 - JSON Schema renommé `scene.schema.json` (version courante, identifiée par son `$id`).

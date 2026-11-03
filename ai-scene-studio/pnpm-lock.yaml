@@ -35,6 +35,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ass/animation-engine':
+        specifier: workspace:*
+        version: link:../../packages/animation-engine
       '@ass/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -124,6 +127,9 @@ importers:
 
   packages/editor-ui:
     dependencies:
+      '@ass/animation-engine':
+        specifier: workspace:*
+        version: link:../animation-engine
       '@ass/scene-engine':
         specifier: workspace:*
         version: link:../scene-engine

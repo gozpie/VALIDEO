@@ -1,5 +1,8 @@
 'use client';
 
+import { copyKeys, keyTransform, pasteKeys, removeKeys } from '@ass/animation-engine';
+import { evaluatedScene } from '@ass/editor-ui';
+import { findEntity } from '@ass/scene-engine';
 import { useEffect } from 'react';
 import { useEditorContext } from './context';
 import {
@@ -17,6 +20,8 @@ const isTyping = (target: EventTarget | null) =>
  * Raccourcis de l'éditeur (Cmd sur macOS, Ctrl ailleurs). Ignorés pendant la saisie dans un champ.
  * W/E/R : outils ; F : cadrer ; H : masquer ; Suppr : supprimer ; ⌘Z / ⇧⌘Z : annuler / rétablir ;
  * ⌘D : dupliquer ; ⌘G : grouper ; ⌘S : enregistrer ; Échap : désélectionner.
+ * Temps : Espace lecture/pause ; ← / → frame précédente/suivante (⇧ : 10 frames) ; Origine / Fin ;
+ * K : clé de transformation ; ⌘C / ⌘V : copier / coller les clés sélectionnées à la frame courante.
  */
 export function useShortcuts({
   onSave,
@@ -39,8 +44,42 @@ export function useShortcuts({
       };
       if (mod && key === 's') return run(onSave);
       if (key === 'f' && !mod) return run(() => viewport.current?.frameSelection());
-      if (key === 'escape') return run(() => state.select([]));
+      if (key === 'escape')
+        return run(() => {
+          state.select([]);
+          state.selectKeys([]);
+        });
+      if (key === ' ') return run(() => state.setPlaying(!state.playing));
+      if (key === 'arrowleft' || key === 'arrowright') {
+        return run(() =>
+          state.setFrame(state.frame + (key === 'arrowleft' ? -1 : 1) * (event.shiftKey ? 10 : 1)),
+        );
+      }
+      if (key === 'home') return run(() => state.setFrame(0));
+      if (key === 'end') return run(() => state.setFrame(state.scene.durationFrames - 1));
+      if (mod && key === 'c' && state.keySelection.length > 0) {
+        return run(() => state.setClipboard(copyKeys(state.scene, state.keySelection)));
+      }
       if (!canEdit) return;
+      if (mod && key === 'v' && state.clipboard.length > 0) {
+        return run(() => state.apply((s) => pasteKeys(s, state.clipboard, state.frame)));
+      }
+      if (!mod && key === 'k') {
+        return run(() => {
+          const evaluated = evaluatedScene(state);
+          for (const id of state.selection) {
+            const entity = findEntity(evaluated, id);
+            if (entity)
+              state.apply((s) => keyTransform(s, id, entity.value.transform, state.frame));
+          }
+        });
+      }
+      if ((key === 'delete' || key === 'backspace') && state.keySelection.length > 0) {
+        return run(() => {
+          state.apply((s) => removeKeys(s, state.keySelection));
+          state.selectKeys([]);
+        });
+      }
       if (mod && key === 'z') return run(event.shiftKey ? state.redo : state.undo);
       if (mod && key === 'y') return run(state.redo);
       if (mod && key === 'd') return run(() => duplicateSelection(store));

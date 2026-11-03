@@ -1,7 +1,16 @@
 'use client';
 
 import type { Camera as SceneCamera, Light as SceneLight, SceneNode } from '@ass/scene-schema';
-import { childrenOf, nodeColor, setTransform, type Entity } from '@ass/scene-engine';
+import { setTransformAtFrame } from '@ass/animation-engine';
+import { evaluatedScene } from '@ass/editor-ui';
+import {
+  childrenOf,
+  evaluateFrame,
+  isLocked,
+  nodeColor,
+  worldMatrix,
+  type Entity,
+} from '@ass/scene-engine';
 import {
   createMaterial,
   createPrimitiveGeometry,
@@ -14,12 +23,23 @@ import {
   GizmoViewport,
   Grid,
   OrbitControls,
+  Line,
   OrthographicCamera,
   PerspectiveCamera,
   TransformControls,
   useGLTF,
 } from '@react-three/drei';
-import { Component, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Component,
+  Suspense,
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import {
   Box3,
@@ -51,24 +71,30 @@ const DIRECTIONS: Record<Exclude<ViewDirection, 'free'>, [number, number, number
 
 const ACCENT = '#4f8cff';
 
+/** Options d'une vue : la vue libre est interactive ; la vue caméra n'affiche que la scène. */
+export const ViewOptions = createContext({ interactive: true, helpers: true });
+
 /** Enregistre l'objet Three.js d'une entité et déclenche le rendu du gizmo quand il change. */
 function useRegister(id: string, ref: React.RefObject<Object3D | null>, onChange: () => void) {
   const { objects } = useEditorContext();
+  const { interactive } = useContext(ViewOptions);
   useLayoutEffect(() => {
     const object = ref.current;
-    if (!object) return;
+    if (!object || !interactive) return;
     objects.set(id, object);
     onChange();
     return () => {
       if (objects.get(id) === object) objects.delete(id);
       onChange();
     };
-  }, [id, objects, ref, onChange]);
+  }, [id, objects, ref, onChange, interactive]);
 }
 
 function useSelectHandler(id: string) {
   const { store } = useEditorContext();
+  const { interactive } = useContext(ViewOptions);
   return (event: ThreeEvent<MouseEvent>) => {
+    if (!interactive) return;
     event.stopPropagation();
     if (event.delta > 4) return; // fin d'une rotation de vue, pas un clic
     const additive = event.shiftKey || event.metaKey || event.ctrlKey;
@@ -81,7 +107,7 @@ function PrimitiveMesh({ node, selected }: { node: SceneNode; selected: boolean 
     () => createPrimitiveGeometry(node.primitive ?? 'cube'),
     [node.primitive],
   );
-  const color = useEditor((state) => nodeColor(state.scene, node.id));
+  const color = useEditor((state) => nodeColor(evaluatedScene(state), node.id));
   const material = useMemo(() => {
     const result = createMaterial(null);
     if (color) result.color = linearColor(color);
@@ -143,10 +169,12 @@ class ModelBoundary extends Component<{ children: ReactNode }, { failed: boolean
 
 function CameraIcon({ camera, selected }: { camera: SceneCamera; selected: boolean }) {
   const onClick = useSelectHandler(camera.id);
+  const active = useEditor((state) => state.scene.activeCameraId === camera.id);
+  if (!useContext(ViewOptions).helpers) return null;
   return (
     <mesh rotation={[Math.PI / 2, 0, Math.PI / 4]} position={[0, 0, -0.25]} onClick={onClick}>
       <coneGeometry args={[0.3, 0.5, 4, 1, true]} />
-      <meshBasicMaterial color={selected ? ACCENT : '#e6e8ee'} wireframe />
+      <meshBasicMaterial color={selected ? ACCENT : active ? '#3fb950' : '#e6e8ee'} wireframe />
     </mesh>
   );
 }
@@ -165,6 +193,7 @@ function LightObject({ light, selected }: { light: SceneLight; selected: boolean
     if (spot.current) spot.current.target = target;
   }, [target, light.kind]);
   const color = linearColor(light.color);
+  const { helpers } = useContext(ViewOptions);
   return (
     <>
       <primitive object={target} />
@@ -197,7 +226,7 @@ function LightObject({ light, selected }: { light: SceneLight; selected: boolean
           castShadow={light.castShadow}
         />
       )}
-      <mesh onClick={onClick}>
+      <mesh onClick={onClick} visible={helpers}>
         <sphereGeometry args={[0.15, 16, 8]} />
         <meshBasicMaterial
           color={selected ? ACCENT : '#d29922'}
@@ -212,7 +241,8 @@ function EntityObject({ entity, onRegistered }: { entity: Entity; onRegistered: 
   const { assetUrl } = useEditorContext();
   const ref = useRef<Group>(null);
   const id = entity.value.id;
-  const selected = useEditor((state) => state.selection.includes(id));
+  const { interactive } = useContext(ViewOptions);
+  const selected = useEditor((state) => interactive && state.selection.includes(id));
   useRegister(id, ref, onRegistered);
   const { position, rotation, scale } = entity.value.transform;
   const visible = entity.kind === 'camera' ? true : entity.value.visible;
@@ -250,14 +280,15 @@ function EntityObject({ entity, onRegistered }: { entity: Entity; onRegistered: 
   );
 }
 
-function EntityChildren({
+export function EntityChildren({
   parentId,
   onRegistered,
 }: {
   parentId: string | null;
   onRegistered: () => void;
 }) {
-  const scene = useEditor((state) => state.scene);
+  // Toujours la scène évaluée à la frame courante : l'animation et les contraintes sont appliquées.
+  const scene = useEditor(evaluatedScene);
   const children = useMemo(() => childrenOf(scene, parentId), [scene, parentId]);
   return (
     <>
@@ -271,9 +302,7 @@ function EntityChildren({
 function SelectionGizmo({ version }: { version: number }) {
   const { store, objects, canEdit } = useEditorContext();
   const primary = useEditor((state) => state.selection.at(-1) ?? null);
-  const locked = useEditor((state) =>
-    primary ? state.scene.nodes.some((n) => n.id === primary && n.locked) : false,
-  );
+  const locked = useEditor((state) => (primary ? isLocked(state.scene, primary) : false));
   const tool = useEditor((state) => state.tool);
   const snapping = useEditor((state) => state.snapping);
   const object = primary ? objects.get(primary) : undefined;
@@ -290,11 +319,39 @@ function SelectionGizmo({ version }: { version: number }) {
       onObjectChange={() =>
         store
           .getState()
-          .updateGesture((scene) => setTransform(scene, primary, readTransform(object)))
+          .updateGesture((scene) =>
+            setTransformAtFrame(scene, primary, readTransform(object), store.getState().frame),
+          )
       }
       onMouseUp={() => store.getState().endGesture()}
     />
   );
+}
+
+/** Trajectoire (travelling) de l'élément sélectionné s'il est animé : positions monde échantillonnées. */
+function MotionPath() {
+  const scene = useEditor((state) => state.scene);
+  const primary = useEditor((state) => state.selection.at(-1) ?? null);
+  const points = useMemo(() => {
+    if (
+      !primary ||
+      !scene.animations.some(
+        (t) => t.targetId === primary && t.propertyPath.startsWith('transform.'),
+      )
+    ) {
+      return null;
+    }
+    const step = Math.max(1, Math.ceil(scene.durationFrames / 240));
+    const result: [number, number, number][] = [];
+    for (let frame = 0; frame < scene.durationFrames; frame += step) {
+      const position = new Vector3().setFromMatrixPosition(
+        worldMatrix(evaluateFrame(scene, frame), primary),
+      );
+      result.push([position.x, position.y, position.z]);
+    }
+    return result.length > 1 ? result : null;
+  }, [scene, primary]);
+  return points ? <Line points={points} color="#d29922" lineWidth={1.5} /> : null;
 }
 
 /** Commandes de vue : vues prédéfinies, perspective/orthographique, cadrage de la sélection. */
@@ -413,6 +470,7 @@ export function Viewport({ view, boxSelect }: { view: ViewSettings; boxSelect: b
           fadeDistance={60}
         />
         <EntityChildren parentId={null} onRegistered={bump} />
+        <MotionPath />
         <SelectionGizmo version={version} />
         <GizmoHelper alignment="bottom-right" margin={[64, 64]}>
           <GizmoViewport axisColors={['#f85149', '#3fb950', '#4f8cff']} labelColor="#0f1115" />

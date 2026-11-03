@@ -8,6 +8,7 @@ import {
   groupEntities,
   isLocked,
   removeEntities,
+  setActiveCamera,
   setVisible,
   type Entity,
 } from '@ass/scene-engine';
@@ -18,7 +19,14 @@ type Store = StoreApi<EditorState>;
 const editable = (scene: SceneDocument, ids: string[]) => ids.filter((id) => !isLocked(scene, id));
 
 export function addAndSelect(store: Store, entity: Entity): void {
-  if (store.getState().apply((scene) => addEntity(scene, entity))) {
+  const added = store.getState().apply((scene) => {
+    const next = addEntity(scene, entity);
+    // La première caméra ajoutée devient la caméra active du plan.
+    return entity.kind === 'camera' && next.activeCameraId === null
+      ? setActiveCamera(next, entity.value.id)
+      : next;
+  });
+  if (added) {
     store.getState().select([entity.value.id]);
   }
 }

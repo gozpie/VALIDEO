@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ass/animation-engine": "workspace:*",
     "@ass/scene-engine": "workspace:*",
     "@ass/scene-schema": "workspace:*",
     "zustand": "5.0.16"

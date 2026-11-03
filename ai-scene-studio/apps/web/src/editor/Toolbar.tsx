@@ -1,6 +1,7 @@
 'use client';
 
-import { isDirty, type Tool } from '@ass/editor-ui';
+import { isDirty, type CameraView, type Tool } from '@ass/editor-ui';
+import { setActiveCamera } from '@ass/scene-engine';
 import Link from 'next/link';
 import { useEditor, useEditorContext } from './context';
 import type { ViewDirection, ViewSettings } from './Viewport';
@@ -53,6 +54,9 @@ export function Toolbar({
   const canRedo = useEditor((state) => state.future.length > 0);
   const tool = useEditor((state) => state.tool);
   const snapping = useEditor((state) => state.snapping);
+  const cameras = useEditor((state) => state.scene.cameras);
+  const activeCameraId = useEditor((state) => state.scene.activeCameraId);
+  const cameraView = useEditor((state) => state.cameraView);
   const state = store.getState();
 
   const status =
@@ -161,6 +165,30 @@ export function Toolbar({
         </>
       )}
       <span className="mx-1 h-5 w-px bg-border" />
+      <select
+        aria-label="Caméra active"
+        disabled={!canEdit}
+        className="max-w-40 rounded border border-border bg-surface px-1 py-1 text-xs"
+        value={activeCameraId ?? ''}
+        onChange={(event) => state.apply((s) => setActiveCamera(s, event.target.value || null))}
+      >
+        <option value="">Aucune caméra active</option>
+        {cameras.map((camera) => (
+          <option key={camera.id} value={camera.id}>
+            {camera.name}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="Disposition des vues"
+        className="rounded border border-border bg-surface px-1 py-1 text-xs"
+        value={cameraView}
+        onChange={(event) => state.setCameraView(event.target.value as CameraView)}
+      >
+        <option value="free">Vue libre</option>
+        <option value="camera">Vue caméra</option>
+        <option value="split">Libre + caméra</option>
+      </select>
       <button
         type="button"
         className={button}

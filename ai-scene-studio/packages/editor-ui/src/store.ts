@@ -7,7 +7,8 @@
  */
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { SceneDocument } from '@ass/scene-schema';
-import { findEntity, subtreeIds } from '@ass/scene-engine';
+import type { ClipboardEntry, KeyRef } from '@ass/animation-engine';
+import { evaluateFrame, findEntity, subtreeIds } from '@ass/scene-engine';
 
 export type Tool = 'translate' | 'rotate' | 'scale';
 export type SelectionMode = 'replace' | 'toggle' | 'add';
@@ -23,6 +24,7 @@ export interface Snapping {
 }
 
 export const HISTORY_LIMIT = 200;
+export type CameraView = 'free' | 'camera' | 'split';
 
 export interface EditorState {
   scene: SceneDocument;
@@ -35,6 +37,13 @@ export interface EditorState {
   past: SceneDocument[];
   future: SceneDocument[];
   gestureStart: SceneDocument | null;
+  /** Temps courant de l'éditeur, en frame entière. */
+  frame: number;
+  playing: boolean;
+  loop: boolean;
+  keySelection: KeyRef[];
+  clipboard: ClipboardEntry[];
+  cameraView: CameraView;
 
   load: (scene: SceneDocument, revisionId: string | null) => void;
   /** Applique une opération et l'inscrit dans l'historique ; renvoie false si elle a échoué. */
@@ -48,6 +57,47 @@ export interface EditorState {
   setTool: (tool: Tool) => void;
   setSnapping: (snapping: Partial<Snapping>) => void;
   markSaved: (scene: SceneDocument, revisionId: string) => void;
+  setFrame: (frame: number) => void;
+  setPlaying: (playing: boolean) => void;
+  setLoop: (loop: boolean) => void;
+  selectKeys: (refs: KeyRef[], mode?: SelectionMode) => void;
+  setClipboard: (entries: ClipboardEntry[]) => void;
+  setCameraView: (view: CameraView) => void;
+}
+
+const sameKey = (a: KeyRef, b: KeyRef) => a.trackId === b.trackId && a.frame === b.frame;
+
+/** Sélection de clés restreinte aux clés encore présentes. */
+function pruneKeys(scene: SceneDocument, refs: KeyRef[]): KeyRef[] {
+  return refs.filter((ref) =>
+    scene.animations.some(
+      (t) => t.id === ref.trackId && t.keyframes.some((k) => k.frame === ref.frame),
+    ),
+  );
+}
+
+const clampFrame = (scene: SceneDocument, frame: number) =>
+  Math.min(Math.max(Math.round(frame), 0), scene.durationFrames - 1);
+
+const evaluations = new WeakMap<SceneDocument, Map<number, SceneDocument>>();
+
+/**
+ * Scène évaluée à la frame courante (animation + contraintes), mise en cache par scène et par frame :
+ * même entrée, même objet, ce qui évite les rendus inutiles.
+ */
+export function evaluatedScene(state: Pick<EditorState, 'scene' | 'frame'>): SceneDocument {
+  let byFrame = evaluations.get(state.scene);
+  if (!byFrame) {
+    byFrame = new Map();
+    evaluations.set(state.scene, byFrame);
+  }
+  let evaluated = byFrame.get(state.frame);
+  if (!evaluated) {
+    evaluated = evaluateFrame(state.scene, state.frame);
+    if (byFrame.size > 512) byFrame.clear();
+    byFrame.set(state.frame, evaluated);
+  }
+  return evaluated;
 }
 
 export const isDirty = (state: Pick<EditorState, 'scene' | 'savedScene'>): boolean =>
@@ -69,6 +119,12 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
     past: [],
     future: [],
     gestureStart: null,
+    frame: 0,
+    playing: false,
+    loop: true,
+    keySelection: [],
+    clipboard: [],
+    cameraView: 'free',
 
     load: (scene, revisionId) =>
       set({
@@ -79,6 +135,9 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
         past: [],
         future: [],
         gestureStart: null,
+        frame: 0,
+        playing: false,
+        keySelection: [],
       }),
 
     apply: (operation) => {
@@ -95,6 +154,8 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
         past: [...past, scene].slice(-HISTORY_LIMIT),
         future: [],
         selection: prune(next, selection),
+        keySelection: pruneKeys(next, get().keySelection),
+        frame: clampFrame(next, get().frame),
       });
       return true;
     },
@@ -128,6 +189,8 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
         past: past.slice(0, -1),
         future: [scene, ...future],
         selection: prune(previous, selection),
+        keySelection: pruneKeys(previous, get().keySelection),
+        frame: clampFrame(previous, get().frame),
       });
     },
 
@@ -140,6 +203,8 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
         past: [...past, scene],
         future: rest,
         selection: prune(next, selection),
+        keySelection: pruneKeys(next, get().keySelection),
+        frame: clampFrame(next, get().frame),
       });
     },
 
@@ -159,6 +224,26 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
     setSnapping: (snapping) => set({ snapping: { ...get().snapping, ...snapping } }),
 
     markSaved: (scene, revisionId) => set({ savedScene: scene, baseRevisionId: revisionId }),
+
+    setFrame: (frame) => set({ frame: clampFrame(get().scene, frame) }),
+    setPlaying: (playing) => set({ playing }),
+    setLoop: (loop) => set({ loop }),
+    selectKeys: (refs, mode = 'replace') => {
+      const current = get().keySelection;
+      if (mode === 'replace') set({ keySelection: refs });
+      if (mode === 'add')
+        set({
+          keySelection: [...current, ...refs.filter((r) => !current.some((c) => sameKey(c, r)))],
+        });
+      if (mode === 'toggle') {
+        const kept = current.filter((c) => !refs.some((r) => sameKey(c, r)));
+        set({
+          keySelection: [...kept, ...refs.filter((r) => !current.some((c) => sameKey(c, r)))],
+        });
+      }
+    },
+    setClipboard: (clipboard) => set({ clipboard }),
+    setCameraView: (cameraView) => set({ cameraView }),
   }));
 }
 

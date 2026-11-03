@@ -304,3 +304,35 @@ export function updateLight(
     Object.assign(entity.value, patch, { id: entity.value.id });
   });
 }
+
+/** Ajoute un marqueur de timeline à une frame entière ; renvoie son identifiant. */
+export function addMarker(
+  scene: SceneDocument,
+  frame: number,
+  label: string,
+): { scene: SceneDocument; id: string } {
+  if (!Number.isInteger(frame) || frame < 0 || frame >= scene.durationFrames)
+    throw new Error('Frame hors du plan');
+  const id = newId();
+  const next = copy(scene);
+  next.markers = [...next.markers, { id, frame, label: label.slice(0, 100) }].sort(
+    (a, b) => a.frame - b.frame,
+  );
+  return { scene: next, id };
+}
+
+export function removeMarker(scene: SceneDocument, id: string): SceneDocument {
+  const next = copy(scene);
+  next.markers = next.markers.filter((marker) => marker.id !== id);
+  return next;
+}
+
+export function setCameraLookAt(
+  scene: SceneDocument,
+  id: string,
+  targetId: string | null,
+): SceneDocument {
+  if (targetId === id) throw new Error('Une caméra ne peut pas se viser elle-même');
+  if (targetId !== null && !findEntity(scene, targetId)) throw new Error('Cible inconnue');
+  return updateCamera(scene, id, { lookAtTargetId: targetId });
+}

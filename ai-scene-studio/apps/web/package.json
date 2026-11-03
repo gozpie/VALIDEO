@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@ass/animation-engine": "workspace:*",
     "@ass/api-client": "workspace:*",
     "@ass/editor-ui": "workspace:*",
     "@ass/scene-engine": "workspace:*",

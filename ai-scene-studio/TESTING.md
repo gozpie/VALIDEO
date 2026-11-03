@@ -33,10 +33,15 @@ valide et par un cas invalide.
 - `shared-types` : 4 tests (machine à états des jobs).
 - `generation-sdk` : 5 tests (appariement des capacités, contraintes bloquantes ou ignorées).
 - `api-client` : 3 tests (types à jour du contrat OpenAPI, gestion du jeton CSRF).
-- `scene-engine` : 11 tests (opérations d'édition, conversions Three.js) ; `editor-ui` : 7 tests (historique, sélection).
+- `animation-engine` : 14 tests (interpolations, slerp, extrapolations, édition des clés, référence de déterminisme
+  `tests/fixtures/animation/cube-camera-animated.expected.json`).
+- `scene-engine` : 16 tests (opérations d'édition, conversions Three.js, mouvements de caméra, visée) ; `editor-ui` :
+  9 tests (historique, sélection, temps, cache d'évaluation).
 - `web` : 17 tests unitaires et de composants (dont hiérarchie et inspecteur de l'éditeur) ; 5 E2E (accueil,
   redirection vers la connexion, mauvais mot de passe, parcours des projets, éditeur 3D : ajout d'un cube,
-  déplacement, annuler/rétablir, renommage, import GLB, duplication, suppression, enregistrement, rechargement).
+  déplacement, annuler/rétablir, renommage, import GLB, duplication, suppression, enregistrement, rechargement ;
+  animation : clés, clé automatique, interpolation, caméra active et visée, vue double, marqueur, lecture,
+  enregistrement et relecture après rechargement).
 - `api` : 64 tests unitaires (dont contrat OpenAPI à jour) et 81 tests d'intégration (PostgreSQL, Redis, S3) :
   migrations, contraintes, authentification, CSRF, limitation, isolation entre workspaces, rôles, invitations,
   CRUD et ordre des séquences et plans.

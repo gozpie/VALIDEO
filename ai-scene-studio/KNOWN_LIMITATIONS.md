@@ -16,7 +16,12 @@
   est dans le rectangle ; le parentage se fait depuis l'inspecteur (pas de glisser-déposer dans la hiérarchie) ;
   panneaux de taille fixe et raccourcis non configurables ; les animations contenues dans un GLB ne sont pas jouées ;
   les icônes des caméras et des lumières sont des repères simplifiés ; pas encore de vue depuis une caméra de la
-  scène (phase 3). L'éclairage d'aperçu de l'éditeur n'appartient pas à la scène. WebGL 2 est requis.
+  L'éclairage d'aperçu de l'éditeur n'appartient pas à la scène. WebGL 2 est requis.
+- Animation et caméras (phase 3) : pas d'éditeur de courbes (les poignées de Bézier ne se règlent pas à l'écran ; sans
+  poignée, une clé Bézier donne un segment rectiligne) ; sélection de clés au clic (pas de rectangle) ; la contrainte
+  « suivre une cible » n'est pas implémentée (seule la visée l'est) ; profondeur de champ non prévisualisée (les
+  paramètres sont enregistrés pour le rendu) ; la lecture temps réel peut sauter des frames si le navigateur est lent
+  (chaque image affichée reste une frame exacte) ; la vue caméra n'affiche pas encore de guides de cadrage.
 - Assets : seuls les GLB sont acceptés (pas encore de glTF à fichiers séparés, textures, HDRI, USD/FBX) ; l'envoi
   transite par l'API (100 Mo maximum) au lieu d'un upload multipart direct vers le stockage avec reprise ; pas de
   miniatures, de tags ni de suppression d'asset ; les objets orphelins du stockage ne sont pas encore nettoyés.

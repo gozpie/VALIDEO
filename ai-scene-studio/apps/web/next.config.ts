@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   ...(process.env['NEXT_OUTPUT'] === 'standalone' ? { output: 'standalone' as const } : {}),
   // Les packages internes sont publiés en TypeScript source.
   transpilePackages: [
+    '@ass/animation-engine',
     '@ass/api-client',
     '@ass/editor-ui',
     '@ass/scene-engine',

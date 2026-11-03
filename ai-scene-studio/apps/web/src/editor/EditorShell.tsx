@@ -8,10 +8,12 @@ import type { Object3D } from 'three';
 import { api, call } from '@/lib/api';
 import { API_URL } from '@/lib/config';
 import { AddMenu } from './AddMenu';
-import { EditorContext, type ViewportApi } from './context';
+import { EditorContext, useEditor, type ViewportApi } from './context';
 import { Hierarchy } from './Hierarchy';
 import { Inspector } from './Inspector';
+import { Timeline } from './Timeline';
 import { Toolbar, type SaveStatus } from './Toolbar';
+import { usePlayback } from './usePlayback';
 import { useShortcuts } from './useShortcuts';
 import type { ViewSettings } from './Viewport';
 
@@ -39,7 +41,27 @@ function Shortcuts({
   onToggleBoxSelect: () => void;
 }) {
   useShortcuts({ onSave, onToggleBoxSelect });
+  usePlayback();
   return null;
+}
+
+const CameraViewport = dynamic(
+  () => import('./CameraViewport').then((module) => module.CameraViewport),
+  { ssr: false },
+);
+
+function Views({ view, boxSelect }: { view: ViewSettings; boxSelect: boolean }) {
+  const layout = useEditor((state) => state.cameraView);
+  if (layout === 'camera') return <CameraViewport />;
+  if (layout === 'split') {
+    return (
+      <div className="grid h-full grid-cols-2">
+        <Viewport view={view} boxSelect={boxSelect} />
+        <CameraViewport />
+      </div>
+    );
+  }
+  return <Viewport view={view} boxSelect={boxSelect} />;
 }
 
 export function EditorShell({
@@ -135,17 +157,20 @@ export function EditorShell({
           boxSelect={boxSelect}
           onBoxSelect={toggleBox}
         />
-        <div className="grid min-h-0 flex-1 grid-cols-[16rem_1fr_18rem]">
+        <div className="grid min-h-0 flex-1 grid-cols-[16rem_1fr_19rem]">
           <aside className="flex min-h-0 flex-col gap-4 overflow-auto border-r border-border bg-panel p-3">
             {canEdit && <AddMenu workspaceId={workspaceId} />}
             <Hierarchy />
           </aside>
           <div className="min-h-0">
-            <Viewport view={view} boxSelect={boxSelect} />
+            <Views view={view} boxSelect={boxSelect} />
           </div>
           <aside className="min-h-0 overflow-auto border-l border-border bg-panel p-3">
             <Inspector />
           </aside>
+        </div>
+        <div className="h-56 shrink-0">
+          <Timeline />
         </div>
       </div>
     </EditorContext.Provider>

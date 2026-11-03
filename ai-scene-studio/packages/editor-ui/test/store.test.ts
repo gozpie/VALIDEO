@@ -110,3 +110,62 @@ describe('store de l’éditeur', () => {
     expect(topLevelSelection(scene, [child.id, group.id])).toEqual([group.id]);
   });
 });
+
+describe('temps et clés', () => {
+  it('borne la frame courante et suit les suppressions de clés', async () => {
+    const { setKey, removeKeys } = await import('@ass/animation-engine');
+    const scene = addEntity(
+      createEmptyScene({ sceneId: '00000000-0000-4000-8000-0000000000ce', durationFrames: 24 }),
+      {
+        kind: 'node',
+        value: cube,
+      },
+    );
+    const store = createEditorStore(scene);
+    store.getState().setFrame(100);
+    expect(store.getState().frame).toBe(23);
+    store.getState().setFrame(-3.4);
+    expect(store.getState().frame).toBe(0);
+    store
+      .getState()
+      .apply((s) =>
+        setKey(s, {
+          targetId: cube.id,
+          propertyPath: 'transform.position',
+          frame: 5,
+          value: [1, 0, 0],
+        }),
+      );
+    const trackId = store.getState().scene.animations[0]!.id;
+    store.getState().selectKeys([{ trackId, frame: 5 }]);
+    store.getState().apply((s) => removeKeys(s, [{ trackId, frame: 5 }]));
+    expect(store.getState().keySelection).toEqual([]);
+  });
+
+  it('met en cache l’évaluation par scène et par frame', async () => {
+    const { setKey } = await import('@ass/animation-engine');
+    const { evaluatedScene } = await import('../src');
+    let scene = addEntity(
+      createEmptyScene({ sceneId: '00000000-0000-4000-8000-0000000000cf', durationFrames: 24 }),
+      {
+        kind: 'node',
+        value: cube,
+      },
+    );
+    scene = setKey(scene, {
+      targetId: cube.id,
+      propertyPath: 'transform.position',
+      frame: 0,
+      value: [0, 0, 0],
+    });
+    scene = setKey(scene, {
+      targetId: cube.id,
+      propertyPath: 'transform.position',
+      frame: 10,
+      value: [10, 0, 0],
+    });
+    const first = evaluatedScene({ scene, frame: 4 });
+    expect(first.nodes[0]!.transform.position).toEqual([4, 0, 0]);
+    expect(evaluatedScene({ scene, frame: 4 })).toBe(first);
+  });
+});
