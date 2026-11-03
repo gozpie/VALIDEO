@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     render_max_frames: int = Field(default=2000, ge=1)
     render_queue_key: str = Field(default="ass:render:queue", pattern=r"^[a-z0-9:_-]{1,100}$")
     render_stale_seconds: int = Field(default=300, ge=10)
+    render_timeout_seconds: int = Field(default=6 * 3600, ge=10)
     blender_path: str = "blender"
     ffmpeg_path: str = "ffmpeg"
 

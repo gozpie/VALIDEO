@@ -11,6 +11,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Étape 4.2 : jobs de rendu (migration `0006`) — machine à états identique au contrat TypeScript, file Redis
   fiable, API de lancement / suivi / annulation, idempotence, échec des jobs abandonnés.
 
+- Étapes 4.3–4.4 : rendu Blender — description de scène (`render/prepare.py`), générateur Blender
+  (`workers/render-worker/blender/build_scene.py`), worker (`render/worker.py`, `render/runner.py`), image Docker
+  Blender 4.5.15 LTS + FFmpeg, service `render-worker` avec quotas ; sorties vidéo, passes EXR, aperçu et `.blend`
+  publiées comme assets.
+
 ### Modifié
 
 - Bézier : correction des poignées trop longues alignée sur Blender (réduction proportionnelle), dans les deux

@@ -91,6 +91,23 @@ services:
       - '127.0.0.1:8000:8000'
     restart: unless-stopped
 
+  # Worker de rendu : Blender 4.5 LTS (Cycles CPU) + FFmpeg. Binaire x86-64 : émulé sur Apple Silicon.
+  render-worker:
+    build: { context: ., dockerfile: infrastructure/docker/render-worker.Dockerfile }
+    image: ai-scene-studio/render-worker:dev
+    platform: linux/amd64
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    # Quotas : le rendu ne peut pas accaparer la machine ni produire un nombre illimité de processus.
+    cpus: ${RENDER_WORKER_CPUS:-4}
+    mem_limit: ${RENDER_WORKER_MEMORY:-4g}
+    pids_limit: 512
+    tmpfs:
+      - /tmp:size=${RENDER_WORKER_TMP:-4g}
+    restart: unless-stopped
+
   web:
     build:
       context: .

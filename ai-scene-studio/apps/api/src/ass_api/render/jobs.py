@@ -92,6 +92,8 @@ class RenderQueue:
             redis.Redis.from_url(
                 settings.redis_url.get_secret_value(),
                 socket_connect_timeout=settings.health_check_timeout_seconds,
+                # Supérieur à l'attente bloquante de `pop` (sinon la lecture expire avant Redis).
+                socket_timeout=60,
             ),
             settings.render_queue_key,
         )
@@ -103,6 +105,7 @@ class RenderQueue:
         self._client.lpush(self._key, job_id)
 
     def pop(self, worker_id: str, timeout_seconds: int) -> str | None:
+        """Attend au plus `timeout_seconds` (< 60 s) un identifiant de job."""
         value = self._client.blmove(
             self._key, self._processing(worker_id), timeout_seconds, "RIGHT", "LEFT"
         )
