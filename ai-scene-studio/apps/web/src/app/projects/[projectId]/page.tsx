@@ -1,6 +1,7 @@
 'use client';
 
 import type { Project, Sequence, Workspace } from '@ass/api-client';
+import { ArrowRight, Clapperboard } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -80,6 +81,24 @@ function ProjectView({ projectId }: { projectId: string }) {
           {project.colorSpace}
         </p>
       </div>
+      <Link
+        href={`/projects/${project_id}/studio`}
+        className="group flex items-center gap-4 rounded-xl border border-ai/40 bg-gradient-to-r from-accent/15 to-ai/10 p-4 shadow-card transition-colors hover:border-ai"
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-ai text-white">
+          <Clapperboard size={18} />
+        </span>
+        <span className="flex-1">
+          <span className="block font-semibold">Ouvrir le studio de production</span>
+          <span className="block text-sm text-muted">
+            Script → découpage par Claude → bible → plans générés, versions et comparaison A/B
+          </span>
+        </span>
+        <ArrowRight
+          size={18}
+          className="text-muted transition-transform group-hover:translate-x-1"
+        />
+      </Link>
       <ErrorText>{error}</ErrorText>
       {canEdit && (
         <Panel title="Nouvelle séquence">

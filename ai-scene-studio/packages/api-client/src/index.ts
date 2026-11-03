@@ -34,6 +34,15 @@ export type GenerationInput = Schemas['GenerationIn'];
 export type GenerationMode = GenerationInput['mode'];
 export type GenerationEstimate = Schemas['EstimateOut'];
 export type GenerationJob = Schemas['GenerationJobOut'];
+export type ScriptSummary = Schemas['ScriptSummaryOut'];
+export type ProjectScript = Schemas['ScriptOut'];
+export type BibleEntry = Schemas['BibleEntryOut'];
+export type BibleKind = BibleEntry['kind'];
+export type ShotVersion = Schemas['ShotVersionOut'];
+export type StoryboardSequence = Schemas['StoryboardSequenceOut'];
+export type StoryboardShot = Schemas['StoryboardShotOut'];
+export type ShotApproach = Shot['approach'];
+export type ShotStatus = Shot['status'];
 export type Problem = Schemas['ProblemOut'];
 export type Page<T> = { items: T[]; nextCursor: string | null };
 

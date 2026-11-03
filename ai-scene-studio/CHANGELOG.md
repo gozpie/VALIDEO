@@ -4,6 +4,21 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+## [0.7.0] — 2026-11-03 — Phase 6 : studio de production
+
+### Ajouté
+
+- Étapes 6.1–6.2 : scripts versionnés, bible du projet (LOOK, personnages, décors, accessoires, galerie et image clé),
+  découpage des plans (description, intention, dialogue, valeur, caméra, mode de fabrication, statut, prompts),
+  versions de plans en arbre avec version retenue (migration `0008`) ; Claude endosse la méthode réalisateur /
+  chef-op de VALIDEO pour découper le film, établir la bible et écrire les prompts d'un plan ; application des
+  propositions au storyboard et à la bible ; générations sans scène 3D, avec les images clés de la bible en
+  références ; chaque image / vidéo générée devient une version du plan.
+- Étape 6.3 : interface du studio (`/projects/{id}/studio`) — étapes Script, Propositions, Bible, Plans ; éditeur de
+  script versionné ; propositions de Claude avec le brouillon des 6 étapes ; bible en cartes ; storyboard par
+  séquence ; panneau du plan (versions, arbre, retenir, comparaison A/B, image puis vidéo, prompts écrits par
+  Claude, découpage, éléments de bible) ; confirmation du coût exact pour tout moteur payant.
+
 ## [0.6.0] — 2026-11-03 — Phase 5 : génération IA depuis la scène
 
 ### Ajouté

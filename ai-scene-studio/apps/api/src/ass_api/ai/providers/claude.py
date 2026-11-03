@@ -283,6 +283,15 @@ class ClaudeProvider(ProviderAdapter):
             ) from exc
         if payload.get("is_error") or not isinstance(payload.get("structured_output"), dict):
             text = str(payload.get("result", ""))[:300]
+            if "safeguards" in text.lower() or "/aup" in text.lower():
+                # Faux positifs connus des garde-fous sur des scripts de fiction ordinaires.
+                raise ProviderError(
+                    "content_policy",
+                    f"{MODELS.get(model, model)} a refusé la demande (garde-fous) : "
+                    "relancez, ou choisissez un autre modèle Claude",
+                    retryable=True,
+                    detail=text,
+                )
             code: ErrorCode = "rate_limited" if "limit" in text.lower() else "unknown"
             raise ProviderError(
                 code,

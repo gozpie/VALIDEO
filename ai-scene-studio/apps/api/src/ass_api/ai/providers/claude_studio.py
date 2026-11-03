@@ -183,6 +183,9 @@ Documents dans le dossier courant : {files}.
 - look : le LOOK du film (pellicule, optiques, grain, palette, contraste) ; « prompt » = bloc LOOK
   en anglais recopié tel quel en tête de chaque prompt d'image. Pas de HDR, « dramatic »,
   « rich colours », teal-orange.
+- NOMS : le nom d'un personnage s'écrit en casse normale (« Marc », jamais « MARC ») ; un décor
+  porte le nom court du lieu (« Salle de la lanterne »), jamais l'intitulé de scène (« INT. … —
+  NUIT ») ; si decoupage.md est fourni, reprends EXACTEMENT les noms qu'il utilise.
 - characters : chaque personnage qui apparaît à l'image. « prompt » décrit une vraie photo de
   casting non retouchée (âge, origine, faciès, carnation, peau texturée, cheveux, costume
   d'époque usé), en anglais.

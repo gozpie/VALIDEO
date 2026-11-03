@@ -204,6 +204,31 @@ l'estimation, sinon `409` sans aucune dépense. Contrainte « bloquante » → `
 disponible → `503`. Sorties : `outputs.assets[]` (`assetId`, `kind` image ou vidéo, assets marqués
 `aiGenerated`) et `outputs.result` (JSON de Claude) ; manifests d'entrée et de sortie conservés en S3.
 
+## Studio de production (phase 6)
+
+| Méthode et chemin                            | Rôle minimal        | Effet                                                                                                       |
+| -------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /projects/{id}/scripts`                 | `viewer`            | versions du brief / script, la plus récente d'abord (sans le texte)                                         |
+| `POST /projects/{id}/scripts`                | `editor`            | `201` nouvelle version immuable `{ title?, content ≤ 500 000 car. }`                                        |
+| `GET /scripts/{id}`                          | `viewer`            | une version avec son texte                                                                                  |
+| `GET/POST /projects/{id}/bible`              | `viewer` / `editor` | éléments (LOOK, personnage, décor, accessoire) ; nom unique par type → `409`                                |
+| `PATCH/DELETE /bible-entries/{id}`           | `editor`            | fiche, prompt, ordre, image clé (parmi les images de l'élément)                                             |
+| `POST /bible-entries/{id}/images`            | `editor`            | ajoute une image du workspace à la galerie (la première devient l'image clé)                                |
+| `GET /projects/{id}/storyboard`              | `viewer`            | séquences et plans (découpage, liens de bible, version retenue, nombre de versions)                         |
+| `GET/POST /shots/{id}/versions`              | `viewer` / `editor` | versions image / vidéo du plan ; `parentId` = arbre des allers-retours                                      |
+| `PATCH /shot-versions/{id}`                  | `editor`            | note de la version                                                                                          |
+| `POST /projects/{id}/generations[/estimate]` | `editor`            | découpage (`script_breakdown`), bible (`bible_from_script`) ou image d'un élément de bible (`bibleEntryId`) |
+| `GET /projects/{id}/generations`             | `viewer`            | générations du projet (sans plan)                                                                           |
+| `POST /projects/{id}/breakdown/apply`        | `editor`            | `{ jobId }` : crée séquences et plans à la suite ; une seule fois (`409` ensuite)                           |
+| `POST /projects/{id}/bible/apply`            | `editor`            | `{ jobId }` : ajoute les éléments absents et relie les plans par les noms                                   |
+
+`PATCH /shots/{id}` accepte aussi `description`, `intention`, `dialogue`, `shotSize`, `camera`, `approach`
+(`image_to_video`, `multishot`, `text_to_video`, `still`, `scene_3d`), `status` (`todo`, `in_progress`, `review`,
+`approved`), `imagePrompt`, `videoPrompt`, `negativePrompt`, `bibleEntryIds`, `selectedVersionId`. Une génération
+d'image ou de vidéo d'un plan n'exige une scène enregistrée que si la caméra la conditionne (`sceneFrames`) ;
+`bibleReferences: true` ajoute en tête les images clés des éléments liés (ordre @image1, @image2…) ;
+`parentVersionId` rattache les versions produites. Mode `shot_prompts` (Claude) : prompts image / vidéo du plan.
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`
@@ -235,5 +260,4 @@ chacun limité à `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`. `200` si tout est OK, sino
 
 ## Endpoints prévus
 
-Les phases suivantes ajouteront le studio de production (scripts, découpage, bible, versions de plans), le montage et
-les exports. Chaque endpoint sera documenté ici au moment de son implémentation.
+Les phases suivantes ajouteront le montage (timeline, export du film, XML Premiere) et les passerelles 3D. Chaque endpoint sera documenté ici au moment de son implémentation.

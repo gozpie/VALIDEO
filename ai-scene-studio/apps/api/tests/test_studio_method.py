@@ -46,3 +46,25 @@ def test_bible_and_shot_prompts_tasks() -> None:
 def test_claude_declares_studio_modes() -> None:
     modes = ClaudeProvider("claude", "jeton").get_capabilities()[0].modes
     assert {"script_breakdown", "bible_from_script", "shot_prompts"} <= set(modes)
+
+
+def test_bible_names_match_tolerantly() -> None:
+    import uuid
+
+    from ass_api.db.models import BibleEntry
+    from ass_api.routes.studio import match_entry, normalize_name
+
+    assert normalize_name("INT. SALLE DE LA LANTERNE — NUIT") == "salle de la lanterne"
+    assert normalize_name("MARC") == "marc"
+    entries = [
+        BibleEntry(id=uuid.uuid4(), kind="set", name=name)
+        for name in ("Salle de la lanterne", "Mer en tempête", "Escalier du phare")
+    ]
+    salle, mer, escalier = (e.id for e in entries)
+    assert match_entry(entries, "INT. SALLE DE LA LANTERNE — NUIT") == salle
+    assert match_entry(entries, "mer en tempete") == mer
+    assert match_entry(entries, "Mer") == mer  # contenu dans un seul nom
+    assert match_entry(entries, "phare") == escalier
+    assert match_entry(entries, "Cuisine") is None
+    entries.append(BibleEntry(id=uuid.uuid4(), kind="set", name="Phare de Ker-an"))
+    assert match_entry(entries, "phare") is None  # ambigu : aucun lien plutôt qu'un faux

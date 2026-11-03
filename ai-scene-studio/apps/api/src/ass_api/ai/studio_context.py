@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ass_api.db.models import (
     BibleEntry,
+    GenerationJob,
     Project,
     ProjectScript,
     Sequence,
@@ -126,4 +127,28 @@ def shot_document(db: Session, shot: Shot) -> str:
         lines += ["", "## Images de référence envoyées avec la génération"]
         for number, entry in enumerate(references, start=1):
             lines.append(f"- @image{number} = {entry.name}")
+    return "\n".join(lines) + "\n"
+
+
+def breakdown_names(db: Session, project_id: uuid.UUID) -> str:
+    """Noms de personnages, décors et accessoires utilisés par les découpages appliqués."""
+    found: dict[str, set[str]] = {"characters": set(), "sets": set(), "props": set()}
+    jobs = db.scalars(
+        select(GenerationJob).where(
+            GenerationJob.project_id == project_id,
+            GenerationJob.mode == "script_breakdown",
+            GenerationJob.status == "completed",
+        )
+    )
+    for job in jobs:
+        for names in (job.outputs.get("applied") or {}).values():
+            for key, values in names.items():
+                found.setdefault(key, set()).update(str(v) for v in values)
+    if not any(found.values()):
+        return ""
+    labels = {"characters": "Personnages", "sets": "Décors", "props": "Accessoires"}
+    lines = ["# Noms utilisés par le découpage (à reprendre exactement)"]
+    for key, label in labels.items():
+        if found.get(key):
+            lines.append(f"- {label} : " + ", ".join(sorted(found[key])))
     return "\n".join(lines) + "\n"

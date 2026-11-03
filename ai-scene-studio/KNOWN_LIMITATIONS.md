@@ -45,6 +45,12 @@
   raccourcis toujours non configurables ; pas de glisser-déposer dans la hiérarchie ; inspecteur et timeline gardent
   leur présentation de la phase 3 (refonte prévue avec le montage, phase 7).
 
+- Studio (phase 6) : pas d'import d'images de référence depuis le disque (seulement les images générées) ; le
+  découpage s'applique à la suite des séquences existantes (pas de fusion ni de remplacement) ; une proposition ne
+  s'applique qu'une fois ; pas de réordonnancement des plans par glisser-déposer dans le storyboard ; liens entre plans
+  et bible établis par les noms (rapprochement tolérant, aucun lien en cas d'ambiguïté) ; un découpage par Claude
+  Opus prend quelques minutes (suivi par interrogation) ; pas encore de montage ni d'export du film (phase 7).
+
 ## Techniques
 
 - **MinIO remplacé par SeaweedFS** en local : les images MinIO ne sont plus distribuées publiquement. Seule l'API S3

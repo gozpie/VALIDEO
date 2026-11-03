@@ -39,7 +39,16 @@ const MODES: Record<GenerationMode, { label: string; hint: string }> = {
   prompt_from_scene: { label: 'Prompt du plan', hint: 'Claude rédige le prompt depuis la caméra' },
   scene_from_text: { label: 'Assistant de scène', hint: 'Claude propose des modifications' },
   image_analysis: { label: 'Critique du rendu', hint: 'Claude analyse l’image de la caméra' },
+  // Modes du studio : lancés depuis le studio de production, pas depuis l'éditeur.
+  script_breakdown: { label: 'Découpage', hint: 'Studio de production' },
+  bible_from_script: { label: 'Bible', hint: 'Studio de production' },
+  shot_prompts: { label: 'Prompts du plan', hint: 'Studio de production' },
 };
+const STUDIO_ONLY = new Set<GenerationMode>([
+  'script_breakdown',
+  'bible_from_script',
+  'shot_prompts',
+]);
 const TEXT_MODES = new Set<GenerationMode>([
   'prompt_from_scene',
   'scene_from_text',
@@ -358,22 +367,24 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
       {model && (
         <>
           <div role="radiogroup" aria-label="Type de génération" className="flex flex-wrap gap-1">
-            {model.modes.map((value) => {
-              const item = MODES[value as GenerationMode];
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === value}
-                  className={chip(mode === value)}
-                  title={item?.hint}
-                  onClick={() => setMode(value as GenerationMode)}
-                >
-                  {item?.label ?? value}
-                </button>
-              );
-            })}
+            {model.modes
+              .filter((value) => !STUDIO_ONLY.has(value as GenerationMode))
+              .map((value) => {
+                const item = MODES[value as GenerationMode];
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === value}
+                    className={chip(mode === value)}
+                    title={item?.hint}
+                    onClick={() => setMode(value as GenerationMode)}
+                  >
+                    {item?.label ?? value}
+                  </button>
+                );
+              })}
           </div>
 
           <label className="flex flex-col gap-1 text-xs">

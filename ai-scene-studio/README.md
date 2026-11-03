@@ -4,12 +4,12 @@ Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 5 livrée (génération IA depuis la scène), en attente de validation.** Éditeur 3D par plan
-> (raccourcis façon Blender, palette ⌘K, menus contextuels), animation par clés, caméras physiques, révisions
-> immuables ; rendu final par **Blender 4.5 LTS** (Cycles) ; génération IA cadrée par la caméra active : Claude
-> (abonnement : prompt du plan, assistant de scène, critique du rendu) et Higgsfield (images GPT Image 2.5, vidéos
-> Seedance 2.5, via la passerelle Chrome ; coût confirmé avant toute dépense). Voir
-> [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
+> **État : phase 6 livrée (studio de production), en attente de validation.** Studio par projet : script
+> versionné → **découpage par Claude** selon la méthode réalisateur / chef-op (6 étapes écrites, version optimisée)
+> → **bible** (LOOK, personnages, décors, accessoires, images clés) → **plans** générés en versions successives
+> (arbre des allers-retours, version retenue, comparaison A/B). Éditeur 3D à la demande par plan (raccourcis façon
+> Blender, rendu Blender 4.5 LTS) ; génération IA : Claude (abonnement) et Higgsfield (passerelle Chrome, coût
+> confirmé avant toute dépense). Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route.
 
 ## Démarrage rapide
 
@@ -71,8 +71,8 @@ scripts/                  check-env.sh, check-all.sh
 | 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB)            | ✅ terminé                            |
 | 3     | Plan animé relisible (caméras, timeline, keyframes)                             | ✅ terminé                            |
 | 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                                 | ✅ terminé                            |
-| 5     | Génération IA depuis la scène ; fondations ergonomie et esthétique              | ✅ terminé (en attente de validation) |
-| 6     | Studio de production : script → découpage → bible → plans versionnés (A/B)      | à faire                               |
+| 5     | Génération IA depuis la scène ; fondations ergonomie et esthétique              | ✅ terminé                            |
+| 6     | Studio de production : script → découpage → bible → plans versionnés (A/B)      | ✅ terminé (en attente de validation) |
 | 7     | Montage intégré (timeline multipiste, titres, audio, étalonnage) + XML Premiere | à faire                               |
 | 8     | Passerelles 3D : image / vidéo IA → décor 3D et caméra rejouée → vidéo IA       | à faire                               |
 | 9     | Durcissement, bêta                                                              | à faire                               |

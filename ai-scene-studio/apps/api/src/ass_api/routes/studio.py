@@ -5,6 +5,8 @@ personnages, décors, accessoires) → plans générés en versions successives 
 une version retenue par plan) → montage (phase 7).
 """
 
+import re
+import unicodedata
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
@@ -518,16 +520,41 @@ def _clip(value: Any, limit: int) -> str:
     return str(value or "").strip()[:limit]
 
 
+def normalize_name(value: str) -> str:
+    """Nom comparable : sans accents ni casse, sans intitulé de scène (INT. / EXT. … — NUIT)."""
+    text = unicodedata.normalize("NFD", value.lower())
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    text = re.sub(r"^(int|ext|int\.?/ext)\.?\s+", "", text)
+    text = re.split(r"\s+[\u2014\u2013-]\s+", text)[0]
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+
+def match_entry(entries: list[BibleEntry], name: str) -> uuid.UUID | None:
+    """Nom identique (normalisé) ; sinon un seul élément dont le nom contient l'autre."""
+    wanted = normalize_name(name)
+    if not wanted:
+        return None
+    exact = [e for e in entries if normalize_name(e.name) == wanted]
+    if exact:
+        return exact[0].id
+    partial = [
+        e
+        for e in entries
+        if (other := normalize_name(e.name)) and (wanted in other or other in wanted)
+    ]
+    return partial[0].id if len(partial) == 1 else None
+
+
 def _link_by_names(
     db: Session, shot_id: uuid.UUID, names: dict[str, list[str]], entries: list[BibleEntry]
 ) -> None:
-    index = {(e.kind, e.name.lower()): e.id for e in entries}
     existing = set(
         db.scalars(select(ShotBibleLink.entry_id).where(ShotBibleLink.shot_id == shot_id))
     )
     for key, kind in ENTRY_KINDS.items():
+        candidates = [e for e in entries if e.kind == kind]
         for name in names.get(key, []):
-            entry_id = index.get((kind, str(name).strip().lower()))
+            entry_id = match_entry(candidates, str(name))
             if entry_id is not None and entry_id not in existing:
                 db.add(ShotBibleLink(shot_id=shot_id, entry_id=entry_id))
                 existing.add(entry_id)
@@ -591,13 +618,13 @@ def apply_bible(
         proposals.append(("look", result["look"]))
     for key, kind in ENTRY_KINDS.items():
         proposals += [(kind, item) for item in result.get(key) or [] if isinstance(item, dict)]
-    taken = {(e.kind, e.name.lower()) for e in project_bible(db, project.id)}
+    taken = {(e.kind, normalize_name(e.name)) for e in project_bible(db, project.id)}
     counts: dict[str, int] = {}
     for kind, item in proposals:
         name = _clip(item.get("name"), 200) or ("LOOK du film" if kind == "look" else "")
-        if not name or (kind, name.lower()) in taken:
+        if not name or (kind, normalize_name(name)) in taken:
             continue
-        taken.add((kind, name.lower()))
+        taken.add((kind, normalize_name(name)))
         counts[kind] = counts.get(kind, 0) + 1
         db.add(
             BibleEntry(

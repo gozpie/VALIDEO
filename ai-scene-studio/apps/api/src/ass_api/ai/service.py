@@ -17,6 +17,7 @@ from ass_api.ai.providers.base import ProviderAdapter, ProviderError, RunContext
 from ass_api.ai.scene_summary import describe_scene
 from ass_api.ai.studio_context import (
     bible_document,
+    breakdown_names,
     latest_script,
     project_brief,
     shot_document,
@@ -152,6 +153,10 @@ def studio_documents(
     entries = list(db.scalars(select(BibleEntry).where(BibleEntry.project_id == project.id)))
     if entries:
         documents["bible.md"] = bible_document(entries)
+    if job.mode == "bible_from_script":
+        names = breakdown_names(db, project.id)
+        if names:
+            documents["decoupage.md"] = names
     if job.mode == "shot_prompts" and shot is not None:
         documents["plan.md"] = shot_document(db, shot)
     return documents

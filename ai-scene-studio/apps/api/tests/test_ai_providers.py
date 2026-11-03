@@ -86,6 +86,13 @@ def test_claude_errors_are_normalized(tmp_path: Path) -> None:
     with pytest.raises(ProviderError) as error:
         provider.run("sonnet", GenerationRequest("image_analysis", "?"), _context(tmp_path))
     assert error.value.code == "rate_limited"
+    refused = {"is_error": True, "result": "API Error: safeguards flagged this message (/aup)"}
+    with pytest.raises(ProviderError) as error:
+        ClaudeProvider(_fake_claude(tmp_path, refused), "secret").run(
+            "sonnet", GenerationRequest("script_breakdown", ""), _context(tmp_path)
+        )
+    assert error.value.code == "content_policy"
+    assert "autre modèle Claude" in str(error.value)
     assert ClaudeProvider(_fake_claude(tmp_path, {}), None).availability() == (
         False,
         "Jeton d'abonnement Claude absent (CLAUDE_CODE_OAUTH_TOKEN)",
