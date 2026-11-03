@@ -246,3 +246,8 @@ Blender) ; 4.7 clôture.
 - **Tests** : `test_animation_port.py` — les deux références (10 et 11 frames, dont fractionnaires et hors plage) sont reproduites à 1e-9 près ; l'entrée n'est pas modifiée.
 - **Objectif** : Blender recevra exactement les valeurs que l'éditeur affiche (déterminisme inter-langages).
 
+### Étape 4.2 — Jobs de rendu
+- **Ajouté** : table `render_jobs` (migration `0006` : état, réglages JSONB, progression, message, erreur, sorties, clé d'idempotence unique par workspace, demande d'annulation, worker, horodatages) ; `render/jobs.py` (transitions identiques à `shared-types/src/jobs.ts`, vérifiées par un test qui lit le fichier TypeScript ; file Redis fiable avec liste « en cours » par worker ; signe de vie ; échec des jobs abandonnés) ; `routes/renders.py` (lancement validé contre la révision : plage de frames, résolution, échantillons, passes ; idempotence ; liste ; détail ; annulation).
+- **Modifié** : correction des poignées de Bézier alignée sur Blender (`BKE_fcurve_correct_bezpart` : réduction proportionnelle des deux poignées quand elles dépassent ensemble la durée du segment) dans les moteurs TypeScript et Python, pour que les courbes exportées dans Blender s'évaluent à l'identique ; test dédié dans chaque langage (références inchangées).
+- **Tests** : `test_render_jobs.py` (contrat, transitions), `test_integration_renders.py` (11 tests : révision requise, création et mise en file, valeurs par défaut, réglages invalides, idempotence, annulation en file et en cours, échec des jobs abandonnés, rôles et isolation, file fiable).
+

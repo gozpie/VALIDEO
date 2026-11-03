@@ -35,6 +35,7 @@ PHASE_1_TABLES = {
     "scenes",
     "scene_revisions",
     "assets",
+    "render_jobs",
 }
 
 

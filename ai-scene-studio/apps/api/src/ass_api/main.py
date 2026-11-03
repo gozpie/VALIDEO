@@ -15,6 +15,7 @@ from ass_api.core.logging import configure_logging
 from ass_api.core.middleware import RequestContextMiddleware
 from ass_api.core.storage import ObjectStorage
 from ass_api.db.session import create_session_factory
+from ass_api.render.jobs import RenderQueue
 from ass_api.routes import (
     assets,
     auth,
@@ -22,6 +23,7 @@ from ass_api.routes import (
     invitations,
     members,
     projects,
+    renders,
     scenes,
     sequences,
     shots,
@@ -42,10 +44,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         limiter = RedisRateLimiter.from_settings(settings)
         app.state.rate_limiter = limiter
         app.state.storage = ObjectStorage.from_settings(settings)
+        render_queue = RenderQueue.from_settings(settings)
+        app.state.render_queue = render_queue
         try:
             yield
         finally:
             limiter.close()
+            render_queue.close()
             engine.dispose()
 
     app = FastAPI(
@@ -74,7 +79,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(workspaces.router)
     app.include_router(members.router)
     app.include_router(invitations.router)
-    for router in (projects.router, sequences.router, shots.router, scenes.router, assets.router):
+    for router in (
+        projects.router,
+        sequences.router,
+        shots.router,
+        scenes.router,
+        assets.router,
+        renders.router,
+    ):
         app.include_router(router)
     return app
 

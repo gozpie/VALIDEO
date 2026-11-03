@@ -66,3 +66,32 @@ def test_input_is_not_modified() -> None:
     before = json.dumps(scene, sort_keys=True)
     evaluate_frame(scene, 30)
     assert json.dumps(scene, sort_keys=True) == before
+
+
+def test_long_bezier_handles_are_scaled_like_blender() -> None:
+    from ass_api.animation.evaluate import evaluate_track
+
+    def track(offset: float) -> dict[str, Any]:
+        return {
+            "valueType": "scalar",
+            "extrapolation": "constant",
+            "keyframes": [
+                {
+                    "frame": 0,
+                    "value": 0,
+                    "interpolation": "bezier",
+                    "inHandle": None,
+                    "outHandle": {"frameOffset": offset, "valueOffset": [offset]},
+                },
+                {
+                    "frame": 30,
+                    "value": 30,
+                    "interpolation": "linear",
+                    "inHandle": {"frameOffset": -offset, "valueOffset": [-offset]},
+                    "outHandle": None,
+                },
+            ],
+        }
+
+    assert evaluate_track(track(30), 7) == pytest.approx(evaluate_track(track(15), 7), abs=1e-12)
+    assert evaluate_track(track(30), 10) == pytest.approx(10, abs=1e-9)

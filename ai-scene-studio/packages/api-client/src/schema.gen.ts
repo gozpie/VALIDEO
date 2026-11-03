@@ -210,6 +210,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/render-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Render */
+        get: operations["get_render_render_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/render-jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Render */
+        post: operations["cancel_render_render_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scene-revisions/{revision_id}": {
         parameters: {
             query?: never;
@@ -298,6 +332,27 @@ export interface paths {
         head?: never;
         /** Update Shot */
         patch: operations["update_shot_shots__shot_id__patch"];
+        trace?: never;
+    };
+    "/shots/{shot_id}/renders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Renders
+         * @description Les 50 rendus les plus récents du plan.
+         */
+        get: operations["list_renders_shots__shot_id__renders_get"];
+        put?: never;
+        /** Create Render */
+        post: operations["create_render_shots__shot_id__renders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/shots/{shot_id}/scene": {
@@ -819,6 +874,72 @@ export interface components {
             /** Name */
             name?: string | null;
             resolution?: components["schemas"]["Resolution"] | null;
+        };
+        /** RenderIn */
+        RenderIn: {
+            /** Frameend */
+            frameEnd?: number | null;
+            /** Framestart */
+            frameStart?: number | null;
+            /** Passes */
+            passes?: ("beauty" | "alpha" | "depth" | "normal" | "object_id" | "cryptomatte" | "motion_vector")[];
+            /**
+             * Resolutionpercent
+             * @default 100
+             */
+            resolutionPercent?: number;
+            /** Revisionid */
+            revisionId?: string | null;
+            /** Samples */
+            samples?: number | null;
+        };
+        /** RenderJobOut */
+        RenderJobOut: {
+            /** Completedat */
+            completedAt: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyid */
+            createdById: string | null;
+            /** Error */
+            error: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Outputs */
+            outputs: {
+                [key: string]: unknown;
+            };
+            /** Progress */
+            progress: number;
+            /**
+             * Scenerevisionid
+             * Format: uuid
+             */
+            sceneRevisionId: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /**
+             * Shotid
+             * Format: uuid
+             */
+            shotId: string;
+            /** Startedat */
+            startedAt: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "preparing" | "running" | "processing" | "completed" | "failed" | "cancelled";
         };
         /** Resolution */
         Resolution: {
@@ -1711,6 +1832,86 @@ export interface operations {
             };
         };
     };
+    get_render_render_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJobOut"];
+                };
+            };
+        };
+    };
+    cancel_render_render_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJobOut"];
+                };
+            };
+        };
+    };
     get_revision_scene_revisions__revision_id__get: {
         parameters: {
             query?: never;
@@ -2119,6 +2320,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShotOut"];
+                };
+            };
+        };
+    };
+    list_renders_shots__shot_id__renders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJobOut"][];
+                };
+            };
+        };
+    };
+    create_render_shots__shot_id__renders_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJobOut"];
                 };
             };
         };

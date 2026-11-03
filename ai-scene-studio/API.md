@@ -168,6 +168,22 @@ glTF, refuse toute ressource externe (`uri`) et les extensions obligatoires sans
 Le contenu est dédupliqué par SHA-256 dans le workspace et stocké sous `workspaces/<workspace>/assets/<sha256>` ;
 le nom du fichier n'est qu'un libellé. Une scène ne peut référencer que des assets de son workspace (`422`).
 
+## Rendus (phase 4)
+
+| Méthode et chemin               | Rôle minimal | Effet                                                                        |
+| ------------------------------- | ------------ | ---------------------------------------------------------------------------- |
+| `POST /shots/{id}/renders`      | `editor`     | `201` job `queued` ; en-tête `Idempotency-Key` facultatif (`200` = même job) |
+| `GET /shots/{id}/renders`       | `viewer`     | 50 rendus les plus récents                                                   |
+| `GET /render-jobs/{id}`         | `viewer`     | état, progression, message, erreur, sorties                                  |
+| `POST /render-jobs/{id}/cancel` | `editor`     | `queued` → `cancelled` ; actif → annulation demandée ; terminé → `409`       |
+
+Corps de lancement : `{ revisionId?, frameStart?, frameEnd?, resolutionPercent (1–100), samples (1–4096)?, passes? }`
+(par défaut : tête de la scène, plage et échantillons de `renderSettings`, passes beauty, alpha, depth, normal,
+object_id, cryptomatte ; `motion_vector` en option, ignoré si le flou de mouvement est actif). `409` sans révision.
+États : `queued → preparing → running → processing → completed`, ou `failed` / `cancelled` (jamais de retour
+arrière ; relancer crée un nouveau job). Un job actif sans signe de vie depuis `ASS_RENDER_STALE_SECONDS` passe en
+échec. Suivi par interrogation de `GET /render-jobs/{id}`.
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`

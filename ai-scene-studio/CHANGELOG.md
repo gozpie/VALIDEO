@@ -8,6 +8,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 - Étape 4.1 : portage Python de l'évaluation (animation + contraintes) pour le rendu, vérifié au milliardième près
   contre les références TypeScript ; nouvelle fixture `look-at.v2.json` et sa référence.
+- Étape 4.2 : jobs de rendu (migration `0006`) — machine à états identique au contrat TypeScript, file Redis
+  fiable, API de lancement / suivi / annulation, idempotence, échec des jobs abandonnés.
+
+### Modifié
+
+- Bézier : correction des poignées trop longues alignée sur Blender (réduction proportionnelle), dans les deux
+  moteurs (TypeScript et Python).
 
 ## [0.4.0] — 2026-11-03 — Phase 3 : caméras et animation
 

@@ -70,12 +70,23 @@ def _cubic(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
 
 
 def bezier_segment(start: dict[str, Any], end: dict[str, Any], frame: float, n: int) -> list[float]:
+    """Bézier temps-valeur avec la correction des poignées de Blender (voir interpolate.ts)."""
     span = end["frame"] - start["frame"]
     v0 = _to_list(start["value"], n)
     v1 = _to_list(end["value"], n)
     out, inn = start["outHandle"], end["inHandle"]
-    x1 = start["frame"] + min(max(out["frameOffset"] if out else span / 3, 0), span)
-    x2 = end["frame"] + max(min(inn["frameOffset"] if inn else -span / 3, 0), -span)
+    out_x = max(out["frameOffset"], 0) if out else span / 3
+    in_x = max(-inn["frameOffset"], 0) if inn else span / 3
+    out_y = [out["valueOffset"][i] if out else (v1[i] - a) / 3 for i, a in enumerate(v0)]
+    in_y = [inn["valueOffset"][i] if inn else (a - v1[i]) / 3 for i, a in enumerate(v0)]
+    out_scale = 0.0 if out and out["frameOffset"] < 0 else 1.0
+    in_scale = 0.0 if inn and inn["frameOffset"] > 0 else 1.0
+    if out_x + in_x > span:
+        factor = span / (out_x + in_x)
+        out_x, in_x = out_x * factor, in_x * factor
+        out_scale, in_scale = out_scale * factor, in_scale * factor
+    x1 = start["frame"] + out_x
+    x2 = end["frame"] - in_x
     lo, hi = 0.0, 1.0
     for _ in range(50):
         mid = (lo + hi) / 2
@@ -87,8 +98,8 @@ def bezier_segment(start: dict[str, Any], end: dict[str, Any], frame: float, n: 
     result = []
     for index, a in enumerate(v0):
         b = v1[index] if index < len(v1) else 0.0
-        c1 = a + (out["valueOffset"][index] if out else (b - a) / 3)
-        c2 = b + (inn["valueOffset"][index] if inn else (a - b) / 3)
+        c1 = a + out_y[index] * (out_scale if out else 1.0)
+        c2 = b + in_y[index] * (in_scale if inn else 1.0)
         result.append(_cubic(a, c1, c2, b, t))
     return result
 

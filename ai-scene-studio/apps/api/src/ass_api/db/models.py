@@ -20,6 +20,7 @@ from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -39,6 +40,16 @@ WORKSPACE_ROLES: Final = ("owner", "admin", "editor", "viewer")
 INVITABLE_ROLES: Final = ("admin", "editor", "viewer")
 COLOR_SPACES: Final = ("srgb", "rec709", "acescg", "linear_rec709")
 MAX_RESOLUTION: Final = 16384
+JOB_STATUSES: Final = (
+    "queued",
+    "preparing",
+    "running",
+    "processing",
+    "completed",
+    "failed",
+    "cancelled",
+)
+TERMINAL_JOB_STATUSES: Final = frozenset({"completed", "failed", "cancelled"})
 ASSET_TYPES: Final = (
     "model",
     "texture",
@@ -332,3 +343,48 @@ class Asset(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = _created_at()
+
+
+class RenderJob(Base):
+    """Rendu hors navigateur d'une révision de scène (Blender) : file Redis, état en base."""
+
+    __tablename__ = "render_jobs"
+    __table_args__ = (
+        CheckConstraint(_in("status", JOB_STATUSES), name="status_valid"),
+        CheckConstraint("progress >= 0 AND progress <= 1", name="progress_range"),
+        UniqueConstraint(
+            "workspace_id", "idempotency_key", name="uq_render_jobs_workspace_id_idempotency_key"
+        ),
+        Index("ix_render_jobs_shot_id_created_at", "shot_id", "created_at"),
+        Index("ix_render_jobs_status", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    shot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), nullable=False
+    )
+    scene_revision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scene_revisions.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="queued")
+    # Réglages validés : frames, résolution, échantillons, passes (voir routes/renders.py).
+    settings: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    progress: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
+    message: Mapped[str] = mapped_column(String(500), nullable=False, server_default="")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outputs: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cancel_requested: Mapped[bool] = mapped_column(nullable=False, server_default=text("false"))
+    worker_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

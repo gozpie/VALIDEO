@@ -2481,6 +2481,248 @@
           }
         }
       }
+    },
+    "/shots/{shot_id}/renders": {
+      "post": {
+        "tags": [
+          "renders"
+        ],
+        "summary": "Create Render",
+        "operationId": "create_render_shots__shot_id__renders_post",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "renders"
+        ],
+        "summary": "List Renders",
+        "description": "Les 50 rendus les plus récents du plan.",
+        "operationId": "list_renders_shots__shot_id__renders_get",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RenderJobOut"
+                  },
+                  "title": "Response List Renders Shots  Shot Id  Renders Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/render-jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "renders"
+        ],
+        "summary": "Get Render",
+        "operationId": "get_render_render_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/render-jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "renders"
+        ],
+        "summary": "Cancel Render",
+        "operationId": "cancel_render_render_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3267,6 +3509,203 @@
         },
         "type": "object",
         "title": "ProjectPatch"
+      },
+      "RenderIn": {
+        "properties": {
+          "revisionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revisionid"
+          },
+          "frameStart": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Framestart"
+          },
+          "frameEnd": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frameend"
+          },
+          "resolutionPercent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Resolutionpercent",
+            "default": 100
+          },
+          "samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4096.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Samples"
+          },
+          "passes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "beauty",
+                "alpha",
+                "depth",
+                "normal",
+                "object_id",
+                "cryptomatte",
+                "motion_vector"
+              ]
+            },
+            "type": "array",
+            "title": "Passes"
+          }
+        },
+        "type": "object",
+        "title": "RenderIn"
+      },
+      "RenderJobOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "shotId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Shotid"
+          },
+          "sceneRevisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scenerevisionid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "preparing",
+              "running",
+              "processing",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "outputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outputs"
+          },
+          "createdById": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdbyid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "shotId",
+          "sceneRevisionId",
+          "status",
+          "settings",
+          "progress",
+          "message",
+          "error",
+          "outputs",
+          "createdById",
+          "createdAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "title": "RenderJobOut"
       },
       "Resolution": {
         "properties": {

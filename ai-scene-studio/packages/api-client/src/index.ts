@@ -26,6 +26,8 @@ export type UploadedAsset = Schemas['UploadedAssetOut'];
 export type SceneState = Schemas['SceneStateOut'];
 export type SceneRevision = Schemas['RevisionOut'];
 export type SaveRevisionResult = Schemas['SaveRevisionOut'];
+export type RenderJob = Schemas['RenderJobOut'];
+export type RenderPass = Schemas['RenderIn']['passes'] extends (infer P)[] | undefined ? P : never;
 export type Problem = Schemas['ProblemOut'];
 export type Page<T> = { items: T[]; nextCursor: string | null };
 

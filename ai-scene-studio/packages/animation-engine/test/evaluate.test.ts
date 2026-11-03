@@ -66,6 +66,24 @@ describe('interpolations', () => {
     expect(evaluateTrack(eased, 3) as number).toBeLessThan(3); // départ lent
   });
 
+  it('réduit les poignées trop longues comme Blender (proportionnellement)', () => {
+    const long = track({
+      keyframes: [
+        { ...key(0, 0, 'bezier'), outHandle: { frameOffset: 30, valueOffset: [30] } },
+        { ...key(30, 30), inHandle: { frameOffset: -30, valueOffset: [-30] } },
+      ],
+    });
+    // Poignées réduites de moitié : (15, 15) et (15, 15) → droite.
+    expect(evaluateTrack(long, 10) as number).toBeCloseTo(10, 9);
+    const half = track({
+      keyframes: [
+        { ...key(0, 0, 'bezier'), outHandle: { frameOffset: 15, valueOffset: [15] } },
+        { ...key(30, 30), inHandle: { frameOffset: -15, valueOffset: [-15] } },
+      ],
+    });
+    expect(evaluateTrack(long, 7)).toBeCloseTo(evaluateTrack(half, 7) as number, 12);
+  });
+
   it('interpole les rotations par slerp, par le plus court chemin', () => {
     const half = Math.SQRT1_2;
     const a: Quat = [0, 0, 0, 1];

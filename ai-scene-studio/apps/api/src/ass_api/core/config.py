@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # Taille maximale d'un asset envoyé à l'API (100 Mo par défaut).
     asset_max_bytes: int = Field(default=100 * 1024 * 1024, ge=1024, le=2 * 1024**3)
 
+    # Rendu : frames maximales par job, délai sans signe de vie avant échec, exécutables.
+    render_max_frames: int = Field(default=2000, ge=1)
+    render_queue_key: str = Field(default="ass:render:queue", pattern=r"^[a-z0-9:_-]{1,100}$")
+    render_stale_seconds: int = Field(default=300, ge=10)
+    blender_path: str = "blender"
+    ffmpeg_path: str = "ffmpeg"
+
     # Limitation des échecs de connexion (fenêtre glissante simple, comptée dans Redis).
     login_max_failures_per_email: int = Field(default=10, ge=1)
     login_max_failures_per_ip: int = Field(default=50, ge=1)

@@ -52,9 +52,11 @@ const cubic = (p0: number, p1: number, p2: number, p3: number, t: number): numbe
 };
 
 /**
- * Bézier cubique en temps et en valeur entre deux clés. Les poignées sont relatives à leur clé ;
- * leur décalage temporel est borné au segment pour garantir une courbe fonction du temps. Sans
- * poignée, le point de contrôle est placé au tiers du segment (segment rectiligne).
+ * Bézier cubique en temps et en valeur entre deux clés, avec la même correction que Blender
+ * (`BKE_fcurve_correct_bezpart`) : si les deux poignées dépassent ensemble la durée du segment, elles
+ * sont réduites proportionnellement (temps et valeur), ce qui garantit une courbe fonction du temps
+ * et une évaluation identique dans Blender. Une poignée orientée vers l'extérieur du segment est
+ * ramenée à zéro. Sans poignée, le point de contrôle est placé au tiers du segment (segment droit).
  */
 export function bezierSegment(
   start: Keyframe,
@@ -67,8 +69,21 @@ export function bezierSegment(
   const v1 = toArray(end.value, components);
   const out = start.outHandle;
   const inn = end.inHandle;
-  const x1 = start.frame + Math.min(Math.max(out ? out.frameOffset : span / 3, 0), span);
-  const x2 = end.frame + Math.max(Math.min(inn ? inn.frameOffset : -span / 3, 0), -span);
+  let outX = out ? Math.max(out.frameOffset, 0) : span / 3;
+  let inX = inn ? Math.max(-inn.frameOffset, 0) : span / 3;
+  const outY = v0.map((a, i) => (out ? (out.valueOffset[i] ?? 0) : ((v1[i] ?? 0) - a) / 3));
+  const inY = v0.map((a, i) => (inn ? (inn.valueOffset[i] ?? 0) : (a - (v1[i] ?? 0)) / 3));
+  let outScale = out && out.frameOffset < 0 ? 0 : 1;
+  let inScale = inn && inn.frameOffset > 0 ? 0 : 1;
+  if (outX + inX > span) {
+    const factor = span / (outX + inX);
+    outX *= factor;
+    inX *= factor;
+    outScale *= factor;
+    inScale *= factor;
+  }
+  const x1 = start.frame + outX;
+  const x2 = end.frame - inX;
   // Recherche de t tel que x(t) = frame (x est monotone) : dichotomie, 50 itérations (≈ 1e-15).
   let lo = 0;
   let hi = 1;
@@ -80,8 +95,8 @@ export function bezierSegment(
   const t = (lo + hi) / 2;
   return v0.map((a, index) => {
     const b = v1[index] ?? 0;
-    const c1 = a + (out ? (out.valueOffset[index] ?? 0) : (b - a) / 3);
-    const c2 = b + (inn ? (inn.valueOffset[index] ?? 0) : (a - b) / 3);
+    const c1 = a + (outY[index] ?? 0) * (out ? outScale : 1);
+    const c2 = b + (inY[index] ?? 0) * (inn ? inScale : 1);
     return cubic(a, c1, c2, b, t);
   });
 }
