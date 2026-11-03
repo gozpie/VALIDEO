@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
+import { AuthScreen } from '@/components/AuthScreen';
 import { useAuth } from '@/components/AuthProvider';
 import { LoginForm } from '@/components/LoginForm';
 import { safeNextPath } from '@/lib/navigation';
@@ -16,13 +17,15 @@ function Login() {
   }, [state.status, router, next]);
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-6">
-      <h1 className="text-xl font-semibold">Connexion</h1>
-      <LoginForm onSignedIn={signedIn} />
-      <p className="text-xs text-muted">
-        L’inscription se fait sur invitation d’un administrateur de workspace.
-      </p>
-    </div>
+    <AuthScreen>
+      <div className="flex flex-col gap-5">
+        <h1 className="text-lg font-bold tracking-tight">Connexion</h1>
+        <LoginForm onSignedIn={signedIn} />
+        <p className="text-xs text-faint">
+          L’inscription se fait sur invitation d’un administrateur de workspace.
+        </p>
+      </div>
+    </AuthScreen>
   );
 }
 

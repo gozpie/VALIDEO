@@ -1,34 +1,39 @@
 'use client';
 
-import { CURRENT_SCHEMA_VERSION } from '@ass/scene-schema';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { ApiStatus } from '@/components/ApiStatus';
+import { AuthScreen } from '@/components/AuthScreen';
 import { useAuth } from '@/components/AuthProvider';
 import { API_URL } from '@/lib/config';
 
 export default function HomePage() {
   const { state } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (state.status === 'authenticated') router.replace('/workspaces');
+  }, [state.status, router]);
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Chagomi</h1>
-        <p className="mt-2 text-sm text-muted">
-          Phase 1 : projets, séquences et plans persistants. L’éditeur de scène 3D arrive en phase
-          2. Format de scène : v{CURRENT_SCHEMA_VERSION}.
-        </p>
-      </header>
-      {state.status === 'authenticated' ? (
-        <Link href="/workspaces" className="text-accent hover:underline">
-          Ouvrir mes workspaces →
-        </Link>
-      ) : (
-        state.status === 'anonymous' && (
-          <Link href="/login" className="text-accent hover:underline">
-            Se connecter →
+    <AuthScreen>
+      <div className="flex flex-col gap-5">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Chagomi</h1>
+          <p className="mt-1 text-sm text-muted">
+            La plateforme de production de films IA : du script au film.
+          </p>
+        </div>
+        {state.status === 'anonymous' && (
+          <Link
+            href="/login"
+            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-white hover:bg-accent-strong"
+          >
+            Se connecter <ArrowRight size={15} />
           </Link>
-        )
-      )}
-      <ApiStatus apiUrl={API_URL} />
-    </div>
+        )}
+        <ApiStatus apiUrl={API_URL} />
+      </div>
+    </AuthScreen>
   );
 }

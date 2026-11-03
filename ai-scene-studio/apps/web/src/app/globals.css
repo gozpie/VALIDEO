@@ -87,6 +87,16 @@ body {
   filter: invert(1);
 }
 
+.brand-logo-light {
+  display: none;
+}
+:root[data-theme='light'] .brand-logo-light {
+  display: block;
+}
+:root[data-theme='light'] .brand-logo-dark {
+  display: none;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-accent) 45%, transparent);
 }

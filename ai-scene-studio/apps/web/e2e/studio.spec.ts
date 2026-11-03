@@ -46,7 +46,10 @@ test.describe('studio de production', () => {
     page.on('pageerror', (error) => errors.push(error.message));
     const { projectId } = await createProject(page);
     await page.goto(`/projects/${projectId}`);
-    await page.getByRole('link', { name: /Ouvrir le studio de production/ }).click();
+    await page
+      .getByRole('main')
+      .getByRole('link', { name: /Ouvrir le studio de production/ })
+      .click();
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/studio$`));
     const steps = page.getByRole('complementary', { name: 'Navigation' });
 
@@ -69,12 +72,12 @@ test.describe('studio de production', () => {
     await characters.getByRole('button', { name: 'Ajouter : Personnage' }).click();
     await characters.getByLabel('Nom : Personnage').fill('Marc');
     await characters.getByRole('button', { name: 'Créer' }).click();
-    const card = page.getByRole('article', { name: 'Marc' });
+    const card = page.getByRole('complementary', { name: 'Élément — Marc' });
     await card.getByLabel('Prompt — Marc').fill('a 64-year-old lighthouse keeper, weathered face');
     await card.getByLabel('Fiche — Marc').click(); // sortie du champ : enregistrement
-    await card.getByLabel('Modèle — Image').selectOption({ label: 'Simulation image' });
+    await card.getByLabel('Modèle — Générer une image').selectOption({ label: 'Simulation image' });
     await expect(card.getByTestId('studio-cost')).toContainText('Simulation');
-    await card.getByRole('button', { name: 'Image', exact: true }).click();
+    await card.getByRole('button', { name: 'Générer une image' }).click();
     await expect(card.getByRole('img', { name: 'Image clé — Marc' })).toBeVisible({
       timeout: 120_000,
     });

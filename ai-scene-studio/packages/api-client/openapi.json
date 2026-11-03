@@ -5529,6 +5529,28 @@
             "type": "string",
             "format": "date-time",
             "title": "Updatedat"
+          },
+          "posterAssetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posterassetid"
+          },
+          "shotCount": {
+            "type": "integer",
+            "title": "Shotcount",
+            "default": 0
+          },
+          "approvedCount": {
+            "type": "integer",
+            "title": "Approvedcount",
+            "default": 0
           }
         },
         "type": "object",

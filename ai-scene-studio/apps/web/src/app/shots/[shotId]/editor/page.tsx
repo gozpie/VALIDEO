@@ -64,7 +64,7 @@ function Editor({ shotId }: { shotId: string }) {
       shotId={shotId}
       workspaceId={loaded.workspace.id}
       title={`${loaded.project.name} — ${loaded.shot.name}`}
-      backHref={`/projects/${loaded.project.id}`}
+      backHref={`/projects/${loaded.project.id}/studio#shots`}
       canEdit={loaded.workspace.role !== 'viewer'}
       scene={loaded.scene}
       revisionId={loaded.state.headRevision?.id ?? null}

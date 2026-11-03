@@ -1,6 +1,7 @@
 'use client';
 
 import type { Project, Sequence, Shot } from '@ass/api-client';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, ErrorText, Field } from '@/components/ui';
@@ -53,7 +54,7 @@ export function SequenceCard({
   return (
     <article
       aria-label={`Séquence ${sequence.name}`}
-      className="rounded-lg border border-border bg-panel p-4"
+      className="rounded-2xl border border-border bg-panel p-5 shadow-card"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-semibold">
@@ -66,14 +67,14 @@ export function SequenceCard({
               disabled={isFirst}
               onClick={() => onMove(-1)}
             >
-              ↑
+              <ArrowUp size={14} />
             </Button>
             <Button
               aria-label={`Descendre ${sequence.name}`}
               disabled={isLast}
               onClick={() => onMove(1)}
             >
-              ↓
+              <ArrowDown size={14} />
             </Button>
             <Button
               variant="danger"
@@ -99,7 +100,10 @@ export function SequenceCard({
           >
             <span>
               <span className="text-muted">{index + 1}.</span>{' '}
-              <Link href={`/shots/${shot.id}/editor`} className="hover:text-accent">
+              <Link
+                href={`/shots/${shot.id}/editor`}
+                className="font-medium hover:text-accent-strong"
+              >
                 {shot.name}
               </Link>
               <span className="ml-2 text-xs text-muted">
@@ -130,7 +134,7 @@ export function SequenceCard({
                     )
                   }
                 >
-                  ↑
+                  <ArrowUp size={14} />
                 </Button>
                 <Button
                   aria-label={`Descendre ${shot.name}`}
@@ -152,7 +156,7 @@ export function SequenceCard({
                     )
                   }
                 >
-                  ↓
+                  <ArrowDown size={14} />
                 </Button>
                 <Button
                   variant="danger"

@@ -31,7 +31,7 @@ import { useEditor, useEditorContext } from './context';
 import { NumberField, Vec3Field } from './fields';
 
 const small =
-  'rounded border border-border px-2 py-0.5 text-xs hover:border-accent disabled:opacity-40';
+  'inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-elevated px-2 text-xs transition-colors hover:border-border-strong disabled:opacity-40';
 
 /** Indicateur d'animation : ◆ clé à cette frame, ◇ propriété animée, rien sinon. */
 function KeyBadge({
@@ -171,7 +171,7 @@ function CameraPanel({ camera, disabled }: { camera: Camera; disabled: boolean }
         <select
           value={camera.lookAtTargetId ?? ''}
           onChange={(event) => apply((s) => setCameraLookAt(s, id, event.target.value || null))}
-          className="rounded border border-border bg-surface px-2 py-1 text-sm"
+          className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] focus:border-accent focus:outline-none"
         >
           <option value="">(aucune cible)</option>
           {targets.map((entity) => (
@@ -272,7 +272,7 @@ export function Inspector() {
   return (
     <section aria-label="Inspecteur" className="flex flex-col gap-4 text-sm">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
           Inspecteur · frame {frame}
         </h2>
         <p className="mt-1 truncate font-semibold">{entity.value.name}</p>
@@ -343,7 +343,7 @@ export function Inspector() {
           onChange={(event) =>
             apply((current) => setParent(current, primary, event.target.value || null))
           }
-          className="rounded border border-border bg-surface px-2 py-1 text-sm"
+          className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] focus:border-accent focus:outline-none"
         >
           <option value="">(racine de la scène)</option>
           {parentOptions.map((node) => (
@@ -454,21 +454,21 @@ export function Inspector() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded border border-border px-2 py-1 hover:border-accent"
+            className="inline-flex h-8 items-center rounded-lg border border-border bg-elevated px-3 text-xs hover:border-border-strong"
             onClick={() => duplicateSelection(store)}
           >
             Dupliquer
           </button>
           <button
             type="button"
-            className="rounded border border-border px-2 py-1 hover:border-accent"
+            className="inline-flex h-8 items-center rounded-lg border border-border bg-elevated px-3 text-xs hover:border-border-strong"
             onClick={() => groupSelection(store)}
           >
             Grouper
           </button>
           <button
             type="button"
-            className="rounded border border-border px-2 py-1 text-error hover:border-error"
+            className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs text-error hover:border-error hover:bg-error/10"
             onClick={() => deleteSelection(store)}
           >
             Supprimer

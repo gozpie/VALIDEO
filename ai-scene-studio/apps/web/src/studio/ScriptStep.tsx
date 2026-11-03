@@ -72,7 +72,7 @@ export function ScriptStep({
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[1fr_20rem] gap-0">
       <section aria-label="Script" className="flex min-h-0 flex-col gap-3 p-6">
-        <div className="flex items-center gap-3">
+        <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
           <input
             aria-label="Titre de la version"
             placeholder="Titre (facultatif) : brief, premier jet, V2…"
@@ -83,7 +83,7 @@ export function ScriptStep({
               setTitle(event.target.value);
               setEdited(true);
             }}
-            className="h-9 flex-1 rounded-md border border-border bg-surface px-3 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
+            className="h-9 flex-1 rounded-lg border border-border bg-panel px-3 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
           />
           {loaded && (
             <span className="text-xs text-faint">
@@ -95,7 +95,7 @@ export function ScriptStep({
               type="button"
               disabled={saving || content.trim() === '' || !edited}
               onClick={save}
-              className="flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-white hover:bg-accent-strong disabled:opacity-40"
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-medium text-white hover:bg-accent-strong disabled:opacity-40"
             >
               <Save size={14} /> Enregistrer une version
             </button>
@@ -113,9 +113,9 @@ export function ScriptStep({
             setContent(event.target.value);
             setEdited(true);
           }}
-          className="min-h-0 flex-1 resize-none rounded-lg border border-border bg-panel p-5 font-mono text-[13px] leading-relaxed text-text/95 placeholder:text-faint focus:border-accent focus:outline-none"
+          className="mx-auto min-h-0 w-full max-w-4xl flex-1 resize-none rounded-2xl border border-border bg-panel px-10 py-8 font-mono text-[14px] leading-[1.75] text-text/95 shadow-card placeholder:text-faint focus:border-accent focus:outline-none"
         />
-        <p className="text-xs text-faint">
+        <p className="mx-auto w-full max-w-4xl text-xs text-faint">
           {content.length.toLocaleString('fr-FR')} caractères
           {edited ? ' · modifications non enregistrées' : ''}
         </p>

@@ -1,10 +1,12 @@
-# AI Scene Studio
+# Chagomi
+
+Plateforme de production de films IA (nom de code du dépôt : AI Scene Studio).
 
 Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 3D persistante**.
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 6 livrée (studio de production), en attente de validation.** Studio par projet : script
+> **État : phase 6 livrée (studio de production et nouvelle interface), en attente de validation.** Studio par projet : script
 > versionné → **découpage par Claude** selon la méthode réalisateur / chef-op (6 étapes écrites, version optimisée)
 > → **bible** (LOOK, personnages, décors, accessoires, images clés) → **plans** générés en versions successives
 > (arbre des allers-retours, version retenue, comparaison A/B). Éditeur 3D à la demande par plan (raccourcis façon

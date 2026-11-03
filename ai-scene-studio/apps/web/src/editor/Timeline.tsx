@@ -1,5 +1,6 @@
 'use client';
 
+import { Pause, Play, Square, StepBack, StepForward } from 'lucide-react';
 import { moveKeys, setKeysInterpolation, type KeyRef } from '@ass/animation-engine';
 import type { Interpolation } from '@ass/scene-schema';
 import { addMarker, findEntity, removeMarker } from '@ass/scene-engine';
@@ -30,7 +31,7 @@ const INTERPOLATIONS: { value: Interpolation; label: string }[] = [
 ];
 
 const button =
-  'rounded border border-border px-2 py-0.5 text-xs hover:border-accent disabled:opacity-40';
+  'inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-elevated px-2 text-xs transition-colors hover:border-border-strong disabled:opacity-40';
 const LABEL_WIDTH = 176;
 
 function formatTime(frame: number, numerator: number, denominator: number): string {
@@ -98,14 +99,15 @@ export function Timeline() {
           aria-label="Frame précédente"
           title="Frame précédente (←)"
         >
-          ◀︎
+          <StepBack size={13} />
         </button>
         <button
           type="button"
-          className={`${button} min-w-16`}
+          className={`${button} min-w-20 border-accent bg-accent text-white hover:bg-accent-strong`}
           onClick={() => state.setPlaying(!playing)}
           title="Lecture / pause (Espace)"
         >
+          {playing ? <Pause size={13} /> : <Play size={13} />}
           {playing ? 'Pause' : 'Lecture'}
         </button>
         <button
@@ -116,7 +118,7 @@ export function Timeline() {
             state.setFrame(0);
           }}
         >
-          Stop
+          <Square size={11} /> Stop
         </button>
         <button
           type="button"
@@ -125,7 +127,7 @@ export function Timeline() {
           aria-label="Frame suivante"
           title="Frame suivante (→)"
         >
-          ▶︎
+          <StepForward size={13} />
         </button>
         <label className="flex items-center gap-1 text-xs">
           <input
@@ -144,7 +146,7 @@ export function Timeline() {
             max={duration - 1}
             value={frame}
             onChange={(event) => state.setFrame(Number(event.target.value))}
-            className="w-16 rounded border border-border bg-surface px-1"
+            className="h-7 w-16 rounded-md border border-border bg-surface px-1.5 font-mono tabular-nums"
           />
           <span className="text-muted">
             / {duration - 1} · {formatTime(frame, numerator, denominator)} ·{' '}
@@ -156,7 +158,7 @@ export function Timeline() {
           <>
             <select
               aria-label="Interpolation des clés sélectionnées"
-              className="rounded border border-border bg-surface px-1 py-0.5 text-xs"
+              className="h-7 rounded-md border border-border bg-surface px-1.5 text-xs"
               value=""
               onChange={(event) =>
                 state.apply((s) =>

@@ -359,3 +359,11 @@ Décision de Pierre (pivot du 03/11) : un studio de fabrication de film IA centr
 - **CI** : verte (run 41727373587) — 124 unitaires et 123 d'intégration Python, tests web, 10 E2E dont le studio.
 - **Reste** : premier test réel Higgsfield (GO de Pierre) ; import d'images de référence depuis le disque ; montage (phase 7).
 
+### Étapes 6.4–6.5 — Chagomi : nouvelle interface sur toute la plateforme
+- **Décisions de Pierre** : interface jugée « horrible, design inexistant, aucune ergonomie » ; références retenues D29 et D30 (barre latérale), P01 (Frame.io, médiathèque) et P06 (ftrack, suivi de production) ; la plateforme s'appelle **Chagomi**.
+- **Ajouté** : `AppSidebar.tsx`, `AppShell.tsx` (coquille commune, navigation selon le contexte), `AuthScreen.tsx`, `GlobalCommands.tsx`, `lib/theme.ts` (thème clair / sombre) ; logos dans `public/brand` (copiés dans l'image Docker) ; API : affiche et avancement dans la liste des projets.
+- **Refait** : Plans (grille, tableau, filtres, bande des plans, lecteur et onglets), Bible (galeries et panneau de détail, création directe), Workspaces et Projets (galeries), Membres, Structure, Script, Connexion, Accueil, Invitation ; éditeur 3D aligné (commandes, transport à icônes, marque, retour vers les Plans).
+- **Projet de démo local** « Jules Verne — Teaser » : copies allégées des médias du teaser CHAGOMI, statuts et descriptions écrits pour la démo ; aucune génération, rien en ligne.
+- **Tests** : `pnpm check`, intégration Python (affiche de projet), E2E adaptés (10 réussis, 2 ignorés sans `E2E_CLAUDE`).
+- **Décision de Pierre pour la suite** : le montage doit être un vrai logiciel complet et l'écran central où l'on revient voir le film se construire. Il demande de repartir de gozCut ; constat : gozCut est en Swift natif Mac (ne tourne pas dans le navigateur), le moteur web `nle` (branche `claude/video-editing-software-analysis-om0bn7`) gère déjà le montage mais ni la composition ni l'export. Choix à trancher avant la phase 7.
+

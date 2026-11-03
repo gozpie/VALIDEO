@@ -33,12 +33,12 @@ export function ApiStatus({ apiUrl }: { apiUrl: string }) {
   return (
     <section
       aria-labelledby="api-status-title"
-      className="rounded-lg border border-border bg-panel p-5"
+      className="rounded-xl border border-border bg-surface/60 p-4"
     >
       <div className="flex items-center justify-between gap-4">
         <h2
           id="api-status-title"
-          className="text-sm font-semibold uppercase tracking-wide text-muted"
+          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint"
         >
           État des services
         </h2>
@@ -46,12 +46,12 @@ export function ApiStatus({ apiUrl }: { apiUrl: string }) {
           type="button"
           onClick={() => void refresh()}
           disabled={state.kind === 'loading'}
-          className="rounded border border-border px-3 py-1 text-sm hover:border-accent disabled:opacity-50"
+          className="rounded-md border border-border px-2.5 py-1 text-xs hover:border-border-strong disabled:opacity-50"
         >
           Revérifier
         </button>
       </div>
-      <div role="status" aria-live="polite" className="mt-4 text-sm">
+      <div role="status" aria-live="polite" className="mt-3 text-[13px]">
         {state.kind === 'loading' && <p className="text-muted">Vérification en cours…</p>}
         {state.kind === 'unreachable' && (
           <p className="text-error">

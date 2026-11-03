@@ -20,7 +20,15 @@ export function RequireAuth({ children }: { children: (session: Session) => Reac
 
   if (state.status === 'authenticated') return <>{children(state.session)}</>;
   if (state.status === 'unreachable') {
-    return <p className="text-error">API injoignable : impossible de vérifier la session.</p>;
+    return (
+      <p className="flex min-h-screen items-center justify-center text-sm text-error">
+        API injoignable : impossible de vérifier la session.
+      </p>
+    );
   }
-  return <p className="text-muted">Vérification de la session…</p>;
+  return (
+    <p className="flex min-h-screen items-center justify-center text-sm text-muted">
+      Vérification de la session…
+    </p>
+  );
 }

@@ -103,6 +103,11 @@ export function Toolbar({
           <ArrowLeft size={15} />
         </Link>
       </Tooltip>
+      <img
+        src="/brand/favicon-chagomi.png"
+        alt="Chagomi"
+        className="brand-mark ml-0.5 h-6 w-6 rounded-md"
+      />
       <h1 className="ml-1 max-w-56 truncate text-sm font-semibold">{title}</h1>
       <span
         role="status"

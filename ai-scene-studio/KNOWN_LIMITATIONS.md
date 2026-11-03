@@ -49,7 +49,7 @@
   découpage s'applique à la suite des séquences existantes (pas de fusion ni de remplacement) ; une proposition ne
   s'applique qu'une fois ; pas de réordonnancement des plans par glisser-déposer dans le storyboard ; liens entre plans
   et bible établis par les noms (rapprochement tolérant, aucun lien en cas d'ambiguïté) ; un découpage par Claude
-  Opus prend quelques minutes (suivi par interrogation) ; pas encore de montage ni d'export du film (phase 7).
+  Opus prend quelques minutes (suivi par interrogation) ; la bande en bas de l'écran Plans est un aperçu, pas un monteur : pas encore de montage ni d'export du film (phase 7).
 
 ## Techniques
 

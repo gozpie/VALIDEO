@@ -42,12 +42,15 @@ test.describe('projets persistants', () => {
     await login(page);
     await page.getByLabel('Nom').fill(workspaceName);
     await page.getByRole('button', { name: 'Créer' }).click();
-    await page.getByRole('link', { name: workspaceName }).click();
+    await page.getByRole('main').getByRole('link', { name: workspaceName }).click();
 
     await page.getByLabel('Nom du projet').fill(projectName);
     await page.getByLabel('Images par seconde').selectOption({ label: '25' });
     await page.getByRole('button', { name: 'Créer le projet' }).click();
-    await page.getByRole('link', { name: projectName }).click();
+    await page.getByRole('main').getByRole('link', { name: projectName }).click();
+    // La carte ouvre le studio ; séquences et réglages sont dans « Structure et réglages ».
+    await expect(page).toHaveURL(/\/studio$/);
+    await page.getByRole('link', { name: 'Structure et réglages' }).click();
     await expect(page.getByRole('heading', { name: projectName })).toBeVisible();
     await expect(page.getByText('1920×1080 · 25 i/s · srgb')).toBeVisible();
 
@@ -77,7 +80,7 @@ test.describe('projets persistants', () => {
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect(page).toHaveURL(/\/login/);
     await login(page);
-    await page.getByRole('link', { name: workspaceName }).click();
-    await expect(page.getByRole('link', { name: projectName })).toBeVisible();
+    await page.getByRole('main').getByRole('link', { name: workspaceName }).click();
+    await expect(page.getByRole('main').getByRole('link', { name: projectName })).toBeVisible();
   });
 });

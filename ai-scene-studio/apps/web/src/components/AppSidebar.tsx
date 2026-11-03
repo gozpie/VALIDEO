@@ -146,7 +146,7 @@ export function AppSidebar({
         className={`flex h-[78px] shrink-0 items-center ${collapsed ? 'justify-center' : 'pl-1'}`}
       >
         {collapsed ? (
-          <img src="/brand/favicon-chagomi.png" alt="" className="brand-mark h-9 w-9" />
+          <img src="/brand/favicon-chagomi.png" alt="" className="brand-mark h-9 w-9 rounded-lg" />
         ) : (
           <>
             <img

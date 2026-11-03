@@ -74,7 +74,7 @@ const DONE = new Set(['completed', 'failed', 'cancelled']);
 const content = (id: string) => `${API_URL}/assets/${id}/content`;
 
 const chip = (on: boolean) =>
-  `rounded-md border px-2 py-1 text-xs transition-colors ${on ? 'border-ai/70 bg-ai/15 text-text' : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'} disabled:opacity-40`;
+  `rounded-lg border px-2.5 py-1 text-xs transition-colors ${on ? 'border-ai/70 bg-ai/15 text-text' : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'} disabled:opacity-40`;
 
 interface ResultAsset {
   assetId: string;
@@ -318,7 +318,7 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
       <div className="flex items-start gap-2">
         <Sparkles size={16} className="mt-0.5 text-ai" />
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
             Génération IA
           </h2>
           <p className="mt-1 text-xs text-muted">

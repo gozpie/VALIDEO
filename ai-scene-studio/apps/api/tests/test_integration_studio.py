@@ -389,6 +389,11 @@ def test_shot_versions_tree_and_selection(
     assert (
         alice.patch(f"/shot-versions/{versions[0]['id']}", json={"note": "B"}).json()["note"] == "B"
     )
+    # La galerie du workspace montre une affiche (première image de plan) et l'avancement.
+    listed = alice.get(f"/workspaces/{project['workspace']}/projects").json()["items"]
+    assert listed[0]["shotCount"] == 1
+    assert listed[0]["approvedCount"] == 0
+    assert listed[0]["posterAssetId"] == versions[0]["assetId"]
     other = alice.post(f"/sequences/{sequence}/shots", json={"name": "P2", "durationFrames": 1})
     assert (
         alice.patch(

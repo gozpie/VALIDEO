@@ -37,7 +37,7 @@ const OUTPUTS: { key: string; label: string }[] = [
 ];
 
 const small =
-  'rounded border border-border px-2 py-0.5 text-xs hover:border-accent disabled:opacity-40';
+  'inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-elevated px-2 text-xs transition-colors hover:border-border-strong disabled:opacity-40';
 const content = (id: string) => `${API_URL}/assets/${id}/content`;
 
 export function RenderPanel({
@@ -104,7 +104,7 @@ export function RenderPanel({
   return (
     <section aria-label="Rendu Blender" className="flex flex-col gap-4 text-sm">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
           Rendu final (Blender)
         </h2>
         <p className="mt-1 text-xs text-muted">
@@ -159,7 +159,7 @@ export function RenderPanel({
                   },
                 })
               }
-              className="rounded border border-border bg-surface px-2 py-1 text-sm"
+              className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] focus:border-accent focus:outline-none"
             >
               <option value="srgb">Standard (sRGB)</option>
               <option value="agx">AgX</option>
@@ -192,7 +192,7 @@ export function RenderPanel({
             <select
               value={percent}
               onChange={(e) => setPercent(Number(e.target.value))}
-              className="rounded border border-border bg-surface px-2 py-1 text-sm"
+              className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] focus:border-accent focus:outline-none"
             >
               {[100, 50, 25, 10].map((value) => (
                 <option key={value} value={value}>
@@ -256,7 +256,7 @@ export function RenderPanel({
           <article
             key={job.id}
             aria-label={`Rendu ${STATUS[job.status]}`}
-            className="rounded border border-border p-2 text-xs"
+            className="rounded-xl border border-border bg-surface/50 p-2.5 text-xs"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold">

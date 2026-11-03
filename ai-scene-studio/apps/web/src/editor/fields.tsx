@@ -120,7 +120,7 @@ export function NumberField({
             if (next !== value) onCommit(next);
           }
         }}
-        className={`w-full rounded border bg-surface px-1.5 py-1 font-mono text-[13px] tabular-nums transition-colors hover:border-border-strong focus:border-accent focus:outline-none disabled:opacity-50 ${scrubbing ? 'border-accent' : 'border-border'}`}
+        className={`w-full rounded-md border bg-surface px-1.5 py-1 font-mono text-[13px] tabular-nums transition-colors hover:border-border-strong focus:border-accent focus:outline-none disabled:opacity-50 ${scrubbing ? 'border-accent' : 'border-border'}`}
       />
     </label>
   );

@@ -6,7 +6,7 @@ from typing import Annotated, Self
 
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from ass_api.auth.dependencies import CurrentSessionDep
@@ -20,7 +20,7 @@ from ass_api.core.pagination import (
     encode_cursor,
     paginate,
 )
-from ass_api.db.models import MAX_RESOLUTION, Project
+from ass_api.db.models import MAX_RESOLUTION, Project, Sequence, Shot, ShotVersion
 from ass_api.db.session import get_db
 from ass_api.routes.schemas import ColorSpace, Description, Name
 
@@ -72,6 +72,51 @@ class ProjectOut(ApiModel):
     color_space: ColorSpace
     created_at: datetime
     updated_at: datetime
+    # Aperçu du projet (galerie du workspace) : renseigné par la liste des projets.
+    poster_asset_id: uuid.UUID | None = None
+    shot_count: int = 0
+    approved_count: int = 0
+
+
+def project_previews(
+    db: Session, project_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, dict[str, uuid.UUID | int | None]]:
+    """Affiche (première image de plan, version retenue d'abord) et avancement de chaque projet."""
+    previews: dict[uuid.UUID, dict[str, uuid.UUID | int | None]] = {
+        project_id: {"poster_asset_id": None, "shot_count": 0, "approved_count": 0}
+        for project_id in project_ids
+    }
+    if not project_ids:
+        return previews
+    counts = db.execute(
+        select(
+            Sequence.project_id,
+            func.count(Shot.id),
+            func.count(case((Shot.status == "approved", 1))),
+        )
+        .join(Shot, Shot.sequence_id == Sequence.id)
+        .where(Sequence.project_id.in_(project_ids))
+        .group_by(Sequence.project_id)
+    )
+    for project_id, shots, approved in counts:
+        previews[project_id]["shot_count"] = shots
+        previews[project_id]["approved_count"] = approved
+    posters = db.execute(
+        select(Sequence.project_id, ShotVersion.asset_id)
+        .join(Shot, Shot.sequence_id == Sequence.id)
+        .join(ShotVersion, ShotVersion.shot_id == Shot.id)
+        .where(Sequence.project_id.in_(project_ids), ShotVersion.kind == "image")
+        .order_by(
+            Sequence.project_id,
+            Sequence.order_index,
+            Shot.order_index,
+            ShotVersion.number.desc(),
+        )
+        .distinct(Sequence.project_id)
+    )
+    for project_id, asset_id in posters:
+        previews[project_id]["poster_asset_id"] = asset_id
+    return previews
 
 
 def project_out(project: Project) -> ProjectOut:
@@ -127,8 +172,10 @@ def list_projects(
     query = select(Project).where(Project.workspace_id == workspace_id)
     projects = db.scalars(paginate(query, Project.created_at, Project.id, cursor, limit)).all()
     last = projects[limit - 1] if len(projects) > limit else None
+    page = projects[:limit]
+    previews = project_previews(db, [project.id for project in page])
     return Page(
-        items=[project_out(project) for project in projects[:limit]],
+        items=[project_out(project).model_copy(update=previews[project.id]) for project in page],
         next_cursor=encode_cursor(last.created_at, last.id) if last else None,
     )
 

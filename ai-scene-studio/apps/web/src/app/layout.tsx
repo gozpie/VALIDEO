@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
-import { AppHeader } from '@/components/AppHeader';
 import { AuthProvider } from '@/components/AuthProvider';
 import { CommandPalette } from '@/components/CommandPalette';
+import { GlobalCommands } from '@/components/GlobalCommands';
 import { Toaster } from '@/components/Toaster';
 import './globals.css';
 
@@ -32,8 +32,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
         <AuthProvider>
-          <AppHeader />
-          <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+          <GlobalCommands />
+          {children}
           <CommandPalette />
           <Toaster />
         </AuthProvider>

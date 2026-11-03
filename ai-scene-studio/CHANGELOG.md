@@ -8,6 +8,12 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ### Ajouté
 
+- Étapes 6.4–6.5 : la plateforme s'appelle **Chagomi** (logo, titre). Barre latérale persistante sur tout le site
+  (logo, profil, recherche ⌘K, étapes de production avec compteurs, projets, repli en rail d'icônes), thème clair ou
+  sombre mémorisé, fil d'Ariane, police Plus Jakarta Sans. Plans : grille dense, tableau de suivi, filtres par
+  statut, bande des plans (largeur = durée, couleur = statut), lecteur et onglets du plan. Bible : galeries et
+  panneau de détail. Workspaces et projets : galeries avec affiche et avancement (`posterAssetId`, `shotCount`,
+  `approvedCount`). Connexion et accueil refaits. Éditeur 3D aligné. Étape du studio dans l'adresse (`#shots`…).
 - Étapes 6.1–6.2 : scripts versionnés, bible du projet (LOOK, personnages, décors, accessoires, galerie et image clé),
   découpage des plans (description, intention, dialogue, valeur, caméra, mode de fabrication, statut, prompts),
   versions de plans en arbre avec version retenue (migration `0008`) ; Claude endosse la méthode réalisateur /

@@ -1396,6 +1396,11 @@ export interface components {
         /** ProjectOut */
         ProjectOut: {
             /**
+             * Approvedcount
+             * @default 0
+             */
+            approvedCount?: number;
+            /**
              * Colorspace
              * @enum {string}
              */
@@ -1415,7 +1420,14 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Posterassetid */
+            posterAssetId?: string | null;
             resolution: components["schemas"]["Resolution"];
+            /**
+             * Shotcount
+             * @default 0
+             */
+            shotCount?: number;
             /**
              * Updatedat
              * Format: date-time
