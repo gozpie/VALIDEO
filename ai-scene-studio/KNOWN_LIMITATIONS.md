@@ -2,10 +2,14 @@
 
 ## Fonctionnelles (phase 1 en cours)
 
-- Étapes 1.1–1.2 : tables et authentification (connexion, session, déconnexion) en place côté API. Pas encore
-  de routes workspaces/projets/séquences/plans (1.3–1.4), ni d'écran de connexion (1.6).
-- Pas d'inscription publique ni de réinitialisation de mot de passe : comptes créés en ligne de commande ;
-  invitations prévues à l'étape 1.4, réinitialisation par e-mail non planifiée (pas de service d'envoi).
+- Pas d'écran tant que l'étape 1.6 n'est pas livrée : l'API couvre authentification, workspaces, membres,
+  invitations, projets, séquences et plans.
+- Pas d'inscription publique ni de réinitialisation de mot de passe : premier compte en ligne de commande,
+  les suivants par invitation. **Aucun e-mail n'est envoyé** : l'admin reçoit le lien et le transmet lui-même ;
+  il pourrait donc l'utiliser à la place de l'invité pour une adresse sans compte (le lien ne donne jamais accès
+  à un compte existant).
+- Un plan ne peut pas encore être déplacé d'une séquence à une autre ; la propriété d'un workspace ne peut pas
+  être transférée.
 - Les sessions expirées sont supprimées quand elles sont présentées ; une purge périodique viendra avec les
   workers (phase 4). La limite d'échecs par e-mail permet à un tiers de bloquer temporairement un compte
   (compromis classique, fenêtre de 15 minutes).

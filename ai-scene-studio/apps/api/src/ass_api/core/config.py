@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = True
     session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)
 
+    # Invitations : lien à usage unique vers le front (ASS_WEB_BASE_URL/invitations/<jeton>).
+    invitation_ttl_hours: int = Field(default=24 * 7, ge=1, le=24 * 30)
+    web_base_url: str = Field(
+        default="http://localhost:3000", pattern=r"^https?://[^\s/]+(/[^\s]*)?$"
+    )
+
     # Limitation des échecs de connexion (fenêtre glissante simple, comptée dans Redis).
     login_max_failures_per_email: int = Field(default=10, ge=1)
     login_max_failures_per_ip: int = Field(default=50, ge=1)

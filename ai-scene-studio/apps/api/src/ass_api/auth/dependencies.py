@@ -28,16 +28,17 @@ def get_rate_limiter(request: Request) -> RateLimiter:
     return limiter
 
 
-def current_session(
+def optional_session(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
-) -> CurrentSession:
-    """Exige une session valide ; pour toute méthode modifiante, exige aussi le jeton CSRF."""
+) -> CurrentSession | None:
+    """Session valide ou ``None`` ; si une session est présentée sur une méthode modifiante,
+    son jeton CSRF est exigé."""
     token = request.cookies.get(settings.session_cookie_name)
     resolved = resolve_session(db, token) if token else None
     if resolved is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentification requise")
+        return None
     record, user = resolved
     if request.method not in SAFE_METHODS:
         received = request.headers.get(CSRF_HEADER, "")
@@ -46,4 +47,14 @@ def current_session(
     return CurrentSession(record=record, user=user)
 
 
+def current_session(
+    session: Annotated[CurrentSession | None, Depends(optional_session)],
+) -> CurrentSession:
+    """Exige une session valide (et le jeton CSRF pour toute méthode modifiante)."""
+    if session is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentification requise")
+    return session
+
+
 CurrentSessionDep = Annotated[CurrentSession, Depends(current_session)]
+OptionalSessionDep = Annotated[CurrentSession | None, Depends(optional_session)]

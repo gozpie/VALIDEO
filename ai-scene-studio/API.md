@@ -94,6 +94,45 @@ Ressource d'un workspace dont on n'est pas membre (ou inexistante) : `404`. Memb
 `role` est le rôle de l'utilisateur connecté. `limit` : 1 à 200 (50 par défaut) ; `cursor` : valeur
 `nextCursor` de la page précédente (opaque), `422` si invalide.
 
+## Membres et invitations (étape 1.4)
+
+| Méthode et chemin                                     | Rôle minimal     | Effet                                                                                                                                           |
+| ----------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /workspaces/{id}/members`                        | `viewer`         | `[{ userId, email, displayName, role, createdAt }]`                                                                                             |
+| `PATCH /workspaces/{id}/members/{userId}` `{ role }`  | `admin`          | rôle `admin`, `editor` ou `viewer` ; le propriétaire est intouchable                                                                            |
+| `DELETE /workspaces/{id}/members/{userId}`            | `admin` (ou soi) | retrait, ou départ volontaire ; jamais le propriétaire                                                                                          |
+| `POST /workspaces/{id}/invitations` `{ email, role }` | `admin`          | `201` avec `token` et `acceptUrl`, **renvoyés une seule fois** ; `409` si déjà membre ; remplace une invitation en attente pour la même adresse |
+| `GET /workspaces/{id}/invitations`                    | `admin`          | invitations en attente                                                                                                                          |
+| `DELETE /workspaces/{id}/invitations/{invitationId}`  | `admin`          | révocation                                                                                                                                      |
+| `GET /invitations/{token}`                            | public           | `{ workspaceName, email, role, expiresAt, accountExists }`                                                                                      |
+| `POST /invitations/{token}/accept`                    | voir ci-dessous  | rejoint le workspace et renvoie la session                                                                                                      |
+
+Acceptation : si aucun compte n'existe pour l'adresse invitée, le corps `{ displayName, password }` crée le
+compte et ouvre une session (cookie posé). Si le compte existe, il faut être connecté **avec ce compte**
+(`401` sinon, `403` si un autre compte est connecté) ; le lien ne permet jamais de définir le mot de passe
+d'un compte existant. Jeton inconnu, expiré (`ASS_INVITATION_TTL_HOURS`) ou déjà utilisé : `404`.
+
+## Projets, séquences et plans (étape 1.4)
+
+| Méthode et chemin                                                                | Rôle minimal        | Effet                                                                  |
+| -------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------- |
+| `POST /workspaces/{id}/projects`                                                 | `editor`            | `201` ; défauts : 24 i/s, 1920×1080, `srgb`                            |
+| `GET /workspaces/{id}/projects?cursor=&limit=`                                   | `viewer`            | `{ items, nextCursor }`                                                |
+| `GET` / `PATCH /projects/{id}`                                                   | `viewer` / `editor` | lecture / modification partielle                                       |
+| `DELETE /projects/{id}`                                                          | `admin`             | `204` ; supprime séquences et plans                                    |
+| `GET` / `POST /projects/{id}/sequences` `{ name, position? }`                    | `viewer` / `editor` | liste ordonnée / insertion (fin par défaut)                            |
+| `PUT /projects/{id}/sequences/order` `{ sequenceIds }`                           | `editor`            | ordre complet ; `422` si la liste n'est pas exactement celle du projet |
+| `GET` / `PATCH` / `DELETE /sequences/{id}`                                       | `viewer` / `editor` | lecture / renommage / suppression (ordre recompacté)                   |
+| `GET` / `POST /sequences/{id}/shots` `{ name, durationFrames, fps?, position? }` | `viewer` / `editor` | liste ordonnée / insertion                                             |
+| `PUT /sequences/{id}/shots/order` `{ shotIds }`                                  | `editor`            | ordre complet                                                          |
+| `GET` / `PATCH` / `DELETE /shots/{id}`                                           | `viewer` / `editor` | `PATCH` partiel ; `fps: null` revient à la cadence du projet           |
+
+Formes : projet `{ id, workspaceId, name, description, fps: { numerator, denominator }, resolution: { width,
+height }, colorSpace, createdAt, updatedAt }` ; séquence `{ id, projectId, name, orderIndex, … }` ; plan
+`{ id, sequenceId, projectId, name, orderIndex, durationFrames, fps | null, effectiveFps, … }`. La cadence est
+rationnelle (1 à 1000 i/s) ; la résolution va de 1 à 16384 px. Les listes de séquences et de plans ne sont pas
+paginées (elles restent courtes et doivent être affichées en entier pour être réordonnées).
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`
@@ -125,6 +164,5 @@ chacun limité à `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`. `200` si tout est OK, sino
 
 ## Endpoints prévus
 
-Phase 1 (suite) : workspaces, membres et invitations, projets, séquences, plans (CRUD, isolement par workspace).
 Les phases suivantes ajouteront scènes et révisions, assets (upload multipart, URL signées), jobs, versions et exports.
 Chaque endpoint sera documenté ici au moment de son implémentation.

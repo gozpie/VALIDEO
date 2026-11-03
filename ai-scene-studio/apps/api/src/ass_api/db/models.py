@@ -19,11 +19,13 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -31,6 +33,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from ass_api.db.base import Base
 
 WORKSPACE_ROLES: Final = ("owner", "admin", "editor", "viewer")
+# Le rôle owner ne s'obtient pas par invitation.
+INVITABLE_ROLES: Final = ("admin", "editor", "viewer")
 COLOR_SPACES: Final = ("srgb", "rec709", "acescg", "linear_rec709")
 MAX_RESOLUTION: Final = 16384
 
@@ -115,6 +119,38 @@ class WorkspaceMember(Base):
     )
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = _created_at()
+
+
+class WorkspaceInvitation(Base):
+    """Invitation à usage unique : seule l'empreinte SHA-256 du jeton du lien est conservée."""
+
+    __tablename__ = "workspace_invitations"
+    __table_args__ = (
+        CheckConstraint("email = lower(email)", name="email_lowercase"),
+        CheckConstraint(_in("role", INVITABLE_ROLES), name="role_valid"),
+        # Une seule invitation en attente par adresse et par workspace.
+        Index(
+            "uq_workspace_invitations_pending_email",
+            "workspace_id",
+            "email",
+            unique=True,
+            postgresql_where=text("accepted_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    invited_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Project(Base):

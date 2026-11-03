@@ -84,3 +84,12 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : garantir qu'aucun utilisateur n'accède aux données d'un workspace dont il n'est pas membre, avant d'exposer projets, séquences et plans.
 - **Vérifications** : ruff, mypy strict ; 61 tests unitaires ; 52 tests d'intégration (PostgreSQL, Redis).
 
+### Étape 1.4 — API CRUD : membres, invitations, projets, séquences, plans
+- **Ajouté** : `routes/members.py` (liste, changement de rôle, retrait par un admin ou départ volontaire ; le propriétaire ne peut être ni rétrogradé ni retiré).
+- **Ajouté** : `routes/invitations.py` et table `workspace_invitations` (migration `0003`) — lien à usage unique renvoyé une seule fois à l'admin (aucun e-mail envoyé), empreinte du jeton seule en base, une invitation en attente par adresse ; acceptation qui crée le compte et ouvre la session, ou qui exige d'être connecté avec le compte invité s'il existe déjà (le lien ne permet jamais de prendre la main sur un compte existant).
+- **Ajouté** : `routes/projects.py`, `routes/sequences.py`, `routes/shots.py`, `routes/ordering.py` — CRUD complet, cadence rationnelle validée (1 à 1000 i/s), cadence de plan facultative avec cadence effective calculée, insertion à une position, réordonnancement par liste complète (refus si ce n'est pas exactement la liste du parent), recompactage à la suppression, verrou de la ligne parente pour sérialiser les modifications d'ordre.
+- **Modifié** : `auth/dependencies.py` (session facultative, CSRF exigé dès qu'une session est présentée), configuration (`ASS_INVITATION_TTL_HOURS`, `ASS_WEB_BASE_URL`).
+- **Tests** : `test_integration_invitations.py` (9 tests) et `test_integration_projects.py` (19 tests) — parcours d'invitation, droits par rôle, isolation entre workspaces sur toutes les routes, ordre, validation, projets retrouvés après reconnexion.
+- **Objectif** : livrable de la phase 1 côté API — l'utilisateur crée et retrouve ses projets, séquences et plans, sans jamais voir ceux d'un autre workspace.
+- **Vérifications** : ruff, mypy strict ; 61 tests unitaires ; 80 tests d'intégration (PostgreSQL, Redis).
+

@@ -42,7 +42,7 @@ class SessionOut(ApiModel):
     expires_at: datetime
 
 
-def _set_session_cookie(response: Response, settings: Settings, token: str) -> None:
+def set_session_cookie(response: Response, settings: Settings, token: str) -> None:
     response.set_cookie(
         settings.session_cookie_name,
         token,
@@ -110,7 +110,7 @@ def login(
     issued = issue_session(db, user, timedelta(hours=settings.session_ttl_hours))
     db.commit()
 
-    _set_session_cookie(response, settings, issued.token)
+    set_session_cookie(response, settings, issued.token)
     logger.info("login_succeeded", user_id=str(user.id))
     return SessionOut(
         user=UserOut.model_validate(user),

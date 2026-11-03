@@ -19,6 +19,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   workspace, `403` rôle insuffisant), routes `/workspaces` (création, liste paginée par curseur, lecture,
   renommage, suppression).
 
+- Étape 1.4 : membres (liste, rôle, retrait, départ), invitations à usage unique (création, liste, révocation,
+  consultation et acceptation avec création de compte), CRUD des projets, séquences et plans avec insertion à
+  une position, réordonnancement complet et recompactage à la suppression ; migration `0003`.
+
 ### Modifié
 
 - Les erreurs HTTP conservent les en-têtes de l'exception (`Retry-After`…).

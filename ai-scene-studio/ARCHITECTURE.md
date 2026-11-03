@@ -81,6 +81,10 @@ Modèles SQLAlchemy dans `apps/api/src/ass_api/db/models.py`, migration
 | `sequences`         | `order_index` unique par projet, contrainte différée en fin de transaction (réordonnancement)                                        |
 | `shots`             | `order_index` unique par séquence (différée), `duration_frames` > 0, fps propre facultatif (sinon hérité du projet)                  |
 
+Étapes 1.2 et 1.4 : `user_sessions` (empreinte SHA-256 du jeton de session, jeton CSRF, expiration) et
+`workspace_invitations` (empreinte du jeton du lien, rôle hors `owner`, une seule invitation en attente par
+adresse et par workspace, `accepted_at`).
+
 Suppression d'un workspace : cascade sur membres, projets, séquences et plans. `scenes` et
 `shots.active_scene_revision_id` arrivent en phase 2 avec les révisions de scène.
 

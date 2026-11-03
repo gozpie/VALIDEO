@@ -10,3 +10,7 @@ WorkspaceName = Annotated[
 ]
 DisplayName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 Description = Annotated[str, Field(max_length=10_000)]
+Email = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=320, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
+]
