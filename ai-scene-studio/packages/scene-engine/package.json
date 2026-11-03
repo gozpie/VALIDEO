@@ -1,0 +1,22 @@
+{
+  "name": "@ass/scene-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opérations d'édition pures sur la scène canonique et conversion vers Three.js.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./three": "./src/three/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ass/scene-schema": "workspace:*",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.187.0"
+  }
+}

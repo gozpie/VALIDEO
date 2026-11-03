@@ -154,3 +154,9 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Objectif** : permettre l'import de modèles GLB dans l'éditeur sans jamais exposer le stockage ni accepter de contenu non autonome.
 - **Vérifications** : 104 tests unitaires et 98 tests d'intégration Python ; `pnpm check`.
 
+### Étape 2.4 — `@ass/scene-engine`
+- **Ajouté** : fabriques (primitives, empty, groupe, modèle, caméra 35 mm, lumières, matériaux), opérations d'édition pures (ajout, suppression en cascade avec pistes et matériaux propres, duplication de sous-arbre avec nouveaux ID, renommage, transformation, visibilité, verrouillage, parentage qui conserve la position monde et refuse cycles et parents non objets, groupement, couleur, réglages caméra et lumière), mathématiques (matrices, Euler ↔ quaternion, champ de vision physique), conversions Three.js (géométries unitaires conformes à SCENE_SCHEMA.md, matériaux en couleurs linéaires, caméra physique, transformations).
+- **Dépendances** : `three` 0.187.0 et `@types/three` (versions exactes).
+- **Tests** : 11 tests (toutes les opérations produisent des scènes valides, entrée jamais modifiée, position monde conservée, cycles refusés, dimensions et orientation des primitives, champ de vision 35 mm, aller-retour des transformations, couleurs linéaires).
+- **Objectif** : un cœur d'édition testable sans navigateur, sur lequel reposent l'historique et l'interface.
+

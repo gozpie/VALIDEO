@@ -35,7 +35,7 @@ packages/scene-schema/    Format canonique de scène v1 (Zod) + JSON Schema
 packages/api-client/      Contrat OpenAPI versionné, types générés et client HTTP typé
 packages/shared-types/    Contrats des entités, statuts de jobs, erreurs API
 packages/generation-sdk/  Contrat ProviderAdapter et appariement des capacités IA
-packages/scene-engine/    (phase 2) Scène canonique ↔ Three.js
+packages/scene-engine/    Opérations d'édition pures, scène canonique ↔ Three.js
 packages/animation-engine/(phase 3) Évaluation déterministe de l'animation
 packages/editor-ui/       (phase 2) Composants de l'éditeur
 workers/                  (phases 4–5) render, media, ai
