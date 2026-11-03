@@ -8,6 +8,7 @@ dependencies = [
     "argon2-cffi==25.1.0",
     "boto3==1.43.120",
     "fastapi==0.161.1",
+    "jsonschema==4.26.0",
     "psycopg[binary]==3.3.6",
     "pydantic==2.14.1",
     "pydantic-settings==2.16.1",

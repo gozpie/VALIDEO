@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 2.1 : validation serveur des scènes (structure par JSON Schema embarqué, norme des quaternions, intégrité
+  identique à TypeScript), cas invalides partagés TypeScript/Python, sérialisation canonique pour l'empreinte.
+
 ## [0.2.0] — 2026-11-03 — Phase 1 : projets persistants
 
 ### Ajouté

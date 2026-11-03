@@ -124,3 +124,18 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Risques restants** : limite d'échecs par e-mail permettant le blocage temporaire d'un compte par un tiers ; derrière un proxy, `FORWARDED_ALLOW_IPS` doit être configuré sinon la limite par IP devient commune ; front et API doivent partager le même site pour le cookie.
 - **Prochaine étape** : phase 2 (scène 3D éditable et persistante : viewport, primitives, sélection, gizmos, hiérarchie, inspector, undo/redo, import GLB, sauvegarde en révisions), après validation de la phase 1.
 
+## AI Scene Studio — Phase 2 (éditeur 3D)
+
+Plan suivi (GO de Pierre pour enchaîner) : 2.1 validation serveur des scènes ; 2.2 scènes et révisions immuables
+(API, stockage S3) ; 2.3 assets GLB (upload validé, contenu servi) ; 2.4 `scene-engine` (scène canonique ↔
+Three.js, opérations d'édition pures) ; 2.5 `editor-ui` (état, sélection, historique annuler/rétablir) ;
+2.6 éditeur dans le navigateur (viewport, primitives, sélection, gizmos, hiérarchie, inspecteur, raccourcis,
+import GLB, sauvegarde et rechargement) ; 2.7 clôture.
+
+### Étape 2.1 — Validation serveur des scènes
+- **Ajouté** : `apps/api/src/ass_api/scenes/validation.py` — structure validée par le JSON Schema généré depuis Zod (copie embarquée dans le package Python pour l'image Docker), norme des quaternions, règles d'intégrité identiques à `validate.ts` (identifiants, parents et cycles, primitives et assets, matériaux, passIndex, caméras, spots, pistes d'animation, plage de rendu) avec les mêmes chemins d'erreur ; refus de `NaN`/`Infinity` et des snapshots > 5 Mo ; sérialisation canonique (clés triées) pour l'empreinte SHA-256.
+- **Ajouté** : `tests/fixtures/scenes/invalid-cases.json` (21 cas), joués par `packages/scene-schema/test/shared-cases.test.ts` et `apps/api/tests/test_scene_validation.py` ; test d'égalité entre la copie embarquée et le JSON Schema généré.
+- **Modifié** : `pnpm schema:generate` écrit aussi la copie embarquée ; `jsonschema` devient une dépendance de l'API.
+- **Objectif** : lever la limite connue « intégrité de scène côté Python » avant tout enregistrement de scène.
+- **Vérifications** : 27 tests Python et 54 tests TypeScript de validation.
+

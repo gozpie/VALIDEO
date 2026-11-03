@@ -102,8 +102,11 @@ absence de cycle, cohérence type/primitive/asset, matériaux référencés, `pa
 `farClip > nearClip`, cônes de spot, cibles et types des pistes, tri strict des keyframes,
 dimensions des poignées, plage de rendu dans la durée.
 
-Le JSON Schema ne couvre que la **structure** : le backend devra réimplémenter les règles d'intégrité
-(phase 1, Pydantic) et les tester sur les mêmes fixtures (`tests/fixtures/scenes`).
+Le JSON Schema ne couvre que la **structure** (ni la norme des quaternions, ni l'intégrité). Le backend
+(`apps/api/src/ass_api/scenes/validation.py`) valide la structure avec une copie embarquée du JSON Schema, puis
+réimplémente la norme des quaternions et toutes les règles d'intégrité. Les deux implémentations sont testées sur
+les mêmes fixtures, dont `tests/fixtures/scenes/invalid-cases.json` (chaque cas doit être signalé au même chemin).
+Le serveur refuse aussi `NaN` / `Infinity` et les snapshots de plus de 5 Mo.
 
 ## Migrations
 

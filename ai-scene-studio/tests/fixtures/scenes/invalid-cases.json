@@ -1,0 +1,223 @@
+{
+  "base": "cube-camera-animated.v1.json",
+  "description": "Cas invalides partagés : chaque implémentation (TypeScript, Python) doit signaler un problème à expectedPath.",
+  "cases": [
+    {
+      "name": "identifiant dupliqué entre collections",
+      "set": [
+        {
+          "path": ["cameras", 0, "id"],
+          "value": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "expectedPath": "cameras.0.id"
+    },
+    {
+      "name": "parent inexistant",
+      "set": [
+        {
+          "path": ["nodes", 1, "parentId"],
+          "value": "99999999-0000-4000-8000-000000000000"
+        }
+      ],
+      "expectedPath": "nodes.1.parentId"
+    },
+    {
+      "name": "cycle de parentage",
+      "set": [
+        {
+          "path": ["nodes", 0, "parentId"],
+          "value": "10000000-0000-4000-8000-000000000002"
+        }
+      ],
+      "expectedPath": "nodes.0.parentId"
+    },
+    {
+      "name": "matériau inexistant",
+      "set": [
+        {
+          "path": ["materials"],
+          "value": []
+        }
+      ],
+      "expectedPath": "nodes.1.materialOverrides.0.materialId"
+    },
+    {
+      "name": "primitive sans type",
+      "set": [
+        {
+          "path": ["nodes", 1, "primitive"],
+          "value": null
+        }
+      ],
+      "expectedPath": "nodes.1.primitive"
+    },
+    {
+      "name": "modèle sans asset",
+      "set": [
+        {
+          "path": ["nodes", 1, "type"],
+          "value": "model"
+        },
+        {
+          "path": ["nodes", 1, "primitive"],
+          "value": null
+        }
+      ],
+      "expectedPath": "nodes.1.assetId"
+    },
+    {
+      "name": "passIndex dupliqué",
+      "set": [
+        {
+          "path": ["nodes", 0, "passIndex"],
+          "value": 1
+        }
+      ],
+      "expectedPath": "nodes.1.passIndex"
+    },
+    {
+      "name": "quaternion non normalisé",
+      "set": [
+        {
+          "path": ["nodes", 1, "transform", "rotation"],
+          "value": [0, 0, 0, 2]
+        }
+      ],
+      "expectedPath": "nodes.1.transform.rotation"
+    },
+    {
+      "name": "frame non entière",
+      "set": [
+        {
+          "path": ["animations", 0, "keyframes", 0, "frame"],
+          "value": 1.5
+        }
+      ],
+      "expectedPath": "animations.0.keyframes.0.frame"
+    },
+    {
+      "name": "farClip <= nearClip",
+      "set": [
+        {
+          "path": ["cameras", 0, "farClip"],
+          "value": 0.05
+        }
+      ],
+      "expectedPath": "cameras.0.farClip"
+    },
+    {
+      "name": "orthographique sans hauteur",
+      "set": [
+        {
+          "path": ["cameras", 0, "projection"],
+          "value": "orthographic"
+        }
+      ],
+      "expectedPath": "cameras.0.orthographicHeight"
+    },
+    {
+      "name": "spot sans angles",
+      "set": [
+        {
+          "path": ["lights", 0, "kind"],
+          "value": "spot"
+        }
+      ],
+      "expectedPath": "lights.0.outerConeAngle"
+    },
+    {
+      "name": "plage de rendu hors durée",
+      "set": [
+        {
+          "path": ["renderSettings", "frameEnd"],
+          "value": 96
+        }
+      ],
+      "expectedPath": "renderSettings.frameEnd"
+    },
+    {
+      "name": "cible inexistante",
+      "set": [
+        {
+          "path": ["animations", 0, "targetId"],
+          "value": "99999999-0000-4000-8000-000000000000"
+        }
+      ],
+      "expectedPath": "animations.0.targetId"
+    },
+    {
+      "name": "propriété non animable",
+      "set": [
+        {
+          "path": ["animations", 0, "propertyPath"],
+          "value": "transform.skew"
+        }
+      ],
+      "expectedPath": "animations.0.propertyPath"
+    },
+    {
+      "name": "propriété incompatible avec la cible",
+      "set": [
+        {
+          "path": ["animations", 1, "targetId"],
+          "value": "10000000-0000-4000-8000-000000000002"
+        }
+      ],
+      "expectedPath": "animations.1.propertyPath"
+    },
+    {
+      "name": "keyframes non triés",
+      "set": [
+        {
+          "path": ["animations", 1, "keyframes", 1, "frame"],
+          "value": 0
+        }
+      ],
+      "expectedPath": "animations.1.keyframes.1.frame"
+    },
+    {
+      "name": "valeur du mauvais type",
+      "set": [
+        {
+          "path": ["animations", 1, "keyframes", 0, "value"],
+          "value": [1, 2, 3]
+        }
+      ],
+      "expectedPath": "animations.1.keyframes.0.value"
+    },
+    {
+      "name": "Bézier sur une rotation",
+      "set": [
+        {
+          "path": ["animations", 2, "keyframes", 0, "interpolation"],
+          "value": "bezier"
+        }
+      ],
+      "expectedPath": "animations.2.keyframes.0.interpolation"
+    },
+    {
+      "name": "poignée de dimension incorrecte",
+      "set": [
+        {
+          "path": ["animations", 0, "keyframes", 0, "outHandle"],
+          "value": {
+            "frameOffset": 4,
+            "valueOffset": [1]
+          }
+        }
+      ],
+      "expectedPath": "animations.0.keyframes.0.outHandle.valueOffset"
+    },
+    {
+      "name": "convention d'axes différente",
+      "set": [
+        {
+          "path": ["coordinateSystem", "upAxis"],
+          "value": "+Z"
+        }
+      ],
+      "expectedPath": "coordinateSystem.upAxis"
+    }
+  ]
+}
