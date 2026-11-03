@@ -4,9 +4,10 @@ Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 1 livrée (projets persistants), en attente de validation.** Connexion, workspaces, membres
-> et invitations, projets, séquences et plans, avec isolation stricte entre workspaces. Pas encore d'éditeur
-> 3D ni de génération IA. Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
+> **État : phase 2 livrée (scène 3D éditable et persistante), en attente de validation.** Connexion, workspaces,
+> projets, séquences et plans ; éditeur 3D par plan (primitives, caméras, lumières, import GLB, gizmos,
+> hiérarchie, inspecteur, annuler/rétablir) enregistré en révisions immuables. Pas encore d'animation ni de
+> génération IA. Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
 
 ## Démarrage rapide
 
@@ -37,7 +38,7 @@ packages/shared-types/    Contrats des entités, statuts de jobs, erreurs API
 packages/generation-sdk/  Contrat ProviderAdapter et appariement des capacités IA
 packages/scene-engine/    Opérations d'édition pures, scène canonique ↔ Three.js
 packages/animation-engine/(phase 3) Évaluation déterministe de l'animation
-packages/editor-ui/       (phase 2) Composants de l'éditeur
+packages/editor-ui/       État de l'éditeur (sélection, outils, annuler/rétablir)
 workers/                  (phases 4–5) render, media, ai
 infrastructure/           Dockerfiles, nginx, migrations Alembic
 tests/                    Fixtures partagées, intégration, E2E transverses
@@ -63,8 +64,8 @@ scripts/                  check-env.sh, check-all.sh
 | Phase | Livrable                                                             | État                                  |
 | ----- | -------------------------------------------------------------------- | ------------------------------------- |
 | 0     | Environnement reproductible, contrats                                | ✅ terminé                            |
-| 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | ✅ terminé (en attente de validation) |
-| 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | à faire                               |
+| 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | ✅ terminé                            |
+| 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | ✅ terminé (en attente de validation) |
 | 3     | Plan animé relisible (caméras, timeline, keyframes)                  | à faire                               |
 | 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                      | à faire                               |
 | 5     | Génération IA depuis la scène                                        | à faire                               |

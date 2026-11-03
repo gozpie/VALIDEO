@@ -4,6 +4,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+## [0.3.0] — 2026-11-03 — Phase 2 : scène 3D éditable et persistante
+
 ### Ajouté
 
 - Étape 2.1 : validation serveur des scènes (structure par JSON Schema embarqué, norme des quaternions, intégrité

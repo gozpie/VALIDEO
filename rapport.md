@@ -172,3 +172,17 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Tests** : `editor-panels.test.tsx` (4 tests : hiérarchie, sélection, inspecteur et historique, masquage, verrouillage, lecture seule) ; E2E `editor.spec.ts` (ajout d'un cube, déplacement numérique, annuler/rétablir au clavier, renommage, import du GLB de test, duplication, suppression et annulation, enregistrement, rechargement complet et vérification, aucune erreur JavaScript) ; contrôle visuel du rendu (cube sélectionné avec gizmo, modèles GLB, tore).
 - **Objectif** : livrable de la phase 2 — une scène 3D réellement éditable et persistante.
 
+### Étape 2.7 — Clôture de la phase 2
+- **Vérifié** : pile Docker reconstruite avec l'éditeur (6 services sains) ; 98 tests d'intégration et 5 E2E contre les conteneurs ; CI GitHub au vert (run 41682069748), y compris l'E2E de l'éditeur avec rendu WebGL sous Linux.
+- **Modifié** : `README.md` (état, feuille de route), `CHANGELOG.md` (version 0.3.0).
+
+### Bilan de la phase 2
+- **Livrable** (« une scène 3D est réellement éditable et persistante ») : atteint et couvert par un E2E qui ajoute un cube, le déplace, annule et rétablit, le renomme, importe un GLB, duplique, supprime et annule, enregistre, recharge la page et retrouve la scène à l'identique.
+- **Fonctionnalités** : viewport (orbite, pan, zoom, perspective/orthographique, 6 vues, grille, axes, cadrage), 6 primitives, empty, groupe, caméra, 3 lumières, import GLB validé, sélection simple/multiple/rectangle, gizmos déplacement/rotation/échelle avec magnétisme, transformations numériques, duplication, suppression, groupement, parentage, renommage, masquage, verrouillage, annuler/rétablir, raccourcis W/E/R/F/H/B/Suppr/⌘Z/⇧⌘Z/⌘D/⌘G/⌘S, enregistrement en révisions immuables (S3, SHA-256, concurrence optimiste) et rechargement.
+- **Commandes exécutées** : `uv run ruff check .`, `uv run mypy …`, `uv run pytest apps/api`, `ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration`, `pnpm check`, `pnpm schema:generate`, `pnpm api:generate`, `pnpm --filter @ass/web build`, `docker compose up --build --wait`, `pnpm test:e2e`, `gh run watch`.
+- **Tests réussis** : 104 unitaires et 98 d'intégration Python ; 101 tests TypeScript ; 5 E2E ; CI au vert. **Tests échoués** : aucun à la clôture (corrigés en cours : attente de FOV erronée dans un test, bruit numérique du parentage, fixture de scène référençant un asset absent, localisateurs E2E).
+- **Écarts au cahier des charges** : Immer non utilisé (opérations pures) ; composants de l'éditeur dans `apps/web/src/editor` plutôt que `packages/editor-ui` ; envoi des assets via l'API (100 Mo) au lieu d'un upload multipart direct avec reprise ; seuls les GLB sont importés (glTF à fichiers séparés, textures, HDRI à venir).
+- **Limitations** : voir `KNOWN_LIMITATIONS.md` (gizmo sur l'élément principal seulement, masquage hérité par les enfants, rectangle sur les centres, pas de glisser-déposer dans la hiérarchie, panneaux fixes, animations GLB non jouées, pas de vue caméra avant la phase 3).
+- **Risques restants** : performances non mesurées sur de grosses scènes (pas d'instancing ni de LOD) ; objets orphelins possibles dans le stockage si une écriture en base échoue après l'envoi (adressage par contenu, nettoyage à prévoir) ; un snapshot est limité à 5 Mo.
+- **Prochaine étape** : phase 3 (caméras et animation : vue caméra, timeline, keyframes, interpolation, animation d'objets et de caméra, lecture, sauvegarde, tests déterministes), après validation de la phase 2.
+
