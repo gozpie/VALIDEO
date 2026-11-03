@@ -126,16 +126,14 @@ describe('temps et clés', () => {
     expect(store.getState().frame).toBe(23);
     store.getState().setFrame(-3.4);
     expect(store.getState().frame).toBe(0);
-    store
-      .getState()
-      .apply((s) =>
-        setKey(s, {
-          targetId: cube.id,
-          propertyPath: 'transform.position',
-          frame: 5,
-          value: [1, 0, 0],
-        }),
-      );
+    store.getState().apply((s) =>
+      setKey(s, {
+        targetId: cube.id,
+        propertyPath: 'transform.position',
+        frame: 5,
+        value: [1, 0, 0],
+      }),
+    );
     const trackId = store.getState().scene.animations[0]!.id;
     store.getState().selectKeys([{ trackId, frame: 5 }]);
     store.getState().apply((s) => removeKeys(s, [{ trackId, frame: 5 }]));
