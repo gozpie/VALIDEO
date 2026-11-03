@@ -46,6 +46,15 @@ valide et par un cas invalide.
   migrations, contraintes, authentification, CSRF, limitation, isolation entre workspaces, rôles, invitations,
   CRUD et ordre des séquences et plans.
 
+## Rendu Blender (phase 4)
+
+- `apps/api/tests/test_blender_coherence.py` : vrais rendus Cycles comparés à la projection calculée depuis la scène
+  canonique (axes, focales, orthographique, hiérarchie, timing, GLB) et sonde des courbes évaluées par Blender.
+  `ASS_BLENDER=docker` (image `ai-scene-studio/render-worker:dev`) ou `ASS_BLENDER=/chemin/blender`.
+- `apps/api/tests/test_render_worker_live.py` : rendu de bout en bout par l'API et le worker de la pile Docker
+  (`ASS_RUN_RENDER=1`, compte E2E).
+- Références de déterminisme inter-langages : `tests/fixtures/animation/*.expected.json` (TypeScript → Python → Blender).
+
 ## E2E de la phase 1
 
 Le parcours complet exige la pile démarrée et un compte de test, créé en ligne de commande :

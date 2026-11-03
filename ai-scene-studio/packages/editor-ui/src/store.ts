@@ -25,6 +25,7 @@ export interface Snapping {
 
 export const HISTORY_LIMIT = 200;
 export type CameraView = 'free' | 'camera' | 'split';
+export type AxisLock = 'x' | 'y' | 'z' | null;
 
 export interface EditorState {
   scene: SceneDocument;
@@ -44,6 +45,8 @@ export interface EditorState {
   keySelection: KeyRef[];
   clipboard: ClipboardEntry[];
   cameraView: CameraView;
+  /** Contrainte d'axe du gizmo (axes canoniques), comme X / Y / Z après G, R ou S dans Blender. */
+  axisLock: AxisLock;
 
   load: (scene: SceneDocument, revisionId: string | null) => void;
   /** Applique une opération et l'inscrit dans l'historique ; renvoie false si elle a échoué. */
@@ -63,6 +66,7 @@ export interface EditorState {
   selectKeys: (refs: KeyRef[], mode?: SelectionMode) => void;
   setClipboard: (entries: ClipboardEntry[]) => void;
   setCameraView: (view: CameraView) => void;
+  setAxisLock: (axis: AxisLock) => void;
 }
 
 const sameKey = (a: KeyRef, b: KeyRef) => a.trackId === b.trackId && a.frame === b.frame;
@@ -125,6 +129,7 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
     keySelection: [],
     clipboard: [],
     cameraView: 'free',
+    axisLock: null,
 
     load: (scene, revisionId) =>
       set({
@@ -220,7 +225,7 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
       }
     },
 
-    setTool: (tool) => set({ tool }),
+    setTool: (tool) => set({ tool, axisLock: null }),
     setSnapping: (snapping) => set({ snapping: { ...get().snapping, ...snapping } }),
 
     markSaved: (scene, revisionId) => set({ savedScene: scene, baseRevisionId: revisionId }),
@@ -244,6 +249,7 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
     },
     setClipboard: (clipboard) => set({ clipboard }),
     setCameraView: (cameraView) => set({ cameraView }),
+    setAxisLock: (axisLock) => set({ axisLock }),
   }));
 }
 

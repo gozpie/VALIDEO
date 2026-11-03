@@ -40,6 +40,10 @@ Derrière un proxy TLS d'entreprise, fournir l'autorité de certification comme 
 - Le cookie de session est `SameSite=Lax` : le front et l'API doivent être sur le **même site** (même domaine
   enregistrable, ex. `studio.example.com` et `api.example.com`, ou l'API sous `/api/` derrière le proxy nginx),
   et `ASS_CORS_ALLOWED_ORIGINS` doit lister l'origine exacte du front. `ASS_WEB_BASE_URL` = URL publique du front.
+- Rendu : le service `render-worker` (Blender 4.5 LTS + FFmpeg) lit la file Redis `ASS_RENDER_QUEUE_KEY`.
+  Quotas par `RENDER_WORKER_CPUS`, `RENDER_WORKER_MEMORY`, `RENDER_WORKER_TMP` ; durée maximale
+  `ASS_RENDER_TIMEOUT_SECONDS`, délai sans signe de vie `ASS_RENDER_STALE_SECONDS`. Plusieurs workers peuvent tourner
+  en parallèle (`docker compose up --scale render-worker=N`). Ne jamais exposer Redis ni le worker sur Internet.
 - Premier compte : `docker compose exec api python -m ass_api.cli create-user --email … --display-name …`.
 - PostgreSQL, Redis, le stockage et les workers ne doivent **jamais** être exposés publiquement : seul le reverse proxy l'est (voir `infrastructure/nginx/nginx.conf`, à compléter par TLS).
 - Ressources : fixer des limites CPU, mémoire et disque par service ; les workers de rendu et d'IA auront des quotas dédiés (phases 4–5).

@@ -265,3 +265,10 @@ Blender) ; 4.7 clôture.
 - **Résultat** : tous les écarts sont inférieurs à 1 pixel (rendu 320 × 180) et à 1e-4 m pour les courbes.
 - **CI** : l'étape d'intégration exécute désormais le rendu réel de bout en bout et les tests de cohérence avec l'image du worker.
 
+### Étape 4.6 — Rendu dans l'éditeur et raccourcis façon Blender
+- **Ajouté** : `RenderPanel.tsx` (onglet « Rendu » : résolution, fond transparent, flou de mouvement, transformation d'affichage de la scène ; plage de frames, pourcentage de résolution, échantillons et passes du rendu ; enregistrement automatique puis lancement ; suivi avec barre de progression et message ; annulation ; lecteur vidéo ; liens de téléchargement de la vidéo, du ProRes alpha, des passes EXR, de la scène `.blend` et de l'aperçu).
+- **Ajouté** : disposition de raccourcis **façon Blender**, choisie par défaut (préférence mémorisée) : G/R/S puis X/Y/Z pour contraindre l'axe (axes de Blender, Z vertical), Maj+A (menu d'ajout flottant), Maj+D, X, H/Maj+H/Alt+H, A/Alt+A, B, Ctrl+P/Alt+P, Alt+G/Alt+R/Alt+S, I/Alt+I, pavé numérique (et chiffres du clavier, comme l'émulation du pavé de Blender) 1/3/7 (Ctrl : vue opposée), 5 (ortho), 0 (vue caméra), « . » (cadrer), Origine (tout cadrer), Espace, ←/→, Maj+←/→, ↑/↓ (clés). Disposition « standard » conservée ; aide des raccourcis dans l'éditeur. Contrainte d'axe du gizmo dans l'état de l'éditeur.
+- **Ajouté** : opérations `updateRenderSettings` et `clearParent` ; commandes de l'éditeur (tout sélectionner, masquer le reste, tout afficher, parenter à l'actif, retirer le parent, effacer une transformation, poser/supprimer des clés, aller à la clé suivante/précédente).
+- **Tests** : E2E `render.spec.ts` (Maj+A, Maj+D, X, Ctrl+Z, Alt+G, I, caméra active, rendu Blender réel à 10 % jusqu'à « Terminé », vidéo affichée, `.blend` téléchargeable) ; contrôle visuel du panneau de rendu et de l'aide des raccourcis.
+- **Objectif** : répondre à la demande de Pierre de « se rapprocher le plus de Blender » (vrai rendu Blender, fichier `.blend`, conventions de raccourcis) sans copier son apparence.
+

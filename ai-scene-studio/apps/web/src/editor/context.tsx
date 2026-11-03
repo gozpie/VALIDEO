@@ -9,6 +9,7 @@ import { useStore } from 'zustand';
 /** Commandes de vue exécutées par le viewport (cadrage, vues prédéfinies). */
 export interface ViewportApi {
   frameSelection: () => void;
+  frameAll: () => void;
 }
 
 export interface EditorContextValue {

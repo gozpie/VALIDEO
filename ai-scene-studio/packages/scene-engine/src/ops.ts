@@ -336,3 +336,26 @@ export function setCameraLookAt(
   if (targetId !== null && !findEntity(scene, targetId)) throw new Error('Cible inconnue');
   return updateCamera(scene, id, { lookAtTargetId: targetId });
 }
+
+/** Réglages de rendu de la scène (résolution, échantillons, transparence, flou, affichage). */
+export function updateRenderSettings(
+  scene: SceneDocument,
+  patch: Partial<SceneDocument['renderSettings']>,
+): SceneDocument {
+  const next = copy(scene);
+  next.renderSettings = { ...next.renderSettings, ...structuredClone(patch) };
+  const { width, height, samples, frameStart, frameEnd } = next.renderSettings;
+  if (![width, height].every((v) => Number.isInteger(v) && v >= 16 && v <= 16384)) {
+    throw new Error('Résolution entre 16 et 16384 pixels');
+  }
+  if (!Number.isInteger(samples) || samples < 1 || samples > 65536)
+    throw new Error('Échantillons invalides');
+  if (frameStart > frameEnd || frameEnd >= next.durationFrames)
+    throw new Error('Plage de rendu invalide');
+  return next;
+}
+
+/** Retire le parent en conservant la position monde (Alt+P de Blender). */
+export function clearParent(scene: SceneDocument, id: string): SceneDocument {
+  return setParent(scene, id, null);
+}

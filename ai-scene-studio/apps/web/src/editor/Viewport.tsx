@@ -305,6 +305,7 @@ function SelectionGizmo({ version }: { version: number }) {
   const locked = useEditor((state) => (primary ? isLocked(state.scene, primary) : false));
   const tool = useEditor((state) => state.tool);
   const snapping = useEditor((state) => state.snapping);
+  const axis = useEditor((state) => state.axisLock);
   const object = primary ? objects.get(primary) : undefined;
   void version;
   if (!canEdit || !primary || !object || locked) return null;
@@ -312,6 +313,9 @@ function SelectionGizmo({ version }: { version: number }) {
     <TransformControls
       object={object}
       mode={tool}
+      showX={axis === null || axis === 'x'}
+      showY={axis === null || axis === 'y'}
+      showZ={axis === null || axis === 'z'}
       translationSnap={snapping.enabled ? snapping.translate : null}
       rotationSnap={snapping.enabled ? MathUtils.degToRad(snapping.rotateDegrees) : null}
       scaleSnap={snapping.enabled ? snapping.scale : null}
@@ -372,29 +376,28 @@ function ViewController({ view }: { view: ViewSettings }) {
   }, [view, camera, orbit]);
 
   useEffect(() => {
-    viewport.current = {
-      frameSelection: () => {
-        if (!orbit) return;
-        const box = new Box3();
-        const ids = store.getState().selection;
-        for (const id of ids.length > 0 ? ids : [...objects.keys()]) {
-          const object = objects.get(id);
-          if (object) box.expandByObject(object);
-        }
-        if (box.isEmpty()) box.setFromCenterAndSize(new Vector3(), new Vector3(2, 2, 2));
-        const center = box.getCenter(new Vector3());
-        const radius = Math.max(box.getSize(new Vector3()).length() / 2, 0.5);
-        const direction = camera.position.clone().sub(orbit.target).normalize();
-        orbit.target.copy(center);
-        camera.position.copy(center.clone().add(direction.multiplyScalar(radius * 2.5)));
-        if ('zoom' in camera && camera.type === 'OrthographicCamera') {
-          (camera as unknown as { zoom: number; updateProjectionMatrix: () => void }).zoom =
-            400 / radius;
-          (camera as unknown as { updateProjectionMatrix: () => void }).updateProjectionMatrix();
-        }
-        orbit.update();
-      },
+    const frame = (all: boolean) => {
+      if (!orbit) return;
+      const box = new Box3();
+      const ids = all ? [] : store.getState().selection;
+      for (const id of ids.length > 0 ? ids : [...objects.keys()]) {
+        const object = objects.get(id);
+        if (object) box.expandByObject(object);
+      }
+      if (box.isEmpty()) box.setFromCenterAndSize(new Vector3(), new Vector3(2, 2, 2));
+      const center = box.getCenter(new Vector3());
+      const radius = Math.max(box.getSize(new Vector3()).length() / 2, 0.5);
+      const direction = camera.position.clone().sub(orbit.target).normalize();
+      orbit.target.copy(center);
+      camera.position.copy(center.clone().add(direction.multiplyScalar(radius * 2.5)));
+      if ('zoom' in camera && camera.type === 'OrthographicCamera') {
+        (camera as unknown as { zoom: number; updateProjectionMatrix: () => void }).zoom =
+          400 / radius;
+        (camera as unknown as { updateProjectionMatrix: () => void }).updateProjectionMatrix();
+      }
+      orbit.update();
     };
+    viewport.current = { frameSelection: () => frame(false), frameAll: () => frame(true) };
     return () => {
       viewport.current = null;
     };

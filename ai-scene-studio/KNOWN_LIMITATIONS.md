@@ -38,9 +38,17 @@
 
 - **MinIO remplacé par SeaweedFS** en local : les images MinIO ne sont plus distribuées publiquement. Seule l'API S3
   standard est utilisée ; un autre stockage compatible S3 peut être branché par configuration.
-- **Blender absent** de l'environnement de développement actuel ; la version cible sera arrêtée en phase 4.
-- **Conversions Blender** documentées (SCENE_SCHEMA.md) mais pas encore vérifiées par des tests de rendu (phase 4).
-- **Identité pixel** : aucune identité n'est garantie entre la preview Three.js et le rendu Blender ; seuls les
-  transformations, le cadrage, les focales et le timing seront testés.
+- **Rendu Blender** (phase 4) : Blender 4.5 LTS, Cycles sur **CPU** (pas de GPU dans le conteneur), sans débruitage
+  (déterminisme). Binaire x86-64 uniquement : émulé sur Apple Silicon. L'éclairage d'aperçu (scène sans lumière) et
+  l'ambiance du monde sont une approximation de l'éditeur, pas une identité. `receiveShadow` et la portée des lumières
+  n'ont pas d'équivalent Cycles (ignorés). Les rotations animées et les caméras contraintes sont échantillonnées par
+  frame dans le `.blend` (les autres propriétés y sont des courbes natives éditables) ; les objets restent sous une
+  racine de conversion Y-up → Z-up, donc Blender affiche des valeurs locales canoniques. Pas de rendu distribué ni de
+  reprise d'un rendu interrompu (relancer crée un nouveau job). Le suivi se fait par interrogation (pas encore de SSE).
+- Le fichier `.blend` produit par Blender 4.5 s'ouvre dans Blender 4.5 ou plus récent ; les versions plus anciennes
+  (par exemple 3.5) peuvent le lire incomplètement.
+- **Identité pixel** : aucune identité n'est garantie entre la preview Three.js et le rendu Blender ; les
+  transformations, le cadrage, les focales, la projection orthographique, la hiérarchie et le timing sont vérifiés par
+  des rendus réels (écart < 1 pixel), pas les matériaux ni l'éclairage.
 - **Génération IA** : un générateur probabiliste ne garantit pas la fidélité géométrique ; un seed identique ne
   garantit pas la reproductibilité chez un fournisseur distant.

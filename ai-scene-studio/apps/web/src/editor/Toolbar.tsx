@@ -2,6 +2,7 @@
 
 import { isDirty, type CameraView, type Tool } from '@ass/editor-ui';
 import { setActiveCamera } from '@ass/scene-engine';
+import type { Keymap } from './keymap';
 import Link from 'next/link';
 import { useEditor, useEditorContext } from './context';
 import type { ViewDirection, ViewSettings } from './Viewport';
@@ -32,6 +33,9 @@ interface Props {
   onView: (view: ViewSettings) => void;
   boxSelect: boolean;
   onBoxSelect: () => void;
+  keymap: Keymap;
+  onKeymap: (keymap: Keymap) => void;
+  onHelp: () => void;
 }
 
 const button =
@@ -47,6 +51,9 @@ export function Toolbar({
   onView,
   boxSelect,
   onBoxSelect,
+  keymap,
+  onKeymap,
+  onHelp,
 }: Props) {
   const { store, canEdit, viewport } = useEditorContext();
   const dirty = useEditor(isDirty);
@@ -226,6 +233,24 @@ export function Toolbar({
         title="Cadrer la sélection (F)"
       >
         Cadrer
+      </button>
+      <select
+        aria-label="Disposition des raccourcis"
+        className="rounded border border-border bg-surface px-1 py-1 text-xs"
+        value={keymap}
+        onChange={(event) => onKeymap(event.target.value as Keymap)}
+      >
+        <option value="blender">Raccourcis Blender</option>
+        <option value="standard">Raccourcis standard</option>
+      </select>
+      <button
+        type="button"
+        className={button}
+        onClick={onHelp}
+        aria-label="Aide des raccourcis"
+        title="Raccourcis clavier"
+      >
+        ?
       </button>
       {canEdit && (
         <button

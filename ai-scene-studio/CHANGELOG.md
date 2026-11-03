@@ -20,6 +20,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   hiérarchie et rotations, timing et interpolation, GLB, courbes évaluées par Blender) ; rendu réel de bout en bout
   en CI.
 
+- Étape 4.6 : éditeur — onglet « Rendu » (réglages de la scène et du rendu, passes, lancement après enregistrement,
+  suivi, annulation, lecture de la vidéo, téléchargements EXR / .blend / ProRes / aperçu) ; **raccourcis façon
+  Blender** par défaut (G/R/S + X/Y/Z, Maj+A, Maj+D, X, H/Maj+H/Alt+H, A/Alt+A, Ctrl+P/Alt+P, Alt+G/R/S, I/Alt+I,
+  pavé numérique 1/3/7/5/0/., Espace, flèches) avec choix « standard » et aide intégrée.
+
 ### Modifié
 
 - Bézier : correction des poignées trop longues alignée sur Blender (réduction proportionnelle), dans les deux
