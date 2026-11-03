@@ -329,5 +329,6 @@ Décisions de Pierre : Claude par l'abonnement (jeton du VPS copié dans le `.en
 - **Commandes exécutées** : `docker compose build/up` (ai-worker, api, web), `pnpm check`, `./scripts/check-all.sh`, `ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration`, `E2E_CLAUDE=1 … playwright test`.
 - **Tests réussis** : 120 unitaires et 119 d'intégration Python (8 rendus Blender ignorés en local, exécutés en CI) ; 52 tests web + paquets TypeScript ; 10 E2E dont Claude réel.
 - **Écarts** : pas de Celery (files Redis maison, comme les rendus) ; passerelle Higgsfield non officielle ; références limitées aux images générées.
+- **CI** : premier passage en échec (FFmpeg absent de la machine de CI pour le fournisseur simulation ; test de rendu réel ignorant la nouvelle sortie `frames`), corrigé (commit 31317f7) ; CI GitHub au vert (run 41721661259).
 - **Prochaine étape** : phase 6 — studio de production (script → découpage par Claude selon la méthode réalisateur / chef-op → bible LOOK, personnages, décors → plans avec arbre de versions et A/B), interface centrée sur le workflow.
 
