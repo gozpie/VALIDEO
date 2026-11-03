@@ -50,7 +50,7 @@ techniques et sorties IA sont des **artefacts attachés à une révision** ; ils
    jamais de retour d'un état terminal. Relancer une opération crée un nouveau job, avec une clé d'idempotence.
 9. **WebGL 2 comme cible** ; WebGPU optionnel plus tard.
 
-## Modèle de données (cible phase 1)
+## Modèle de données (cible)
 
 ```text
 User ─< WorkspaceMember >─ Workspace ─< Project ─< Sequence ─< Shot
@@ -66,6 +66,23 @@ Shot ─< RenderVersion (parent, révision, job, asset de sortie)
 - `SceneRevision` est immuable : le snapshot JSON est stocké en S3 sous une clé dérivée de son SHA-256 ; la base conserve l'empreinte.
 
 Les formes JSON correspondantes sont dans `packages/shared-types/src/entities.ts`.
+
+### Implémenté (migration `0001`, étape 1.1)
+
+Modèles SQLAlchemy dans `apps/api/src/ass_api/db/models.py`, migration
+`infrastructure/migrations/versions/20261103_0001_identites_workspaces_projets.py`.
+
+| Table               | Points clés                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `users`             | e-mail unique et en minuscules ; `password_hash` NULL = compte sans mot de passe local (invitation en attente, identité externe)     |
+| `workspaces`        | `owner_id` → `users` en `RESTRICT` : un propriétaire ne peut pas être supprimé tant qu'il possède un workspace                       |
+| `workspace_members` | clé (`workspace_id`, `user_id`), rôle `owner` / `admin` / `editor` / `viewer`, index sur `user_id`                                   |
+| `projects`          | fps rationnel (`fps_numerator` / `fps_denominator`), résolution 1–16384, `color_space` (`srgb`, `rec709`, `acescg`, `linear_rec709`) |
+| `sequences`         | `order_index` unique par projet, contrainte différée en fin de transaction (réordonnancement)                                        |
+| `shots`             | `order_index` unique par séquence (différée), `duration_frames` > 0, fps propre facultatif (sinon hérité du projet)                  |
+
+Suppression d'un workspace : cascade sur membres, projets, séquences et plans. `scenes` et
+`shots.active_scene_revision_id` arrivent en phase 2 avec les révisions de scène.
 
 ## Observabilité
 

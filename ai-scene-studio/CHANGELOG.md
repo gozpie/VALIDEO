@@ -4,6 +4,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 1.1 : modèle de données (`users`, `workspaces`, `workspace_members`, `projects`, `sequences`, `shots`)
+  et migration Alembic `0001`, avec tests unitaires et tests d'intégration PostgreSQL (aller-retour des
+  migrations, `alembic check`, contraintes, cascades, réordonnancement).
+- `CLAUDE.md` : conventions, commandes et règles de contribution (prévu par le cahier des charges, absent de la phase 0).
+
+### Modifié
+
+- `infrastructure/migrations/env.py` : enregistre les modèles et accepte une URL de base fournie par les tests.
+
 ## [0.1.0] — 2026-11-02 — Phase 0 : audit et initialisation
 
 ### Ajouté

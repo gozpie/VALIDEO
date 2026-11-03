@@ -1,9 +1,10 @@
 # Limites connues
 
-## Fonctionnelles (phase 0)
+## Fonctionnelles (phase 1 en cours)
 
-- Aucune fonctionnalité métier : pas d'authentification, de projets, d'éditeur, d'animation, de rendu ni de génération IA.
-  L'interface web se limite à l'état des services.
+- Étape 1.1 : les tables utilisateurs, workspaces, membres, projets, séquences et plans existent, mais aucune
+  route API ni écran ne les expose encore (authentification et CRUD : étapes 1.2 à 1.6).
+- Pas d'éditeur, d'animation, de rendu ni de génération IA. L'interface web se limite à l'état des services.
 - `packages/scene-engine`, `animation-engine`, `editor-ui` et `workers/*` ne contiennent qu'une description de leur rôle.
 - Les types de `shared-types` décrivent la forme cible des entités ; ils seront générés depuis l'OpenAPI en phase 1.
 

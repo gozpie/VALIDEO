@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from ass_api.core.config import get_settings
+from ass_api.db import models  # noqa: F401  (enregistre les tables dans la métadonnée)
 from ass_api.db.base import Base
 
 config = context.config
@@ -16,6 +17,10 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
+    # Les tests d'intégration ciblent une base temporaire via config.attributes["database_url"].
+    override = config.attributes.get("database_url")
+    if isinstance(override, str):
+        return override
     return get_settings().database_url.get_secret_value()
 
 
