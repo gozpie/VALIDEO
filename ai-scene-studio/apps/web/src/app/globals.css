@@ -7,21 +7,22 @@
  */
 @theme {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, ui-sans-serif,
-    sans-serif;
+    var(--font-jakarta), -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    ui-sans-serif, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
-  --color-surface: #0b0d12;
-  --color-panel: #12151c;
-  --color-elevated: #1a1e27;
-  --color-hover: #222733;
-  --color-border: #272c37;
-  --color-border-strong: #394050;
+  --color-surface: #111316;
+  --color-panel: #18191d;
+  --color-elevated: #212328;
+  --color-hover: #26282e;
+  --color-border: #2a2c33;
+  --color-border-strong: #3b3e47;
+  --color-sidebar: #18191d;
   --color-text: #eceef3;
   --color-muted: #8f98a8;
   --color-faint: #5d6575;
-  --color-accent: #4f6bed;
-  --color-accent-strong: #7088ff;
+  --color-accent: #3478f6;
+  --color-accent-strong: #5b93ff;
   --color-ok: #3fb950;
   --color-error: #f85149;
   --color-warn: #d29922;
@@ -57,9 +58,33 @@
   color-scheme: dark;
 }
 
+/* Thème clair (préférence mémorisée, bouton soleil / lune de la barre latérale). */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-surface: #f3f4f7;
+  --color-panel: #ffffff;
+  --color-elevated: #ffffff;
+  --color-hover: #eef0f4;
+  --color-border: #e3e6ec;
+  --color-border-strong: #cfd4dd;
+  --color-text: #12151b;
+  --color-muted: #5a6273;
+  --color-faint: #8b93a3;
+  --color-accent: #2f6ff5;
+  --color-accent-strong: #2f6ff5;
+  --color-sidebar: #ffffff;
+  --shadow-pop: 0 16px 40px -14px rgb(16 24 40 / 0.25), 0 0 0 1px rgb(16 24 40 / 0.06);
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05), 0 4px 16px -8px rgb(16 24 40 / 0.12);
+}
+
 body {
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+/* Marque Chagomi (crème, sur fond transparent) : foncée sur le thème clair. */
+:root[data-theme='light'] .brand-mark {
+  filter: invert(1);
 }
 
 ::selection {

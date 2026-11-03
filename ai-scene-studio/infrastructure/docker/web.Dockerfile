@@ -35,6 +35,7 @@ WORKDIR /app
 RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app app
 COPY --from=builder --chown=app:app /repo/apps/web/.next/standalone ./
 COPY --from=builder --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=app:app /repo/apps/web/public ./apps/web/public
 USER app
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \

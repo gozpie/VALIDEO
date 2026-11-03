@@ -79,10 +79,18 @@ function TextField({
   );
 }
 
+type DrawerTab = 'fabrication' | 'prompts' | 'decoupage' | 'bible';
+const TABS: { id: DrawerTab; label: string }[] = [
+  { id: 'fabrication', label: 'Fabrication' },
+  { id: 'prompts', label: 'Prompts' },
+  { id: 'decoupage', label: 'Découpage' },
+  { id: 'bible', label: 'Dans le plan' },
+];
+
 /**
- * Panneau d'un plan : versions (aperçu, arbre, version retenue, comparaison A/B), fabrication
- * (image puis vidéo, en repartant d'une version), prompts (écrits par Claude ou à la main),
- * découpage et éléments de bible présents.
+ * Panneau d'un plan : lecteur et versions (arbre, version retenue, comparaison A/B) toujours
+ * visibles ; onglets Fabrication (image puis vidéo, en repartant d'une version), Prompts (écrits
+ * par Claude ou à la main), Découpage et éléments de bible présents.
  */
 export function ShotDrawer({
   shot,
@@ -103,6 +111,7 @@ export function ShotDrawer({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [compareId, setCompareId] = useState<string | null>(null);
   const [comparing, setComparing] = useState(false);
+  const [tab, setTab] = useState<DrawerTab>(canEdit ? 'fabrication' : 'decoupage');
 
   const loadVersions = useCallback(() => {
     call(api.GET('/shots/{shot_id}/versions', { params: { path: { shot_id: shot.id } } }))
@@ -160,21 +169,21 @@ export function ShotDrawer({
         src={assetUrl(version.assetId)}
         controls
         loop
-        className="aspect-video w-full rounded-lg bg-black object-contain"
+        className="aspect-video w-full bg-black object-contain"
         aria-label={label}
       />
     ) : (
       <img
         src={assetUrl(version.assetId)}
         alt={label}
-        className="aspect-video w-full rounded-lg bg-black object-contain"
+        className="aspect-video w-full bg-black object-contain"
       />
     );
 
   return (
     <aside
       aria-label={`Plan — ${shot.name}`}
-      className="flex w-[34rem] shrink-0 animate-slide-up flex-col border-l border-border bg-panel"
+      className="flex w-[36rem] shrink-0 animate-slide-up flex-col border-l border-border bg-panel"
     >
       <header className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{shot.name}</h2>
@@ -208,9 +217,9 @@ export function ShotDrawer({
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-4">
-        {/* Versions et comparaison A/B */}
-        <section aria-label="Versions" className="flex flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+        {/* Lecteur, versions et comparaison A/B */}
+        <section aria-label="Versions" className="flex shrink-0 flex-col gap-2 pb-3">
           {preview ? (
             comparing && compare ? (
               <div className="grid grid-cols-2 gap-2">
@@ -231,12 +240,12 @@ export function ShotDrawer({
               media(preview, `Version ${preview.number}`)
             )
           ) : (
-            <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-border text-xs text-faint">
+            <div className="flex aspect-video items-center justify-center bg-surface text-xs text-faint">
               Aucune version : générez une image ci-dessous.
             </div>
           )}
           {preview && (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 px-4 text-xs">
               <span className="text-muted">
                 v{preview.number} · {preview.kind === 'video' ? 'vidéo' : 'image'}
                 {preview.parentId &&
@@ -272,7 +281,10 @@ export function ShotDrawer({
             </div>
           )}
           {versions.length > 0 && (
-            <ul className="flex flex-col gap-0.5" aria-label="Arbre des versions">
+            <ul
+              className="flex max-h-32 flex-col gap-0.5 overflow-auto px-3"
+              aria-label="Arbre des versions"
+            >
               {versions.map((version) => (
                 <li key={version.id} style={{ paddingLeft: (depth.get(version.id) ?? 0) * 14 }}>
                   <div
@@ -285,7 +297,15 @@ export function ShotDrawer({
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
                       {version.kind === 'video' ? (
-                        <Film size={12} className="text-faint" />
+                        <span className="relative h-6 w-10 shrink-0 overflow-hidden rounded bg-black">
+                          <video
+                            src={assetUrl(version.assetId)}
+                            preload="metadata"
+                            muted
+                            className="h-full w-full object-cover"
+                          />
+                          <Film size={10} className="absolute bottom-0.5 right-0.5 text-white" />
+                        </span>
                       ) : (
                         <img
                           src={assetUrl(version.assetId)}
@@ -315,12 +335,28 @@ export function ShotDrawer({
           )}
         </section>
 
+        <div
+          role="tablist"
+          aria-label="Détail du plan"
+          className="sticky top-0 z-10 flex shrink-0 gap-1 border-y border-border bg-panel px-3"
+        >
+          {TABS.filter((item) => canEdit || item.id !== 'fabrication').map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              onClick={() => setTab(item.id)}
+              className={`border-b-2 px-2.5 py-2 text-xs font-medium transition-colors ${tab === item.id ? 'border-accent text-text' : 'border-transparent text-muted hover:text-text'}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         {/* Fabrication */}
-        {canEdit && (
-          <section aria-label="Fabrication" className="flex flex-col gap-2">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
-              Fabrication
-            </h3>
+        {canEdit && tab === 'fabrication' && (
+          <section aria-label="Fabrication" className="flex flex-col gap-2 p-4">
             {running.map((job) => (
               <JobProgress key={job.id} job={job} />
             ))}
@@ -373,162 +409,157 @@ export function ShotDrawer({
         )}
 
         {/* Prompts */}
-        <section aria-label="Prompts" className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
-              Prompts
-            </h3>
-          </div>
-          {canEdit && (
-            <GenerateControl
-              compact
-              target={{ kind: 'shot', id: shot.id }}
-              providers={providers}
-              mode="shot_prompts"
-              defaultModel="claude:sonnet"
-              body={{ prompt: '' }}
-              label="Écrire avec Claude"
-              disabled={!shot.description.trim()}
-              onCreated={track}
+        {tab === 'prompts' && (
+          <section aria-label="Prompts" className="flex flex-col gap-2 p-4">
+            {canEdit && (
+              <GenerateControl
+                compact
+                target={{ kind: 'shot', id: shot.id }}
+                providers={providers}
+                mode="shot_prompts"
+                defaultModel="claude:sonnet"
+                body={{ prompt: '' }}
+                label="Écrire avec Claude"
+                disabled={!shot.description.trim()}
+                onCreated={track}
+              />
+            )}
+            {promptJob && canEdit && <PromptProposal job={promptJob} onUse={patch} />}
+            <TextField
+              label="Prompt image (anglais, par couches)"
+              value={shot.imagePrompt}
+              rows={5}
+              mono
+              disabled={!canEdit}
+              onSave={(imagePrompt) => void patch({ imagePrompt })}
             />
-          )}
-          {promptJob && canEdit && <PromptProposal job={promptJob} onUse={patch} />}
-          <TextField
-            label="Prompt image (anglais, par couches)"
-            value={shot.imagePrompt}
-            rows={5}
-            mono
-            disabled={!canEdit}
-            onSave={(imagePrompt) => void patch({ imagePrompt })}
-          />
-          <TextField
-            label="Prompt vidéo"
-            value={shot.videoPrompt}
-            rows={4}
-            mono
-            disabled={!canEdit}
-            onSave={(videoPrompt) => void patch({ videoPrompt })}
-          />
-          <TextField
-            label="Prompt négatif"
-            value={shot.negativePrompt}
-            rows={2}
-            mono
-            disabled={!canEdit}
-            onSave={(negativePrompt) => void patch({ negativePrompt })}
-          />
-        </section>
+            <TextField
+              label="Prompt vidéo"
+              value={shot.videoPrompt}
+              rows={4}
+              mono
+              disabled={!canEdit}
+              onSave={(videoPrompt) => void patch({ videoPrompt })}
+            />
+            <TextField
+              label="Prompt négatif"
+              value={shot.negativePrompt}
+              rows={2}
+              mono
+              disabled={!canEdit}
+              onSave={(negativePrompt) => void patch({ negativePrompt })}
+            />
+          </section>
+        )}
 
         {/* Découpage */}
-        <section aria-label="Découpage" className="flex flex-col gap-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
-            Découpage
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-[11px] text-muted">
-              Valeur de plan
-              <input
-                defaultValue={shot.shotSize}
-                disabled={!canEdit}
-                maxLength={80}
-                onBlur={(event) =>
-                  event.target.value !== shot.shotSize &&
-                  void patch({ shotSize: event.target.value })
-                }
-                className={input}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[11px] text-muted">
-              Mode de fabrication
-              <select
-                value={shot.approach}
-                disabled={!canEdit}
-                onChange={(event) => void patch({ approach: event.target.value as ShotApproach })}
-                className={input}
-              >
-                {Object.entries(APPROACH_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <TextField
-            label="Caméra"
-            value={shot.camera}
-            rows={2}
-            disabled={!canEdit}
-            onSave={(camera) => void patch({ camera })}
-          />
-          <TextField
-            label="Description"
-            value={shot.description}
-            rows={6}
-            disabled={!canEdit}
-            onSave={(description) => void patch({ description })}
-          />
-          <TextField
-            label="Intention"
-            value={shot.intention}
-            rows={2}
-            disabled={!canEdit}
-            onSave={(intention) => void patch({ intention })}
-          />
-          <TextField
-            label="Dialogue / voix off"
-            value={shot.dialogue}
-            rows={2}
-            disabled={!canEdit}
-            onSave={(dialogue) => void patch({ dialogue })}
-          />
-        </section>
+        {tab === 'decoupage' && (
+          <section aria-label="Découpage" className="flex flex-col gap-2 p-4">
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-[11px] text-muted">
+                Valeur de plan
+                <input
+                  defaultValue={shot.shotSize}
+                  disabled={!canEdit}
+                  maxLength={80}
+                  onBlur={(event) =>
+                    event.target.value !== shot.shotSize &&
+                    void patch({ shotSize: event.target.value })
+                  }
+                  className={input}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-muted">
+                Mode de fabrication
+                <select
+                  value={shot.approach}
+                  disabled={!canEdit}
+                  onChange={(event) => void patch({ approach: event.target.value as ShotApproach })}
+                  className={input}
+                >
+                  {Object.entries(APPROACH_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <TextField
+              label="Caméra"
+              value={shot.camera}
+              rows={2}
+              disabled={!canEdit}
+              onSave={(camera) => void patch({ camera })}
+            />
+            <TextField
+              label="Description"
+              value={shot.description}
+              rows={6}
+              disabled={!canEdit}
+              onSave={(description) => void patch({ description })}
+            />
+            <TextField
+              label="Intention"
+              value={shot.intention}
+              rows={2}
+              disabled={!canEdit}
+              onSave={(intention) => void patch({ intention })}
+            />
+            <TextField
+              label="Dialogue / voix off"
+              value={shot.dialogue}
+              rows={2}
+              disabled={!canEdit}
+              onSave={(dialogue) => void patch({ dialogue })}
+            />
+          </section>
+        )}
 
         {/* Bible */}
-        <section aria-label="Éléments de bible du plan" className="flex flex-col gap-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
-            Dans le plan
-          </h3>
-          {bible.length === 0 ? (
-            <p className="text-xs text-faint">La bible du projet est vide.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {bible
-                .filter((entry) => entry.kind !== 'look')
-                .map((entry) => {
-                  const on = linked.has(entry.id);
-                  return (
-                    <button
-                      key={entry.id}
-                      type="button"
-                      aria-pressed={on}
-                      disabled={!canEdit}
-                      title={BIBLE_LABELS[entry.kind].one}
-                      onClick={() =>
-                        void patch({
-                          bibleEntryIds: on
-                            ? shot.bibleEntryIds.filter((id) => id !== entry.id)
-                            : [...shot.bibleEntryIds, entry.id],
-                        })
-                      }
-                      className={`flex items-center gap-1.5 rounded-full border py-0.5 pl-0.5 pr-2.5 text-xs transition-colors ${on ? 'border-ai/60 bg-ai/15 text-text' : 'border-border text-muted hover:border-border-strong'}`}
-                    >
-                      {entry.keyAssetId ? (
-                        <img
-                          src={assetUrl(entry.keyAssetId)}
-                          alt=""
-                          className="h-5 w-5 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="h-5 w-5 rounded-full bg-surface" />
-                      )}
-                      {entry.name}
-                    </button>
-                  );
-                })}
-            </div>
-          )}
-        </section>
+        {tab === 'bible' && (
+          <section aria-label="Éléments de bible du plan" className="flex flex-col gap-2 p-4">
+            {bible.length === 0 ? (
+              <p className="text-xs text-faint">La bible du projet est vide.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {bible
+                  .filter((entry) => entry.kind !== 'look')
+                  .map((entry) => {
+                    const on = linked.has(entry.id);
+                    return (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        aria-pressed={on}
+                        disabled={!canEdit}
+                        title={BIBLE_LABELS[entry.kind].one}
+                        onClick={() =>
+                          void patch({
+                            bibleEntryIds: on
+                              ? shot.bibleEntryIds.filter((id) => id !== entry.id)
+                              : [...shot.bibleEntryIds, entry.id],
+                          })
+                        }
+                        className={`flex items-center gap-1.5 rounded-full border py-0.5 pl-0.5 pr-2.5 text-xs transition-colors ${on ? 'border-ai/60 bg-ai/15 text-text' : 'border-border text-muted hover:border-border-strong'}`}
+                      >
+                        {entry.keyAssetId ? (
+                          <img
+                            src={assetUrl(entry.keyAssetId)}
+                            alt=""
+                            className="h-5 w-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="h-5 w-5 rounded-full bg-surface" />
+                        )}
+                        {entry.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </aside>
   );

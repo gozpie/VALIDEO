@@ -39,7 +39,7 @@ export function AppHeader() {
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-ai text-white shadow-card">
             <Clapperboard size={15} />
           </span>
-          AI Scene Studio
+          Chagomi
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <button

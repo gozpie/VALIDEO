@@ -48,7 +48,7 @@ test.describe('studio de production', () => {
     await page.goto(`/projects/${projectId}`);
     await page.getByRole('link', { name: /Ouvrir le studio de production/ }).click();
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/studio$`));
-    const steps = page.getByRole('navigation', { name: 'Étapes de fabrication' });
+    const steps = page.getByRole('complementary', { name: 'Navigation' });
 
     // 1. Script : deux versions immuables.
     await page.getByLabel('Brief ou script').fill('INT. PHARE — NUIT\nMarc rallume la lampe.');
@@ -83,11 +83,13 @@ test.describe('studio de production', () => {
     await steps.getByRole('button', { name: /Plans/ }).click();
     await page.getByRole('button', { name: /Plan 1\.1 — Marc rallume la lampe/ }).click();
     const drawer = page.getByRole('complementary', { name: 'Plan — Marc rallume la lampe' });
+    await drawer.getByRole('tab', { name: 'Dans le plan' }).click();
     await drawer.getByRole('button', { name: 'Marc', exact: true }).click();
     await expect(drawer.getByRole('button', { name: 'Marc', exact: true })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    await drawer.getByRole('tab', { name: 'Fabrication' }).click();
     await drawer.getByLabel('Modèle — Générer l’image').selectOption({ label: 'Simulation image' });
     await drawer.getByRole('button', { name: 'Générer l’image' }).click();
     const tree = drawer.getByRole('list', { name: 'Arbre des versions' });

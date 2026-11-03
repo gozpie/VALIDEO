@@ -11,7 +11,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold">AI Scene Studio</h1>
+        <h1 className="text-2xl font-semibold">Chagomi</h1>
         <p className="mt-2 text-sm text-muted">
           Phase 1 : projets, séquences et plans persistants. L’éditeur de scène 3D arrive en phase
           2. Format de scène : v{CURRENT_SCHEMA_VERSION}.

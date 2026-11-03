@@ -1,20 +1,12 @@
 'use client';
 
 import type { GenerationJob, Project, Workspace } from '@ass/api-client';
-import {
-  ArrowLeft,
-  Clapperboard,
-  Command as CommandIcon,
-  FileText,
-  LayoutGrid,
-  Sparkles,
-  Users,
-} from 'lucide-react';
+import { Clapperboard, FileText, LayoutGrid, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useState, type ReactNode } from 'react';
-import { Kbd } from '@/components/Kbd';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { AppSidebar } from '@/components/AppSidebar';
 import { api, call } from '@/lib/api';
-import { commandStore, useCommandSource } from '@/lib/commands';
+import { useCommandSource } from '@/lib/commands';
 import { toast } from '@/lib/toast';
 import { BibleStep } from './BibleStep';
 import { useBible, useJobs, useProviders, useScripts, useStoryboard } from './data';
@@ -25,10 +17,10 @@ import { ShotsStep } from './ShotsStep';
 export type StudioStep = 'script' | 'proposals' | 'bible' | 'shots';
 
 const STEPS: { id: StudioStep; label: string; icon: ReactNode }[] = [
-  { id: 'script', label: 'Script', icon: <FileText size={15} /> },
-  { id: 'proposals', label: 'Propositions', icon: <Sparkles size={15} /> },
-  { id: 'bible', label: 'Bible', icon: <Users size={15} /> },
-  { id: 'shots', label: 'Plans', icon: <LayoutGrid size={15} /> },
+  { id: 'script', label: 'Script', icon: <FileText size={18} /> },
+  { id: 'proposals', label: 'Propositions', icon: <Sparkles size={18} /> },
+  { id: 'bible', label: 'Bible', icon: <Users size={18} /> },
+  { id: 'shots', label: 'Plans', icon: <LayoutGrid size={18} /> },
 ];
 
 /**
@@ -44,6 +36,16 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
   const [bible, refreshBible] = useBible(projectId);
   const [board, refreshBoard] = useStoryboard(projectId);
   const providers = useProviders();
+  const [projects, setProjects] = useState<Project[]>([project]);
+  useEffect(() => {
+    call(
+      api.GET('/workspaces/{workspace_id}/projects', {
+        params: { path: { workspace_id: workspace.id } },
+      }),
+    )
+      .then((page) => setProjects(page.items))
+      .catch(() => undefined);
+  }, [workspace.id]);
 
   const loadJobs = useCallback(
     () =>
@@ -99,109 +101,109 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
     })),
   );
 
+  const stepTitle = STEPS.find((item) => item.id === step)?.label ?? '';
   return (
-    <div className="fixed inset-0 z-10 flex flex-col bg-surface">
-      <header className="flex items-center gap-3 border-b border-border bg-panel px-4 py-2">
-        <Link
-          href={`/projects/${projectId}`}
-          aria-label="Retour au projet"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-text"
-        >
-          <ArrowLeft size={16} />
-        </Link>
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-ai text-white">
-          <Clapperboard size={14} />
-        </span>
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold">{project.name}</h1>
-          <p className="text-[11px] text-faint">
-            Studio · {workspace.name} · {project.resolution.width}×{project.resolution.height} ·{' '}
-            {fps} i/s
-          </p>
-        </div>
-        <nav
-          aria-label="Étapes de fabrication"
-          className="mx-auto flex items-center gap-1 rounded-xl bg-surface p-1"
-        >
-          {STEPS.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-current={step === item.id ? 'step' : undefined}
-              onClick={() => setStep(item.id)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${step === item.id ? 'bg-elevated text-text shadow-card' : 'text-muted hover:text-text'}`}
-            >
-              <span className="font-mono text-[10px] text-faint">{index + 1}</span>
-              {item.icon}
-              {item.label}
-              <span
-                className={`rounded px-1.5 py-px text-[10px] ${step === item.id ? 'bg-accent/25 text-text' : 'bg-panel text-faint'}`}
-              >
-                {counts[item.id]}
-              </span>
-            </button>
-          ))}
-        </nav>
-        <button
-          type="button"
-          aria-label="Palette de commandes"
-          onClick={() => commandStore.getState().setOpen(true)}
-          className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1 text-xs text-muted hover:text-text"
-        >
-          <CommandIcon size={13} /> <Kbd>⌘K</Kbd>
-        </button>
-      </header>
-      <main className="flex min-h-0 flex-1 flex-col">
-        {step === 'script' && (
-          <ScriptStep
-            projectId={projectId}
-            canEdit={canEdit}
-            scripts={scripts}
-            refreshScripts={refreshScripts}
-            providers={providers}
-            onJob={(job) => {
-              track(job);
-              toast('Claude travaille : la proposition arrivera dans « Propositions »', {
-                kind: 'ai',
-              });
-            }}
-          />
-        )}
-        {step === 'proposals' && (
-          <ProposalsStep
-            projectId={projectId}
-            canEdit={canEdit}
-            jobs={jobs}
-            onApplied={(kind) => {
-              refreshJobs();
-              refreshBible();
-              refreshBoard();
-              setStep(kind === 'breakdown' ? 'shots' : 'bible');
-            }}
-          />
-        )}
-        {step === 'bible' && (
-          <BibleStep
-            projectId={projectId}
-            canEdit={canEdit}
-            entries={bible}
-            refresh={refreshBible}
-            providers={providers}
-            jobs={jobs}
-            onJob={track}
-          />
-        )}
-        {step === 'shots' && (
-          <ShotsStep
-            canEdit={canEdit}
-            board={board}
-            refresh={refreshBoard}
-            bible={bible}
-            providers={providers}
-            fps={fps}
-          />
-        )}
-      </main>
+    <div className="fixed inset-0 z-10 flex bg-surface">
+      <AppSidebar
+        subtitle={workspace.name}
+        sections={[
+          {
+            title: 'Production',
+            items: STEPS.map((item) => ({
+              id: item.id,
+              label: item.label,
+              icon: item.icon,
+              badge: counts[item.id],
+              active: step === item.id,
+              onSelect: () => setStep(item.id),
+            })),
+          },
+          {
+            title: 'Projets',
+            items: projects.map((other) => ({
+              id: other.id,
+              label: other.name,
+              icon: <Clapperboard size={17} />,
+              current: other.id === projectId,
+              href:
+                other.id === projectId ? `/projects/${other.id}` : `/projects/${other.id}/studio`,
+            })),
+            action: { label: 'Nouveau projet', href: `/workspaces/${workspace.id}` },
+          },
+        ]}
+      />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-5">
+          <nav
+            aria-label="Fil d’Ariane"
+            className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted"
+          >
+            <Link href={`/workspaces/${workspace.id}`} className="truncate hover:text-text">
+              {workspace.name}
+            </Link>
+            <span className="text-faint">/</span>
+            <Link href={`/projects/${projectId}`} className="truncate hover:text-text">
+              {project.name}
+            </Link>
+            <span className="text-faint">/</span>
+            <h1 className="truncate text-[15px] font-bold text-text">{stepTitle}</h1>
+          </nav>
+          <span className="ml-auto text-xs tabular-nums text-faint">
+            {project.resolution.width}×{project.resolution.height} · {fps} i/s
+          </span>
+        </header>
+        <main className="flex min-h-0 flex-1 flex-col">
+          {step === 'script' && (
+            <ScriptStep
+              projectId={projectId}
+              canEdit={canEdit}
+              scripts={scripts}
+              refreshScripts={refreshScripts}
+              providers={providers}
+              onJob={(job) => {
+                track(job);
+                toast('Claude travaille : la proposition arrivera dans « Propositions »', {
+                  kind: 'ai',
+                });
+              }}
+            />
+          )}
+          {step === 'proposals' && (
+            <ProposalsStep
+              projectId={projectId}
+              canEdit={canEdit}
+              jobs={jobs}
+              onApplied={(kind) => {
+                refreshJobs();
+                refreshBible();
+                refreshBoard();
+                setStep(kind === 'breakdown' ? 'shots' : 'bible');
+              }}
+            />
+          )}
+          {step === 'bible' && (
+            <BibleStep
+              projectId={projectId}
+              canEdit={canEdit}
+              entries={bible}
+              refresh={refreshBible}
+              providers={providers}
+              jobs={jobs}
+              onJob={track}
+            />
+          )}
+          {step === 'shots' && (
+            <ShotsStep
+              canEdit={canEdit}
+              board={board}
+              refresh={refreshBoard}
+              bible={bible}
+              providers={providers}
+              fps={fps}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
