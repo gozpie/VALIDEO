@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "sceneId": "00000000-0000-4000-8000-000000000002",
+  "coordinateSystem": {
+    "handedness": "right",
+    "upAxis": "+Y",
+    "forwardAxis": "-Z"
+  },
+  "units": {
+    "length": "meter",
+    "angle": "radian"
+  },
+  "fps": {
+    "numerator": 24000,
+    "denominator": 1001
+  },
+  "durationFrames": 96,
+  "activeCameraId": "20000000-0000-4000-8000-000000000001",
+  "markers": [],
+  "nodes": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "name": "Groupe décor",
+      "type": "group",
+      "parentId": null,
+      "assetId": null,
+      "primitive": null,
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1]
+      },
+      "visible": true,
+      "castShadow": false,
+      "receiveShadow": false,
+      "locked": false,
+      "layer": "decor",
+      "passIndex": 0,
+      "renderMode": "proxy",
+      "materialOverrides": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "name": "Cube",
+      "type": "primitive",
+      "parentId": "10000000-0000-4000-8000-000000000001",
+      "assetId": null,
+      "primitive": "cube",
+      "transform": {
+        "position": [0, 0.5, 0],
+        "rotation": [0, 0.3826834, 0, 0.9238795],
+        "scale": [1, 1, 1]
+      },
+      "visible": true,
+      "castShadow": true,
+      "receiveShadow": true,
+      "locked": false,
+      "layer": "hero",
+      "passIndex": 1,
+      "renderMode": "final_3d",
+      "materialOverrides": [
+        {
+          "slot": "*",
+          "materialId": "40000000-0000-4000-8000-000000000001"
+        }
+      ]
+    }
+  ],
+  "cameras": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "name": "Caméra principale",
+      "parentId": null,
+      "transform": {
+        "position": [0, 1.6, 5],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1]
+      },
+      "projection": "perspective",
+      "focalLengthMm": 35,
+      "sensorWidthMm": 36,
+      "sensorHeightMm": 24,
+      "orthographicHeight": null,
+      "nearClip": 0.1,
+      "farClip": 1000,
+      "focusDistance": 5,
+      "aperture": 2.8,
+      "locked": false,
+      "lookAtTargetId": null,
+      "rollRadians": 0
+    }
+  ],
+  "lights": [
+    {
+      "id": "30000000-0000-4000-8000-000000000001",
+      "name": "Soleil",
+      "parentId": null,
+      "transform": {
+        "position": [0, 10, 0],
+        "rotation": [-0.3826834, 0, 0, 0.9238795],
+        "scale": [1, 1, 1]
+      },
+      "kind": "directional",
+      "color": [1, 0.95, 0.9],
+      "intensity": 3,
+      "range": null,
+      "innerConeAngle": null,
+      "outerConeAngle": null,
+      "castShadow": true,
+      "visible": true
+    }
+  ],
+  "materials": [
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "name": "Rouge mat",
+      "type": "pbr_metallic_roughness",
+      "baseColor": [0.6, 0.05, 0.05],
+      "baseColorTextureAssetId": null,
+      "metallic": 0,
+      "roughness": 0.7,
+      "emissive": [0, 0, 0],
+      "emissiveStrength": 0,
+      "opacity": 1,
+      "normalTextureAssetId": null
+    }
+  ],
+  "animations": [
+    {
+      "id": "50000000-0000-4000-8000-000000000001",
+      "targetId": "10000000-0000-4000-8000-000000000002",
+      "propertyPath": "transform.position",
+      "valueType": "vec3",
+      "extrapolation": "constant",
+      "keyframes": [
+        {
+          "frame": 0,
+          "value": [0, 0.5, 0],
+          "interpolation": "bezier",
+          "inHandle": null,
+          "outHandle": {
+            "frameOffset": 8,
+            "valueOffset": [0.5, 0, 0]
+          }
+        },
+        {
+          "frame": 48,
+          "value": [2, 0.5, 0],
+          "interpolation": "linear",
+          "inHandle": {
+            "frameOffset": -8,
+            "valueOffset": [-0.5, 0, 0]
+          },
+          "outHandle": null
+        }
+      ]
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000002",
+      "targetId": "20000000-0000-4000-8000-000000000001",
+      "propertyPath": "camera.focalLengthMm",
+      "valueType": "scalar",
+      "extrapolation": "constant",
+      "keyframes": [
+        {
+          "frame": 0,
+          "value": 35,
+          "interpolation": "ease_in_out",
+          "inHandle": null,
+          "outHandle": null
+        },
+        {
+          "frame": 95,
+          "value": 50,
+          "interpolation": "linear",
+          "inHandle": null,
+          "outHandle": null
+        }
+      ]
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000003",
+      "targetId": "20000000-0000-4000-8000-000000000001",
+      "propertyPath": "transform.rotation",
+      "valueType": "quaternion",
+      "extrapolation": "constant",
+      "keyframes": [
+        {
+          "frame": 0,
+          "value": [0, 0, 0, 1],
+          "interpolation": "linear",
+          "inHandle": null,
+          "outHandle": null
+        },
+        {
+          "frame": 95,
+          "value": [0, 0.258819, 0, 0.9659258],
+          "interpolation": "linear",
+          "inHandle": null,
+          "outHandle": null
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "assetId": "70000000-0000-4000-8000-000000000001",
+      "role": "style",
+      "label": "Ambiance crépuscule"
+    }
+  ],
+  "renderSettings": {
+    "width": 1920,
+    "height": 1080,
+    "frameStart": 0,
+    "frameEnd": 95,
+    "samples": 128,
+    "transparentBackground": true,
+    "motionBlur": false,
+    "antiAliasing": "msaa4",
+    "colorManagement": {
+      "workingSpace": "linear_rec709",
+      "displayTransform": "agx"
+    }
+  }
+}

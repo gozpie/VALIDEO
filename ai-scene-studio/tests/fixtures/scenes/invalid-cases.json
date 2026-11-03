@@ -1,5 +1,5 @@
 {
-  "base": "cube-camera-animated.v1.json",
+  "base": "cube-camera-animated.v2.json",
   "description": "Cas invalides partagés : chaque implémentation (TypeScript, Python) doit signaler un problème à expectedPath.",
   "cases": [
     {
@@ -218,6 +218,68 @@
         }
       ],
       "expectedPath": "coordinateSystem.upAxis"
+    },
+    {
+      "name": "caméra active inexistante",
+      "set": [
+        {
+          "path": ["activeCameraId"],
+          "value": "99999999-0000-4000-8000-000000000000"
+        }
+      ],
+      "expectedPath": "activeCameraId"
+    },
+    {
+      "name": "cible de visée inexistante",
+      "set": [
+        {
+          "path": ["cameras", 0, "lookAtTargetId"],
+          "value": "99999999-0000-4000-8000-000000000000"
+        }
+      ],
+      "expectedPath": "cameras.0.lookAtTargetId"
+    },
+    {
+      "name": "caméra visant elle-même",
+      "set": [
+        {
+          "path": ["cameras", 0, "lookAtTargetId"],
+          "value": "20000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "expectedPath": "cameras.0.lookAtTargetId"
+    },
+    {
+      "name": "marqueur hors durée",
+      "set": [
+        {
+          "path": ["markers"],
+          "value": [
+            {
+              "id": "80000000-0000-4000-8000-000000000001",
+              "frame": 96,
+              "label": "Fin"
+            }
+          ]
+        }
+      ],
+      "expectedPath": "markers.0.frame"
+    },
+    {
+      "name": "identifiant de marqueur dupliqué",
+      "set": [
+        {
+          "path": ["markers"],
+          "value": [
+            {
+              "id": "10000000-0000-4000-8000-000000000001",
+              "frame": 3,
+              "label": "A"
+            }
+          ]
+        }
+      ],
+      "expectedPath": "markers.0.id"
     }
   ]
 }

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "sceneId": "00000000-0000-4000-8000-000000000001",
+  "coordinateSystem": {
+    "handedness": "right",
+    "upAxis": "+Y",
+    "forwardAxis": "-Z"
+  },
+  "units": {
+    "length": "meter",
+    "angle": "radian"
+  },
+  "fps": {
+    "numerator": 24,
+    "denominator": 1
+  },
+  "durationFrames": 48,
+  "activeCameraId": null,
+  "markers": [],
+  "nodes": [],
+  "cameras": [],
+  "lights": [],
+  "materials": [],
+  "animations": [],
+  "references": [],
+  "renderSettings": {
+    "width": 1920,
+    "height": 1080,
+    "frameStart": 0,
+    "frameEnd": 47,
+    "samples": 64,
+    "transparentBackground": false,
+    "motionBlur": false,
+    "antiAliasing": "msaa4",
+    "colorManagement": {
+      "workingSpace": "linear_rec709",
+      "displayTransform": "srgb"
+    }
+  }
+}

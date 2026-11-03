@@ -44,6 +44,7 @@ function checkUniqueIds(scene: SceneDocument, ctx: Ctx): Map<string, TargetKind 
     ['materials', 'material', scene.materials],
     ['animations', 'other', scene.animations],
     ['references', 'other', scene.references],
+    ['markers', 'other', scene.markers],
   ];
   for (const [key, kind, items] of collections) {
     items.forEach((item, index) => {
@@ -139,7 +140,34 @@ function checkNodes(scene: SceneDocument, ctx: Ctx): void {
 }
 
 function checkCamerasAndLights(scene: SceneDocument, ctx: Ctx): void {
+  const targets = new Set([...scene.nodes, ...scene.cameras, ...scene.lights].map((e) => e.id));
+  if (scene.activeCameraId !== null && !scene.cameras.some((c) => c.id === scene.activeCameraId)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['activeCameraId'],
+      message: `Caméra active inexistante : ${scene.activeCameraId}`,
+    });
+  }
+  scene.markers.forEach((marker, index) => {
+    if (marker.frame >= scene.durationFrames) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['markers', index, 'frame'],
+        message: 'Un marqueur doit être placé avant la fin du plan (frame < durationFrames)',
+      });
+    }
+  });
   scene.cameras.forEach((camera, index) => {
+    if (
+      camera.lookAtTargetId !== null &&
+      (camera.lookAtTargetId === camera.id || !targets.has(camera.lookAtTargetId))
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cameras', index, 'lookAtTargetId'],
+        message: 'La cible de visée doit être une autre entité de la scène',
+      });
+    }
     if (camera.farClip <= camera.nearClip) {
       ctx.addIssue({
         code: 'custom',

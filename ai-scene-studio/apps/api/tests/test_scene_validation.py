@@ -17,8 +17,8 @@ from ass_api.scenes.validation import (
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / "tests/fixtures/scenes"
 SHARED = json.loads((FIXTURES / "invalid-cases.json").read_text(encoding="utf-8"))
-EMBEDDED_SCHEMA = ROOT / "apps/api/src/ass_api/scenes/scene.v1.schema.json"
-GENERATED_SCHEMA = ROOT / "packages/scene-schema/schema/scene.v1.schema.json"
+EMBEDDED_SCHEMA = ROOT / "apps/api/src/ass_api/scenes/scene.schema.json"
+GENERATED_SCHEMA = ROOT / "packages/scene-schema/schema/scene.schema.json"
 
 
 def _load(name: str) -> dict[str, Any]:
@@ -30,7 +30,7 @@ def test_embedded_schema_matches_generated_one() -> None:
     assert EMBEDDED_SCHEMA.read_bytes() == GENERATED_SCHEMA.read_bytes(), "pnpm schema:generate"
 
 
-@pytest.mark.parametrize("name", ["empty.v1.json", "cube-camera-animated.v1.json"])
+@pytest.mark.parametrize("name", ["empty.v2.json", "cube-camera-animated.v2.json"])
 def test_valid_fixtures(name: str) -> None:
     assert scene_issues(_load(name)) == []
 

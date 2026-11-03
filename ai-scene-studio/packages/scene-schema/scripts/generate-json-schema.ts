@@ -10,8 +10,8 @@ import { buildJsonSchema } from '../src/json-schema';
 const content = `${JSON.stringify(buildJsonSchema(), null, 2)}\n`;
 // Copie embarquée dans le package Python de l'API (image Docker autonome) ; un test vérifie l'égalité.
 for (const relative of [
-  '../schema/scene.v1.schema.json',
-  '../../../apps/api/src/ass_api/scenes/scene.v1.schema.json',
+  '../schema/scene.schema.json',
+  '../../../apps/api/src/ass_api/scenes/scene.schema.json',
 ]) {
   const target = fileURLToPath(new URL(relative, import.meta.url));
   writeFileSync(target, content);

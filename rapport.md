@@ -199,3 +199,11 @@ déplacement, copier-coller) ; 3.5 clôture (E2E, CI, bilan).
 - **Tests** : 13 tests (passage exact par les clés, chaque interpolation, Bézier droite et symétrique, slerp et signe opposé, extrapolations, booléens, entrée non modifiée, référence, indépendance vis-à-vis de l'ordre d'évaluation, édition des clés).
 - **Objectif** : un état de scène exact pour n'importe quelle frame, séparé de l'affichage.
 
+### Étape 3.2 — Format de scène v2, contraintes et mouvements de caméra
+- **Modifié** : `@ass/scene-schema` — `CURRENT_SCHEMA_VERSION = 2` : `activeCameraId`, `markers`, caméras `locked` / `lookAtTargetId` / `rollRadians`, propriété animable `camera.rollRadians` ; règles d'intégrité (caméra active existante, cible de visée existante et différente de la caméra, marqueurs dans la durée, identifiants de marqueurs uniques) ; migration `migrateV1toV2` ; fabrique de scène vide ; JSON Schema renommé `scene.schema.json`.
+- **Ajouté** : fixtures `empty.v2.json` et `cube-camera-animated.v2.json` (résultat exact de la migration des fixtures v1), 5 nouveaux cas invalides partagés TypeScript/Python.
+- **Modifié** : validation Python (mêmes règles, propriété animable) ; `scene-engine` (caméras verrouillables, `setActiveCamera`, nettoyage de la caméra active et des cibles de visée à la suppression, copie des cibles à la duplication) ; `animation-engine` (roulis animé).
+- **Ajouté** : `scene-engine/src/camera.ts` — `moveCamera` (dolly, truck, pedestal, pan, tilt, orbite) et `evaluateFrame` (animation puis contrainte de visée avec roulis, y compris pour une caméra enfant).
+- **Tests** : migrations avant/après et non-mutation, 26 cas partagés, mouvements de caméra, visée d'une cible animée à plusieurs frames, roulis, caméra active et suppressions (TypeScript 61 + 16 + 14 tests sur ces packages ; Python 109 unitaires, 98 intégration).
+- **Objectif** : associer une caméra active à chaque plan et calculer ses mouvements à partir des clés et des contraintes, de façon déterministe.
+

@@ -86,6 +86,9 @@ export function createCamera(name = 'Caméra'): Camera {
     farClip: 1000,
     focusDistance: null,
     aperture: 2.8,
+    locked: false,
+    lookAtTargetId: null,
+    rollRadians: 0,
   };
 }
 

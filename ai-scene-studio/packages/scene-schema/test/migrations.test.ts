@@ -3,9 +3,28 @@ import { migrateScene, SceneMigrationError, type SceneMigration } from '../src';
 import { loadSceneFixture } from './fixtures';
 
 describe('migrateScene', () => {
-  it('retourne un document v1 valide inchangé', () => {
+  it('migre un document v1 vers v2 (fixtures avant/après)', () => {
+    for (const name of ['empty', 'cube-camera-animated']) {
+      expect(migrateScene(loadSceneFixture(`${name}.v1.json`))).toEqual(
+        loadSceneFixture(`${name}.v2.json`),
+      );
+    }
+  });
+
+  it('ne modifie pas le document source et laisse un document v2 inchangé', () => {
     const raw = loadSceneFixture('cube-camera-animated.v1.json');
-    expect(migrateScene(raw)).toEqual(raw);
+    const before = structuredClone(raw);
+    migrateScene(raw);
+    expect(raw).toEqual(before);
+    const current = loadSceneFixture('cube-camera-animated.v2.json');
+    expect(migrateScene(current)).toEqual(current);
+  });
+
+  it('choisit la première caméra comme caméra active, ou aucune', () => {
+    expect(migrateScene(loadSceneFixture('cube-camera-animated.v1.json')).activeCameraId).toBe(
+      '20000000-0000-4000-8000-000000000001',
+    );
+    expect(migrateScene(loadSceneFixture('empty.v1.json')).activeCameraId).toBeNull();
   });
 
   it('refuse une version future', () => {
@@ -19,7 +38,7 @@ describe('migrateScene', () => {
   it("applique une chaîne de migrations jusqu'à la version cible", () => {
     const raw = loadSceneFixture('empty.v1.json');
     const calls: number[] = [];
-    // Migration fictive v1 → v2 ; le document reste invalide car le schéma courant est v1.
+    // Migration fictive v1 → v2 incomplète : le document reste invalide pour le schéma v2.
     const migrations: Record<number, SceneMigration> = {
       1: (doc) => {
         calls.push(1);

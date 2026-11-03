@@ -5,10 +5,30 @@ import { validateScene, type SceneValidationIssue } from './validate';
 export type SceneMigration = (document: Record<string, unknown>) => Record<string, unknown>;
 
 /**
- * Registre des migrations, indexé par version source.
- * Exemple futur : `1: migrateV1toV2` transformera un document v1 en v2.
+ * v1 → v2 : caméra active (la première caméra, s'il y en a une), marqueurs de timeline, et pour chaque
+ * caméra le verrouillage, la contrainte de visée et le roulis (valeurs neutres).
  */
-export const SCENE_MIGRATIONS: Readonly<Record<number, SceneMigration>> = {};
+export const migrateV1toV2: SceneMigration = (document) => {
+  const cameras = Array.isArray(document['cameras'])
+    ? (document['cameras'] as Record<string, unknown>[])
+    : [];
+  const first = cameras[0];
+  return {
+    ...document,
+    schemaVersion: 2,
+    activeCameraId: first && typeof first['id'] === 'string' ? first['id'] : null,
+    markers: [],
+    cameras: cameras.map((camera) => ({
+      ...camera,
+      locked: false,
+      lookAtTargetId: null,
+      rollRadians: 0,
+    })),
+  };
+};
+
+/** Registre des migrations, indexé par version source. */
+export const SCENE_MIGRATIONS: Readonly<Record<number, SceneMigration>> = { 1: migrateV1toV2 };
 
 export class SceneMigrationError extends Error {
   constructor(

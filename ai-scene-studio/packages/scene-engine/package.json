@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ass/animation-engine": "workspace:*",
     "@ass/scene-schema": "workspace:*",
     "three": "0.187.0"
   },

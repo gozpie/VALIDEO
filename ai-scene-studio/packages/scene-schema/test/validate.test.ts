@@ -5,7 +5,7 @@ import { loadSceneFixture } from './fixtures';
 const clone = <T>(value: T): T => structuredClone(value);
 
 function animated(): SceneDocument {
-  const result = validateScene(loadSceneFixture('cube-camera-animated.v1.json'));
+  const result = validateScene(loadSceneFixture('cube-camera-animated.v2.json'));
   if (!result.success) throw new Error(JSON.stringify(result.issues));
   return result.data;
 }
@@ -26,7 +26,7 @@ function expectIssue(scene: unknown, pathFragment: string, messageFragment: stri
 }
 
 describe('validateScene — fixtures valides', () => {
-  it.each(['empty.v1.json', 'cube-camera-animated.v1.json'])('accepte %s', (name) => {
+  it.each(['empty.v2.json', 'cube-camera-animated.v2.json'])('accepte %s', (name) => {
     const result = validateScene(loadSceneFixture(name));
     expect(result.success ? [] : result.issues).toEqual([]);
   });
@@ -57,7 +57,7 @@ describe('validateScene — règles structurelles', () => {
   });
 
   it('refuse une version de schéma inconnue', () => {
-    expectIssue({ ...animated(), schemaVersion: 2 }, 'schemaVersion', '');
+    expectIssue({ ...animated(), schemaVersion: 3 }, 'schemaVersion', '');
   });
 
   it("refuse une convention d'axes différente", () => {

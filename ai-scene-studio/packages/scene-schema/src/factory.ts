@@ -19,6 +19,8 @@ export function createEmptyScene(options: CreateEmptySceneOptions): SceneDocumen
     units: { length: 'meter', angle: 'radian' },
     fps: options.fps ?? { numerator: 24, denominator: 1 },
     durationFrames,
+    activeCameraId: null,
+    markers: [],
     nodes: [],
     cameras: [],
     lights: [],

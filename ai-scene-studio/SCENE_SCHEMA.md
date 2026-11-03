@@ -1,19 +1,21 @@
-# Format canonique de scène (v1)
+# Format canonique de scène (v2)
 
 La scène et ses révisions sont la **source de vérité** du produit. Le format est du JSON
 versionné, indépendant de Three.js et de Blender. Implémentation de référence :
-`packages/scene-schema` (Zod). JSON Schema structurel généré : `packages/scene-schema/schema/scene.v1.schema.json`.
+`packages/scene-schema` (Zod). JSON Schema structurel généré : `packages/scene-schema/schema/scene.schema.json`.
 
 ## Racine
 
 | Champ                                                                 | Type                                                       | Notes                                                                                  |
 | --------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `schemaVersion`                                                       | `1`                                                        | Entier. Incrémenté à chaque changement non rétrocompatible.                            |
+| `schemaVersion`                                                       | `2`                                                        | Entier. Incrémenté à chaque changement non rétrocompatible.                            |
 | `sceneId`                                                             | UUID                                                       | Stable sur toutes les révisions.                                                       |
 | `coordinateSystem`                                                    | `{ handedness: "right", upAxis: "+Y", forwardAxis: "-Z" }` | Constantes (voir conventions).                                                         |
 | `units`                                                               | `{ length: "meter", angle: "radian" }`                     | Constantes.                                                                            |
 | `fps`                                                                 | `{ numerator, denominator }`                               | Rationnel : 24000/1001 = 23,976 i/s exact.                                             |
 | `durationFrames`                                                      | entier ≥ 1                                                 |                                                                                        |
+| `activeCameraId`                                                      | UUID ou `null`                                             | v2 : caméra active du plan (vue caméra, rendu).                                        |
+| `markers`                                                             | `{ id, frame, label }[]`                                   | v2 : repères de la timeline, `frame < durationFrames`.                                 |
 | `nodes`, `cameras`, `lights`, `materials`, `animations`, `references` | tableaux                                                   |                                                                                        |
 | `renderSettings`                                                      | objet                                                      | Résolution, plage de frames, samples, transparence, motion blur, AA, color management. |
 
@@ -64,6 +66,11 @@ par des tests de rendu en phase 4 (axes, cadrage, focales).
   `FOVv = 2·atan(tan(FOVh/2) / aspect)` avec `aspect = width/height` du rendu.
   Équivalents : Blender `sensor_fit = 'HORIZONTAL'` ; Three.js `PerspectiveCamera.fov = FOVv` (en degrés).
 - Orthographique : `orthographicHeight` (m) obligatoire, ignoré sinon.
+- v2 : `locked` (paramètres verrouillés dans l'éditeur), `lookAtTargetId` (contrainte de visée : à chaque frame, après
+  l'animation, l'axe −Z de la caméra est orienté vers la position monde de la cible, +Y vers le haut), `rollRadians`
+  (roulis autour de l'axe de visée, appliqué avec la contrainte ; animable via `camera.rollRadians`).
+- L'état d'une frame est `evaluateFrame(scene, frame)` (`@ass/scene-engine`) : animation (`@ass/animation-engine`) puis
+  contraintes. Vue 3D, vue caméra et rendu utilisent cette même évaluation.
 
 ### Lumières
 
@@ -88,7 +95,7 @@ par des tests de rendu en phase 4 (axes, cadrage, focales).
 
 - `AnimationTrack = { id, targetId, propertyPath, valueType, extrapolation, keyframes[] }`.
 - Propriétés animables (table `ANIMATABLE_PROPERTIES`, extensible) : `transform.position|rotation|scale`, `visible`,
-  `camera.focalLengthMm|focusDistance|aperture`, `light.intensity|color`, `material.opacity`.
+  `camera.focalLengthMm|focusDistance|aperture|rollRadians`, `light.intensity|color`, `material.opacity`.
 - `Keyframe = { frame (entier), value, interpolation, inHandle, outHandle }`. L'interpolation porte sur le segment **de cette clé vers la suivante**.
 - Interpolations : `step`, `linear`, `bezier` (poignées `{ frameOffset, valueOffset[] }` relatives à la clé), `ease_in`, `ease_out`, `ease_in_out`.
 - Rotations : `linear` = **slerp** par le plus court chemin ; `ease_*` = slerp avec temps remappé ; `bezier` interdit (pas de Bézier composante par composante sur un quaternion).
@@ -109,6 +116,11 @@ les mêmes fixtures, dont `tests/fixtures/scenes/invalid-cases.json` (chaque cas
 Le serveur refuse aussi `NaN` / `Infinity` et les snapshots de plus de 5 Mo.
 
 ## Migrations
+
+Historique : **v1 → v2** (`migrateV1toV2`) ajoute `activeCameraId` (première caméra, ou `null`), `markers: []`, et pour
+chaque caméra `locked: false`, `lookAtTargetId: null`, `rollRadians: 0`. Fixtures avant/après :
+`tests/fixtures/scenes/*.v1.json` → `*.v2.json`. Le serveur n'accepte à l'enregistrement que la version courante ;
+une révision v1 déjà stockée est migrée à la lecture par l'éditeur et réenregistrée en v2.
 
 `migrateScene(raw)` lit `schemaVersion`, applique la chaîne `SCENE_MIGRATIONS[N]` (N → N+1),
 refuse les versions futures, puis valide le résultat. Règles :

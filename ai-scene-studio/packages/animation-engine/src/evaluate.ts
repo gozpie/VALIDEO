@@ -120,6 +120,11 @@ function assign(scene: SceneDocument, track: AnimationTrack, value: Value): void
       if (camera) camera[key] = Math.max(value as number, 1e-6);
       return;
     }
+    case 'camera.rollRadians': {
+      const camera = scene.cameras.find((c) => c.id === id);
+      if (camera) camera.rollRadians = value as number;
+      return;
+    }
     case 'light.intensity': {
       const light = scene.lights.find((l) => l.id === id);
       if (light) light.intensity = Math.max(value as number, 0);

@@ -8,8 +8,8 @@ import pytest
 from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parents[3]
-SCHEMA_PATH = ROOT / "packages/scene-schema/schema/scene.v1.schema.json"
-FIXTURES = sorted((ROOT / "tests/fixtures/scenes").glob("*.v1.json"))
+SCHEMA_PATH = ROOT / "packages/scene-schema/schema/scene.schema.json"
+FIXTURES = sorted((ROOT / "tests/fixtures/scenes").glob("*.v2.json"))
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +35,7 @@ def test_fixture_matches_schema(validator: Draft202012Validator, fixture: Path) 
 
 
 def test_rejects_float_frame(validator: Draft202012Validator) -> None:
-    scene = _load(ROOT / "tests/fixtures/scenes/cube-camera-animated.v1.json")
+    scene = _load(ROOT / "tests/fixtures/scenes/cube-camera-animated.v2.json")
     scene["animations"][0]["keyframes"][0]["frame"] = 1.5
     assert not validator.is_valid(scene)
 

@@ -142,6 +142,9 @@ importers:
 
   packages/scene-engine:
     dependencies:
+      '@ass/animation-engine':
+        specifier: workspace:*
+        version: link:../animation-engine
       '@ass/scene-schema':
         specifier: workspace:*
         version: link:../scene-schema

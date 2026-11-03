@@ -101,6 +101,13 @@ export function removeEntities(scene: SceneDocument, ids: Iterable<string>): Sce
   next.cameras = next.cameras.filter((c) => !removed.has(c.id));
   next.lights = next.lights.filter((l) => !removed.has(l.id));
   next.animations = next.animations.filter((track) => !removed.has(track.targetId));
+  if (next.activeCameraId !== null && removed.has(next.activeCameraId)) {
+    next.activeCameraId = next.cameras[0]?.id ?? null;
+  }
+  for (const camera of next.cameras) {
+    if (camera.lookAtTargetId !== null && removed.has(camera.lookAtTargetId))
+      camera.lookAtTargetId = null;
+  }
   const usedMaterials = new Set(
     next.nodes.flatMap((n) => n.materialOverrides.map((o) => o.materialId)),
   );
@@ -134,16 +141,25 @@ export function setVisible(scene: SceneDocument, id: string, visible: boolean): 
   });
 }
 
+/** Verrouillage des paramètres : objets et caméras. */
 export function setLocked(scene: SceneDocument, id: string, locked: boolean): SceneDocument {
   return mutate(scene, id, (entity) => {
-    if (entity.kind !== 'node') throw new Error('Seuls les objets peuvent être verrouillés');
+    if (entity.kind === 'light') throw new Error('Une lumière ne se verrouille pas');
     entity.value.locked = locked;
   });
 }
 
 export function isLocked(scene: SceneDocument, id: string): boolean {
   const entity = findEntity(scene, id);
-  return entity?.kind === 'node' && entity.value.locked;
+  return entity !== null && entity.kind !== 'light' && entity.value.locked;
+}
+
+/** Caméra active du plan (vue caméra, rendu) ; null pour aucune. */
+export function setActiveCamera(scene: SceneDocument, cameraId: string | null): SceneDocument {
+  if (cameraId !== null && !scene.cameras.some((c) => c.id === cameraId)) {
+    throw new Error('Caméra inconnue');
+  }
+  return { ...copy(scene), activeCameraId: cameraId };
 }
 
 /**
@@ -200,6 +216,10 @@ export function duplicateEntities(
         id: must(mapping, camera.id),
         parentId: remap(camera.parentId, camera.id === id),
         name: camera.id === id ? `${camera.name} copie`.slice(0, 200) : camera.name,
+        lookAtTargetId:
+          camera.lookAtTargetId === null
+            ? null
+            : (mapping.get(camera.lookAtTargetId) ?? camera.lookAtTargetId),
       });
     }
     for (const light of scene.lights.filter((l) => subtree.has(l.id))) {

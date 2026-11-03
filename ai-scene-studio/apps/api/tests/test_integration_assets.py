@@ -26,7 +26,7 @@ pytestmark = [
     ),
 ]
 
-SCENE = Path(__file__).resolve().parents[3] / "tests/fixtures/scenes/empty.v1.json"
+SCENE = Path(__file__).resolve().parents[3] / "tests/fixtures/scenes/empty.v2.json"
 
 
 @pytest.fixture

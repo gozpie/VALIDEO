@@ -8,6 +8,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 - Étape 3.1 : `@ass/animation-engine` — évaluation déterministe (interpolations, slerp, extrapolations) et
   édition pure des clés ; référence de déterminisme.
+- Étape 3.2 : format de scène **v2** (caméra active, marqueurs, verrouillage, visée et roulis des caméras) avec
+  migration v1 → v2 et fixtures avant/après ; validation serveur à jour ; `evaluateFrame` (animation + contraintes) ;
+  mouvements de caméra (dolly, truck, pedestal, pan, tilt, orbite).
+
+### Modifié
+
+- JSON Schema renommé `scene.schema.json` (version courante, identifiée par son `$id`).
 
 ## [0.3.0] — 2026-11-03 — Phase 2 : scène 3D éditable et persistante
 

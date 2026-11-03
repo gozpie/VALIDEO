@@ -25,6 +25,7 @@ ANIMATABLE_PROPERTIES: Final[dict[str, tuple[str, tuple[str, ...]]]] = {
     "camera.focalLengthMm": ("scalar", ("camera",)),
     "camera.focusDistance": ("scalar", ("camera",)),
     "camera.aperture": ("scalar", ("camera",)),
+    "camera.rollRadians": ("scalar", ("camera",)),
     "light.intensity": ("scalar", ("light",)),
     "light.color": ("vec3", ("light",)),
     "material.opacity": ("scalar", ("material",)),
@@ -47,7 +48,7 @@ class SceneValidationError(ValueError):
 @cache
 def _validator() -> Draft202012Validator:
     schema = json.loads(
-        files("ass_api.scenes").joinpath("scene.v1.schema.json").read_text(encoding="utf-8")
+        files("ass_api.scenes").joinpath("scene.schema.json").read_text(encoding="utf-8")
     )
     return Draft202012Validator(schema, format_checker=FormatChecker())
 
@@ -103,6 +104,7 @@ class _Checker:
             ("materials", "material"),
             ("animations", "other"),
             ("references", "other"),
+            ("markers", "other"),
         ):
             for index, item in enumerate(self.scene[key]):
                 if item["id"] in kinds:
@@ -178,7 +180,23 @@ class _Checker:
                 pass_indices[pass_index] = index
 
     def _cameras_and_lights(self) -> None:
+        entities = {e["id"] for key in ("nodes", "cameras", "lights") for e in self.scene[key]}
+        active = self.scene["activeCameraId"]
+        if active is not None and active not in {c["id"] for c in self.scene["cameras"]}:
+            self.add("activeCameraId", f"Caméra active inexistante : {active}")
+        for index, marker in enumerate(self.scene["markers"]):
+            if marker["frame"] >= self.scene["durationFrames"]:
+                self.add(
+                    _path("markers", index, "frame"),
+                    "Un marqueur doit être placé avant la fin du plan (frame < durationFrames)",
+                )
         for index, camera in enumerate(self.scene["cameras"]):
+            target = camera["lookAtTargetId"]
+            if target is not None and (target == camera["id"] or target not in entities):
+                self.add(
+                    _path("cameras", index, "lookAtTargetId"),
+                    "La cible de visée doit être une autre entité de la scène",
+                )
             if camera["farClip"] <= camera["nearClip"]:
                 self.add(
                     _path("cameras", index, "farClip"),

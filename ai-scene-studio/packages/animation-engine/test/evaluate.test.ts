@@ -100,7 +100,7 @@ describe('interpolations', () => {
 });
 
 describe('evaluateScene', () => {
-  const scene = validateScene(load('scenes/cube-camera-animated.v1.json'));
+  const scene = validateScene(load('scenes/cube-camera-animated.v2.json'));
   if (!scene.success) throw new Error('fixture invalide');
   const document = scene.data;
   const FRAMES = [-5, 0, 1, 12, 24, 30.5, 47, 48, 60, 95, 200];
@@ -122,6 +122,19 @@ describe('evaluateScene', () => {
       }),
     );
   }
+
+  it('anime le roulis d’une caméra', () => {
+    const doc = structuredClone(document);
+    doc.animations.push({
+      id: '00000000-0000-4000-8000-0000000000f1',
+      targetId: doc.cameras[0]!.id,
+      propertyPath: 'camera.rollRadians',
+      valueType: 'scalar',
+      extrapolation: 'constant',
+      keyframes: [key(0, 0), key(10, 1)],
+    });
+    expect(evaluateScene(doc, 5).cameras[0]!.rollRadians).toBe(0.5);
+  });
 
   it('ne modifie pas la scène d’entrée et reste valide', () => {
     const before = structuredClone(document);

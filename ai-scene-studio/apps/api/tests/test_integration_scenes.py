@@ -24,7 +24,7 @@ pytestmark = [
     ),
 ]
 
-FIXTURE = Path(__file__).resolve().parents[3] / "tests/fixtures/scenes/cube-camera-animated.v1.json"
+FIXTURE = Path(__file__).resolve().parents[3] / "tests/fixtures/scenes/cube-camera-animated.v2.json"
 
 
 def _scene() -> dict[str, Any]:

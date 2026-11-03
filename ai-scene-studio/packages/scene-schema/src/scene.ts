@@ -10,7 +10,7 @@ import {
   Quaternion,
 } from './primitives';
 
-export const CURRENT_SCHEMA_VERSION = 1 as const;
+export const CURRENT_SCHEMA_VERSION = 2 as const;
 
 /**
  * Convention d'axes unique : main droite, +Y vers le haut, -Z vers l'avant, mètres.
@@ -81,6 +81,12 @@ export const Camera = z.object({
   focusDistance: z.number().positive().nullable(),
   /** Ouverture en f-stops (ex. 2.8). */
   aperture: z.number().positive(),
+  /** Verrouillage des paramètres dans l'éditeur (v2). */
+  locked: z.boolean(),
+  /** Contrainte de visée (v2) : la caméra oriente son axe −Z vers cette entité ; null = libre. */
+  lookAtTargetId: Uuid.nullable(),
+  /** Roulis en radians autour de l'axe de visée, appliqué avec la contrainte de visée (v2). */
+  rollRadians: z.number().refine(Number.isFinite, { message: 'Nombre fini attendu' }),
 });
 export type Camera = z.infer<typeof Camera>;
 
@@ -165,6 +171,14 @@ export const AnimationTrack = z.object({
 });
 export type AnimationTrack = z.infer<typeof AnimationTrack>;
 
+/** Repère nommé sur la timeline (v2). */
+export const Marker = z.object({
+  id: Uuid,
+  frame: Frame,
+  label: z.string().max(100),
+});
+export type Marker = z.infer<typeof Marker>;
+
 export const Reference = z.object({
   id: Uuid,
   assetId: Uuid,
@@ -200,6 +214,7 @@ export const ANIMATABLE_PROPERTIES = {
   'camera.focalLengthMm': { valueType: 'scalar', targets: ['camera'] },
   'camera.focusDistance': { valueType: 'scalar', targets: ['camera'] },
   'camera.aperture': { valueType: 'scalar', targets: ['camera'] },
+  'camera.rollRadians': { valueType: 'scalar', targets: ['camera'] },
   'light.intensity': { valueType: 'scalar', targets: ['light'] },
   'light.color': { valueType: 'vec3', targets: ['light'] },
   'material.opacity': { valueType: 'scalar', targets: ['material'] },
@@ -216,6 +231,9 @@ export const SceneDocumentShape = z.object({
   units: Units,
   fps: FrameRate,
   durationFrames: z.int().min(1),
+  /** Caméra active du plan (v2) : celle de la vue caméra et du rendu ; null = aucune. */
+  activeCameraId: Uuid.nullable(),
+  markers: z.array(Marker),
   nodes: z.array(SceneNode),
   cameras: z.array(Camera),
   lights: z.array(Light),
