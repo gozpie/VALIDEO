@@ -89,6 +89,9 @@ jobs:
           printf '%s\n' "$E2E_PASSWORD" | docker compose exec -T api
           python -m ass_api.cli create-user --email "$E2E_EMAIL" --display-name E2E --password-stdin
       - run: uv sync --frozen
+      # Le fournisseur IA « simulation » des tests d'intégration produit ses images avec FFmpeg.
+      - name: Installe FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Tests d'intégration (PostgreSQL, Redis, S3, rendu Blender réels)
         run: ASS_RUN_INTEGRATION=1 ASS_RUN_RENDER=1 ASS_BLENDER=docker uv run pytest apps/api -m integration
       - run: pnpm install --frozen-lockfile

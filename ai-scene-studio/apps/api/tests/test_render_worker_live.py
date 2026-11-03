@@ -152,7 +152,10 @@ def test_render_end_to_end() -> None:
             job = client.get(f"/render-jobs/{job['id']}").json()
         assert job["status"] == "completed", job
         assert job["progress"] == 1
-        assert set(job["outputs"]) == {"video", "passes", "preview", "blend"}
+        assert set(job["outputs"]) == {"video", "passes", "preview", "blend", "frames"}
+        # Rendu court (≤ 8 frames) : chaque frame est aussi publiée en PNG (réutilisable par l'IA).
+        assert sorted(job["outputs"]["frames"], key=int) == ["0", "1", "2", "3"]
+        assert set(job["outputs"]["frames"]["0"]) >= {"beauty"}
 
         video = client.get(f"/assets/{job['outputs']['video']}/content").content
         assert video[4:8] == b"ftyp"
