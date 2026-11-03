@@ -10,6 +10,14 @@ def _vec(values: Any) -> str:
     return "(" + ", ".join(f"{v:.2f}" for v in values) + ")"
 
 
+def _srgb(linear: list[float]) -> list[float]:
+    """Linéaire → sRGB (0-1), l'espace dans lequel Claude propose les couleurs."""
+    return [
+        12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+        for c in (max(0.0, min(1.0, v)) for v in linear)
+    ]
+
+
 def _euler_degrees(q: list[float]) -> tuple[float, float, float]:
     x, y, z, w = q
     # Ordre XYZ (comme l'éditeur).
@@ -47,7 +55,7 @@ def describe_scene(scene: dict[str, Any], frame_start: int, frame_end: int) -> s
         kind = node["primitive"] if node["type"] == "primitive" else node["type"]
         override = next((o for o in node["materialOverrides"] if o["slot"] == "*"), None)
         color = materials.get(override["materialId"]) if override else None
-        extra = f", couleur linéaire {_vec(color['baseColor'])}" if color else ""
+        extra = f", couleur sRGB {_vec(_srgb(color['baseColor']))}" if color else ""
         hidden = "" if node["visible"] else " [masqué]"
         mode = " [proxy : non rendu]" if node["renderMode"] == "proxy" else ""
         lines.append(

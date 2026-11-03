@@ -33,7 +33,7 @@ techniques et sorties IA sont des **artefacts attachés à une révision** ; ils
 | `packages/editor-ui`        | Panneaux, inspector, timeline                                              | React                                                                                                            | 2–3   |
 | `workers/render-worker`     | Conversion scène → Blender, rendu Cycles, passes                           | Blender headless                                                                                                 | 4     |
 | `workers/media-worker`      | Miniatures, transcodage, assemblage vidéo                                  | FFmpeg, OpenEXR                                                                                                  | 4     |
-| `workers/ai-worker`         | Exécution des générations via les adapters                                 | Python, Celery                                                                                                   | 5     |
+| worker IA (`ass_api.ai`)    | Exécution des générations via les adapters, une file Redis par fournisseur | Python, `claude` (abonnement), passerelle Chrome Higgsfield, FFmpeg                                              | 5     |
 
 ## Décisions (ADR condensées)
 

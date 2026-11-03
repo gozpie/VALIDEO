@@ -214,13 +214,19 @@ def _build(
 
 
 def _context(
-    db: Session, current: CurrentSessionDep, shot_id: uuid.UUID, body: GenerationIn
-) -> tuple[Any, SceneRevision, dict[str, Any]]:
+    db: Session,
+    current: CurrentSessionDep,
+    shot_id: uuid.UUID,
+    body: GenerationIn,
+    require_revision: bool = True,
+) -> tuple[Any, SceneRevision | None, dict[str, Any]]:
     shot, _sequence, _project, access = shot_access(db, current.user, shot_id, Role.EDITOR)
     scene = db.scalars(select(Scene).where(Scene.shot_id == shot.id)).one_or_none()
     revision_id = body.revision_id or (scene.head_revision_id if scene else None)
     revision = db.get(SceneRevision, revision_id) if revision_id else None
-    if revision is None or scene is None or revision.scene_id != scene.id:
+    valid = revision is not None and scene is not None and revision.scene_id == scene.id
+    # L'estimation est possible avant le premier enregistrement ; la génération, non.
+    if not valid and (require_revision or body.revision_id is not None):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Enregistrez la scène avant de lancer une génération"
         )
@@ -261,7 +267,7 @@ def estimate_generation(
     client: RedisDep,
     settings: SettingsDep,
 ) -> EstimateOut:
-    _access, _revision, render = _context(db, current, shot_id, body)
+    _access, _revision, render = _context(db, current, shot_id, body, require_revision=False)
     provider, request = _build(body, providers, render)
     cost, mismatches = _estimate(provider, body, request)
     available, reason = _availability(client, settings, provider.id)
@@ -295,6 +301,8 @@ def create_generation(
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=100)] = None,
 ) -> GenerationJobOut:
     access, revision, render = _context(db, current, shot_id, body)
+    if revision is None:  # exclu par _context (require_revision)
+        raise HTTPException(status.HTTP_409_CONFLICT, "Révision introuvable")
     if idempotency_key:
         existing = db.scalars(
             select(GenerationJob).where(

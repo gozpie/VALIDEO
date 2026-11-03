@@ -149,6 +149,21 @@ def test_estimate_and_mismatches(alice: ApiClient, shot: dict[str, str]) -> None
     )
 
 
+def test_estimate_before_first_save_but_not_generation(alice: ApiClient) -> None:
+    workspace = alice.post("/workspaces", json={"name": "Vide"}).json()["id"]
+    project = alice.post(f"/workspaces/{workspace}/projects", json={"name": "P"}).json()["id"]
+    sequence = alice.post(f"/projects/{project}/sequences", json={"name": "S"}).json()["id"]
+    shot_id = alice.post(
+        f"/sequences/{sequence}/shots", json={"name": "Neuf", "durationFrames": 24}
+    ).json()["id"]
+    estimate = alice.post(f"/shots/{shot_id}/generations/estimate", json=IMAGE)
+    assert estimate.status_code == 200
+    assert estimate.json()["amount"] == 3
+    created = alice.post(f"/shots/{shot_id}/generations", json={**IMAGE, "confirmedCost": 3})
+    assert created.status_code == 409
+    assert "Enregistrez la scène" in created.json()["detail"]
+
+
 def test_paid_generation_requires_exact_cost_confirmation(
     alice: ApiClient, shot: dict[str, str], broker: Any, ai_settings: Settings
 ) -> None:

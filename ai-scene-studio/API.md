@@ -184,6 +184,26 @@ object_id, cryptomatte ; `motion_vector` en option, ignoré si le flou de mouvem
 arrière ; relancer crée un nouveau job). Un job actif sans signe de vie depuis `ASS_RENDER_STALE_SECONDS` passe en
 échec. Suivi par interrogation de `GET /render-jobs/{id}`.
 
+## Génération IA (phase 5)
+
+| Méthode et chemin                       | Rôle minimal | Effet                                                                                    |
+| --------------------------------------- | ------------ | ---------------------------------------------------------------------------------------- |
+| `GET /ai/providers`                     | connecté     | fournisseurs, modèles et capacités déclarées, disponibilité des workers IA               |
+| `POST /shots/{id}/generations/estimate` | `editor`     | coût exact, contraintes non respectées, disponibilité (même avant le 1ᵉʳ enregistrement) |
+| `POST /shots/{id}/generations`          | `editor`     | `201` job `queued` ; `Idempotency-Key` facultatif ; `409` sans révision                  |
+| `GET /shots/{id}/generations`           | `viewer`     | 50 générations les plus récentes du plan                                                 |
+| `GET /generation-jobs/{id}`             | `viewer`     | état, progression, message, sorties, coûts estimé et réel                                |
+| `POST /generation-jobs/{id}/cancel`     | `editor`     | `queued` → `cancelled` ; actif → annulation demandée ; terminé → `409`                   |
+
+Corps : `{ provider, model, mode, prompt?, negativePrompt?, revisionId?, sceneFrames? (≤ 2 frames de la caméra
+active, rendues par Blender avec profondeur et normales), referenceAssetIds? (≤ 8 images du workspace),
+aspectRatio?, durationSeconds?, seed?, options?, confirmedCost? }`. Modes : `text_to_image`, `image_to_image`,
+`text_to_video`, `image_to_video` (images et vidéos) ; `prompt_from_scene`, `scene_from_text`, `image_analysis`
+(Claude, sorties JSON). **Fournisseur payant** : `confirmedCost` doit reprendre exactement le montant de
+l'estimation, sinon `409` sans aucune dépense. Contrainte « bloquante » → `422` ; fournisseur sans worker
+disponible → `503`. Sorties : `outputs.assets[]` (`assetId`, `kind` image ou vidéo, assets marqués
+`aiGenerated`) et `outputs.result` (JSON de Claude) ; manifests d'entrée et de sortie conservés en S3.
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`
@@ -215,5 +235,5 @@ chacun limité à `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`. `200` si tout est OK, sino
 
 ## Endpoints prévus
 
-Les phases suivantes ajouteront scènes et révisions, assets (upload multipart, URL signées), jobs, versions et exports.
-Chaque endpoint sera documenté ici au moment de son implémentation.
+Les phases suivantes ajouteront le studio de production (scripts, découpage, bible, versions de plans), le montage et
+les exports. Chaque endpoint sera documenté ici au moment de son implémentation.

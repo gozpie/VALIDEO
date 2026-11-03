@@ -28,6 +28,12 @@ export type SceneRevision = Schemas['RevisionOut'];
 export type SaveRevisionResult = Schemas['SaveRevisionOut'];
 export type RenderJob = Schemas['RenderJobOut'];
 export type RenderPass = Schemas['RenderIn']['passes'] extends (infer P)[] | undefined ? P : never;
+export type AiProvider = Schemas['ProviderOut'];
+export type AiModel = Schemas['ModelOut'];
+export type GenerationInput = Schemas['GenerationIn'];
+export type GenerationMode = GenerationInput['mode'];
+export type GenerationEstimate = Schemas['EstimateOut'];
+export type GenerationJob = Schemas['GenerationJobOut'];
 export type Problem = Schemas['ProblemOut'];
 export type Page<T> = { items: T[]; nextCursor: string | null };
 

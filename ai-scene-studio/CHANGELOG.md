@@ -4,6 +4,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+## [0.6.0] — 2026-11-03 — Phase 5 : génération IA depuis la scène
+
 ### Ajouté
 
 - Étape 5.1 : socle IA — fournisseurs (simulation, Claude par l'abonnement, passerelle Higgsfield), capacités et
@@ -13,6 +15,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Étape 5.3 : jetons de design et icônes ; palette de commandes (⌘K, F3) ; notifications avec « Annuler » ; menu
   contextuel de la hiérarchie ; panneaux redimensionnables mémorisés ; infobulles avec raccourcis ; champs
   numériques à expressions et étiquette glissable (une seule annulation par glissé).
+- Étape 5.4 : onglet « IA » de l'éditeur — choix du moteur et du modèle avec disponibilité, types de génération
+  selon les capacités, prompt et prompt négatif, « Rédiger avec Claude », cadrage par la caméra active (image de
+  fin pour la vidéo), format et durée, références reprises des résultats, estimation en direct, **confirmation du
+  montant exact** avant toute génération payante, historique avec progression, annulation, images et vidéos,
+  prompt réutilisable, propositions de l'assistant de scène appliquées en une étape annulable, critique du rendu.
+
+### Modifié
+
+- L'estimation d'une génération est possible avant le premier enregistrement de la scène (la génération, non).
+- Résumé de scène pour Claude et couleurs proposées en sRGB (0–1), converties en linéaire à l'application.
 
 ## [0.5.0] — 2026-11-03 — Phase 4 : rendu technique (Blender)
 

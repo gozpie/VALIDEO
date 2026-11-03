@@ -27,7 +27,7 @@ import type { ViewportApi } from './context';
 import type { Keymap } from './keymap';
 import type { ViewDirection } from './Viewport';
 
-export type EditorPanel = 'inspector' | 'render';
+export type EditorPanel = 'inspector' | 'render' | 'ai';
 
 interface Options {
   store: StoreApi<EditorState>;
@@ -254,6 +254,13 @@ export function editorCommands(options: Options): Command[] {
       label: 'Afficher le rendu Blender',
       group: 'Panneaux',
       run: () => options.setPanel('render'),
+    },
+    {
+      id: 'panel-ai',
+      label: 'Afficher la génération IA',
+      group: 'Panneaux',
+      keywords: 'claude higgsfield image vidéo prompt',
+      run: () => options.setPanel('ai'),
     },
     {
       id: 'keymap',

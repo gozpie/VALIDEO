@@ -14,7 +14,7 @@
 - Éditeur 3D (phase 2) : le gizmo agit sur l'élément principal de la sélection (pas de transformation groupée) ;
   masquer un objet masque aussi ses enfants dans la vue ; la sélection rectangle retient les objets dont le centre
   est dans le rectangle ; le parentage se fait depuis l'inspecteur (pas de glisser-déposer dans la hiérarchie) ;
-  panneaux de taille fixe et raccourcis non configurables ; les animations contenues dans un GLB ne sont pas jouées ;
+  raccourcis non configurables ; les animations contenues dans un GLB ne sont pas jouées ;
   les icônes des caméras et des lumières sont des repères simplifiés ; pas encore de vue depuis une caméra de la
   L'éclairage d'aperçu de l'éditeur n'appartient pas à la scène. WebGL 2 est requis.
 - Animation et caméras (phase 3) : pas d'éditeur de courbes (les poignées de Bézier ne se règlent pas à l'écran ; sans
@@ -33,6 +33,17 @@
 - Pas d'éditeur, d'animation, de rendu ni de génération IA. L'interface web se limite à l'état des services.
 - `packages/scene-engine`, `animation-engine`, `editor-ui` et `workers/*` ne contiennent qu'une description de leur rôle.
 - Les types de `shared-types` décrivent la forme cible des entités ; ils seront générés depuis l'OpenAPI en phase 1.
+
+- Génération IA (phase 5) : Claude ne génère ni image ni vidéo (prompt, assistant de scène, critique) ; Higgsfield
+  passe par une **passerelle navigateur non officielle** (Chrome du Mac ouvert sur higgsfield.ai, worker lancé sur
+  le Mac) : elle dépend de l'interface du site et peut casser sans préavis ; GPT Image 2.5 et Seedance 2.5 ne
+  reçoivent ni la profondeur ni les normales (contrôle seulement indicatif, signalé à l'estimation) ; pas encore
+  de sélection de références dans la bibliothèque d'assets (on reprend en référence une image générée) ; suivi par
+  interrogation ; l'assistant de scène ignore les opérations impossibles en les signalant. Le premier test réel
+  Higgsfield (payant) attend le GO de l'utilisateur.
+- Ergonomie (phase 5) : palette, menus contextuels, notifications et panneaux redimensionnables couvrent l'éditeur ;
+  raccourcis toujours non configurables ; pas de glisser-déposer dans la hiérarchie ; inspecteur et timeline gardent
+  leur présentation de la phase 3 (refonte prévue avec le montage, phase 7).
 
 ## Techniques
 

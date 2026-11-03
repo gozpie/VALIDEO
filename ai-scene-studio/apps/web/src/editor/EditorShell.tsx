@@ -12,6 +12,7 @@ import { useCommandSource } from '@/lib/commands';
 import { API_URL } from '@/lib/config';
 import { toast } from '@/lib/toast';
 import { AddMenu } from './AddMenu';
+import { AiPanel } from './AiPanel';
 import { EditorContext, useEditor, type ViewportApi } from './context';
 import { Hierarchy } from './Hierarchy';
 import { Inspector } from './Inspector';
@@ -303,13 +304,12 @@ export function EditorShell({
             <div role="tablist" className="flex border-b border-border">
               {tab('inspector', 'Inspecteur')}
               {tab('render', 'Rendu')}
+              {tab('ai', 'IA')}
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-3">
-              {panel === 'inspector' ? (
-                <Inspector />
-              ) : (
-                <RenderPanel shotId={shotId} onSave={save} />
-              )}
+              {panel === 'inspector' && <Inspector />}
+              {panel === 'render' && <RenderPanel shotId={shotId} onSave={save} />}
+              {panel === 'ai' && <AiPanel shotId={shotId} onSave={save} />}
             </div>
           </aside>
         </div>
