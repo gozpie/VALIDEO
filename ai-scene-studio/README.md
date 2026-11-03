@@ -4,10 +4,11 @@ Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 2 livrée (scène 3D éditable et persistante), en attente de validation.** Connexion, workspaces,
-> projets, séquences et plans ; éditeur 3D par plan (primitives, caméras, lumières, import GLB, gizmos,
-> hiérarchie, inspecteur, annuler/rétablir) enregistré en révisions immuables. Pas encore d'animation ni de
-> génération IA. Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
+> **État : phase 3 livrée (caméras et animation), en attente de validation.** Connexion, workspaces, projets,
+> séquences et plans ; éditeur 3D par plan (primitives, caméras physiques, lumières, import GLB, gizmos,
+> hiérarchie, inspecteur, annuler/rétablir) ; animation par clés avec timeline, caméra active, visée, vue caméra ;
+> enregistrement en révisions immuables. Pas encore de rendu hors navigateur ni de génération IA. Voir
+> [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
 
 ## Démarrage rapide
 
@@ -65,8 +66,8 @@ scripts/                  check-env.sh, check-all.sh
 | ----- | -------------------------------------------------------------------- | ------------------------------------- |
 | 0     | Environnement reproductible, contrats                                | ✅ terminé                            |
 | 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | ✅ terminé                            |
-| 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | ✅ terminé (en attente de validation) |
-| 3     | Plan animé relisible (caméras, timeline, keyframes)                  | à faire                               |
+| 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | ✅ terminé                            |
+| 3     | Plan animé relisible (caméras, timeline, keyframes)                  | ✅ terminé (en attente de validation) |
 | 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                      | à faire                               |
 | 5     | Génération IA depuis la scène                                        | à faire                               |
 | 6     | Versioning (historique, A/B, restauration)                           | à faire                               |

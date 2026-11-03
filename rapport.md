@@ -215,3 +215,16 @@ déplacement, copier-coller) ; 3.5 clôture (E2E, CI, bilan).
 - **Tests** : `editor-ui` (temps, cache) ; E2E `animation.spec.ts` (clé, clé automatique à la frame 24, relecture exacte à la frame 12, interpolation palier, caméra active et visée, vue double, marqueur, lecture, enregistrement, rechargement et vérification de toutes les données) ; contrôle visuel de la vue double et de la timeline.
 - **Objectif** : livrable de la phase 3 — un plan 3D animé peut être créé et relu.
 
+### Étape 3.5 — Clôture de la phase 3
+- **Modifié** : image Docker web (manifeste de `animation-engine`), `README.md`, `CHANGELOG.md` (version 0.4.0).
+- **Vérifié** : pile Docker reconstruite ; 98 tests d'intégration et 6 E2E contre les conteneurs ; CI GitHub au vert (run 41686775358).
+
+### Bilan de la phase 3
+- **Livrable** (« un plan 3D animé peut être créé et relu ») : atteint et couvert par un E2E qui anime un cube (clé, clé automatique, interpolation), ajoute une caméra active qui le vise, affiche la vue caméra, pose un marqueur, lit l'animation, enregistre, recharge et retrouve exactement les valeurs aux frames 12 et 24, le marqueur, la caméra active et la visée.
+- **Fonctionnalités** : moteur d'animation pur et déterministe (step, linéaire, Bézier, ease, slerp, extrapolations) ; format v2 (caméra active, marqueurs, caméras verrouillables avec visée et roulis) et migration ; évaluation d'une frame = animation puis contraintes ; caméras physiques (focale, capteur, FOV, ouverture, mise au point, near/far, roulis, verrouillage, visée), mouvements dolly/truck/pedestal/pan/tilt/orbite, trajectoire ; vue caméra, vue double, sélecteur de caméra ; timeline (lecture, pause, stop, pas à pas, boucle, navigation, marqueurs, pistes repliables, zoom, sélection multiple, déplacement, interpolation, copier-coller, suppression).
+- **Commandes exécutées** : `pnpm check`, `pnpm schema:generate`, `pnpm api:generate`, `UPDATE_GOLDEN=1 vitest run` (création de la référence), `uv run ruff check .`, `uv run mypy …`, `uv run pytest apps/api`, `ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration`, `docker compose up --build --wait`, `pnpm test:e2e`, `gh run watch`.
+- **Tests réussis** : 109 unitaires et 98 d'intégration Python ; 129 TypeScript ; 6 E2E ; CI au vert. **Tests échoués** : aucun à la clôture (un défaut de mise en forme committé puis corrigé dans un commit séparé).
+- **Écarts** : contrainte « suivre une cible » non implémentée (visée seule) ; poignées de Bézier sans éditeur de courbes ; profondeur de champ non prévisualisée (rendu en phase 4).
+- **Limitations et risques** : voir `KNOWN_LIMITATIONS.md` ; l'identité visuelle entre la vue Three.js et le futur rendu Blender ne sera vérifiée que sur les transformations, focales et le cadrage (phase 4) ; la référence de déterminisme couvre la fixture animée, pas encore des scènes complexes.
+- **Prochaine étape** : phase 4 (rendu technique : export de scène, worker Blender, passes, FFmpeg), après validation de la phase 3. Elle exigera Blender en mode headless et des décisions d'infrastructure (version de Blender, rendu CPU ou GPU).
+
