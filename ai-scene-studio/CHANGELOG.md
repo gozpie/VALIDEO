@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 3.1 : `@ass/animation-engine` — évaluation déterministe (interpolations, slerp, extrapolations) et
+  édition pure des clés ; référence de déterminisme.
+
 ## [0.3.0] — 2026-11-03 — Phase 2 : scène 3D éditable et persistante
 
 ### Ajouté

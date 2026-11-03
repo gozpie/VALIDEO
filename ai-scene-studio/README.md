@@ -37,7 +37,7 @@ packages/api-client/      Contrat OpenAPI versionné, types générés et client
 packages/shared-types/    Contrats des entités, statuts de jobs, erreurs API
 packages/generation-sdk/  Contrat ProviderAdapter et appariement des capacités IA
 packages/scene-engine/    Opérations d'édition pures, scène canonique ↔ Three.js
-packages/animation-engine/(phase 3) Évaluation déterministe de l'animation
+packages/animation-engine/Évaluation déterministe de l'animation, édition des clés
 packages/editor-ui/       État de l'éditeur (sélection, outils, annuler/rétablir)
 workers/                  (phases 4–5) render, media, ai
 infrastructure/           Dockerfiles, nginx, migrations Alembic

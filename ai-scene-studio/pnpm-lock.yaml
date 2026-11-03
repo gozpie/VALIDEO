@@ -103,6 +103,12 @@ importers:
         specifier: 4.3.3
         version: 4.3.3
 
+  packages/animation-engine:
+    dependencies:
+      '@ass/scene-schema':
+        specifier: workspace:*
+        version: link:../scene-schema
+
   packages/api-client:
     dependencies:
       openapi-fetch:

@@ -186,3 +186,16 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Risques restants** : performances non mesurées sur de grosses scènes (pas d'instancing ni de LOD) ; objets orphelins possibles dans le stockage si une écriture en base échoue après l'envoi (adressage par contenu, nettoyage à prévoir) ; un snapshot est limité à 5 Mo.
 - **Prochaine étape** : phase 3 (caméras et animation : vue caméra, timeline, keyframes, interpolation, animation d'objets et de caméra, lecture, sauvegarde, tests déterministes), après validation de la phase 2.
 
+## AI Scene Studio — Phase 3 (caméras et animation)
+
+Plan suivi (GO de Pierre) : 3.1 moteur d'animation ; 3.2 format de scène v2 (caméra active, marqueurs,
+verrouillage et visée des caméras) et contraintes ; 3.3 caméras dans l'éditeur (caméra active, vue caméra,
+vue simultanée, mouvements de caméra, trajectoire) ; 3.4 timeline (lecture, pistes, clés, marqueurs, zoom,
+déplacement, copier-coller) ; 3.5 clôture (E2E, CI, bilan).
+
+### Étape 3.1 — Moteur d'animation
+- **Ajouté** : `packages/animation-engine` — `evaluateTrack` / `evaluateScene` (step, linear, Bézier cubique temps-valeur, ease in/out/in-out, slerp au plus court chemin, extrapolations constant/linear/cycle, bornes physiques des grandeurs après dépassement de Bézier), édition pure des clés (`setKey`, `removeKeys`, `moveKeys`, `copyKeys`, `pasteKeys`, `setTransformAtFrame`, `keyTransform`).
+- **Ajouté** : référence de déterminisme `tests/fixtures/animation/cube-camera-animated.expected.json` (valeurs de la fixture animée à 11 frames, dont fractionnaires et hors plage).
+- **Tests** : 13 tests (passage exact par les clés, chaque interpolation, Bézier droite et symétrique, slerp et signe opposé, extrapolations, booléens, entrée non modifiée, référence, indépendance vis-à-vis de l'ordre d'évaluation, édition des clés).
+- **Objectif** : un état de scène exact pour n'importe quelle frame, séparé de l'affichage.
+

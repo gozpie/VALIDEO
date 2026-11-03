@@ -1,0 +1,17 @@
+{
+  "name": "@ass/animation-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Évaluation déterministe de l'animation d'une scène à une frame donnée, et édition des keyframes.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ass/scene-schema": "workspace:*"
+  }
+}
