@@ -12,6 +12,7 @@ FROM base AS builder
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
+COPY packages/animation-engine/package.json packages/animation-engine/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/editor-ui/package.json packages/editor-ui/package.json
 COPY packages/scene-engine/package.json packages/scene-engine/package.json
