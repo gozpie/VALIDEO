@@ -7,6 +7,8 @@
   échelle), magnétisme, historique annuler/rétablir borné à 200 entrées. Un geste continu (gizmo) ne crée qu'une
   entrée. L'historique conserve des scènes complètes, ce qui est sûr et économe parce que les opérations de
   `@ass/scene-engine` ne modifient jamais leur entrée (partage structurel).
-- Composants React de l'éditeur (viewport, hiérarchie, inspecteur, barre d'outils) : étape 2.6.
+- Les composants React de l'éditeur (viewport React Three Fiber, hiérarchie, inspecteur, barre d'outils,
+  raccourcis) sont dans `apps/web/src/editor/` : ils dépendent du client API de l'application. Ils pourront
+  rejoindre ce package lorsqu'un second front en aura besoin.
 
 Immer, prévu à l'origine, n'est pas utilisé : les opérations pures de `scene-engine` rendent son rôle inutile.

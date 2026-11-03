@@ -14,6 +14,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   flux ; plafond global des corps de requête ; contrôle des assets référencés par une scène ; fixture `cube.glb`.
 - Étape 2.4 : `@ass/scene-engine` — fabriques d'objets, opérations d'édition pures, conversions Three.js.
 - Étape 2.5 : `@ass/editor-ui` — store de l'éditeur (sélection, outils, magnétisme, annuler/rétablir, gestes).
+- Étape 2.6 : éditeur 3D `/shots/[id]/editor` — viewport (orbite, pan, zoom, perspective/orthographique, vues
+  prédéfinies, grille, axes, cadrage), primitives, empty, groupe, caméras, lumières, import GLB, sélection (clic,
+  multiple, rectangle), gizmos déplacement/rotation/échelle avec magnétisme, hiérarchie (recherche, renommage,
+  masquage, verrouillage), inspecteur (transformations numériques, parent, couleur, caméra, lumière), duplication,
+  groupement, suppression, raccourcis clavier, enregistrement en révision et rechargement.
 
 ## [0.2.0] — 2026-11-03 — Phase 1 : projets persistants
 

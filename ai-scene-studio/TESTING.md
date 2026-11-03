@@ -33,8 +33,10 @@ valide et par un cas invalide.
 - `shared-types` : 4 tests (machine à états des jobs).
 - `generation-sdk` : 5 tests (appariement des capacités, contraintes bloquantes ou ignorées).
 - `api-client` : 3 tests (types à jour du contrat OpenAPI, gestion du jeton CSRF).
-- `web` : 13 tests unitaires et de composants ; 4 E2E (accueil, redirection vers la connexion, mauvais mot de passe,
-  parcours complet workspace → projet → séquence → plans → rechargement → reconnexion).
+- `scene-engine` : 11 tests (opérations d'édition, conversions Three.js) ; `editor-ui` : 7 tests (historique, sélection).
+- `web` : 17 tests unitaires et de composants (dont hiérarchie et inspecteur de l'éditeur) ; 5 E2E (accueil,
+  redirection vers la connexion, mauvais mot de passe, parcours des projets, éditeur 3D : ajout d'un cube,
+  déplacement, annuler/rétablir, renommage, import GLB, duplication, suppression, enregistrement, rechargement).
 - `api` : 64 tests unitaires (dont contrat OpenAPI à jour) et 81 tests d'intégration (PostgreSQL, Redis, S3) :
   migrations, contraintes, authentification, CSRF, limitation, isolation entre workspaces, rôles, invitations,
   CRUD et ordre des séquences et plans.

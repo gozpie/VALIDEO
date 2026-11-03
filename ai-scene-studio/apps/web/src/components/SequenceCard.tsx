@@ -1,6 +1,7 @@
 'use client';
 
 import type { Project, Sequence, Shot } from '@ass/api-client';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, ErrorText, Field } from '@/components/ui';
 import { api, call } from '@/lib/api';
@@ -97,7 +98,10 @@ export function SequenceCard({
             className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm"
           >
             <span>
-              <span className="text-muted">{index + 1}.</span> {shot.name}
+              <span className="text-muted">{index + 1}.</span>{' '}
+              <Link href={`/shots/${shot.id}/editor`} className="hover:text-accent">
+                {shot.name}
+              </Link>
               <span className="ml-2 text-xs text-muted">
                 {shot.durationFrames} frames ·{' '}
                 {formatDuration(shot.durationFrames, shot.effectiveFps)} ·{' '}

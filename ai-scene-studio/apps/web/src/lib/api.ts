@@ -1,4 +1,4 @@
-import { createApiClient, type ApiClient } from '@ass/api-client';
+import { CSRF_HEADER, createApiClient, type ApiClient, type UploadedAsset } from '@ass/api-client';
 import { API_URL } from '@/lib/config';
 
 /** Client unique du navigateur : il porte le jeton CSRF de la session courante. */
@@ -32,4 +32,24 @@ export async function call<T>(
     throw new Error(errorMessage(result.error));
   }
   return result.data as T;
+}
+
+/** Envoi d'un fichier en multipart (le client typé ne gère que le JSON) ; cookie et CSRF inclus. */
+export async function uploadAsset(workspaceId: string, file: File): Promise<UploadedAsset> {
+  const form = new FormData();
+  form.append('file', file);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/workspaces/${workspaceId}/assets`, {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+      headers: api.csrfToken ? { [CSRF_HEADER]: api.csrfToken } : {},
+    });
+  } catch (error) {
+    throw new Error(errorMessage(error), { cause: error });
+  }
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(errorMessage(body, 'Import impossible'));
+  return body as UploadedAsset;
 }

@@ -13,6 +13,8 @@ WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
+COPY packages/editor-ui/package.json packages/editor-ui/package.json
+COPY packages/scene-engine/package.json packages/scene-engine/package.json
 COPY packages/scene-schema/package.json packages/scene-schema/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY packages/generation-sdk/package.json packages/generation-sdk/package.json
