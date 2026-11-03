@@ -5,9 +5,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session, sessionmaker
 
 from ass_api.core.config import Settings, get_settings
+from ass_api.db.session import create_session_factory
 from ass_api.main import create_app
+
+from .support import ClientPool, build_app, client_pool, integration_settings, migrate
 
 
 @pytest.fixture
@@ -41,3 +45,22 @@ def database_url() -> Iterator[str]:
         with admin.connect() as connection:
             connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
         admin.dispose()
+
+
+@pytest.fixture(scope="module")
+def api_settings(database_url: str) -> Settings:
+    """API branchée sur la base temporaire du module, migrée à la dernière version."""
+    migrate(database_url)
+    return integration_settings(database_url)
+
+
+@pytest.fixture(scope="module")
+def db_factory(api_settings: Settings) -> Iterator[sessionmaker[Session]]:
+    engine, factory = create_session_factory(api_settings)
+    yield factory
+    engine.dispose()
+
+
+@pytest.fixture
+def clients(api_settings: Settings) -> Iterator[ClientPool]:
+    yield from client_pool(build_app(api_settings))

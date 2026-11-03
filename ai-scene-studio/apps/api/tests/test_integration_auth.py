@@ -26,7 +26,7 @@ from ass_api.db.models import User, UserSession
 from ass_api.db.session import create_session_factory
 from ass_api.main import create_app
 
-from .test_integration_database import ALEMBIC_INI
+from .support import ALEMBIC_INI
 
 pytestmark = [
     pytest.mark.integration,

@@ -13,7 +13,7 @@ from ass_api.core.errors import register_error_handlers
 from ass_api.core.logging import configure_logging
 from ass_api.core.middleware import RequestContextMiddleware
 from ass_api.db.session import create_session_factory
-from ass_api.routes import auth, health
+from ass_api.routes import auth, health, workspaces
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -54,6 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_error_handlers(app)
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(workspaces.router)
     return app
 
 

@@ -15,6 +15,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   sessions en base (empreinte du jeton) et cookie `HttpOnly`/`SameSite=Lax`/`Secure`, jeton CSRF,
   limitation des échecs dans Redis, migration `0002` (`user_sessions`), commande `create-user`.
 
+- Étape 1.3 : autorisation par workspace (rôles `viewer` < `editor` < `admin` < `owner`, `404` hors
+  workspace, `403` rôle insuffisant), routes `/workspaces` (création, liste paginée par curseur, lecture,
+  renommage, suppression).
+
 ### Modifié
 
 - Les erreurs HTTP conservent les en-têtes de l'exception (`Retry-After`…).

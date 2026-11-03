@@ -77,3 +77,10 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : permettre à un utilisateur de se connecter de façon sûre, préalable aux droits par workspace (1.3).
 - **Vérifications** : ruff, mypy strict ; 51 tests unitaires ; 36 tests d'intégration (PostgreSQL et Redis réels) ; essai manuel avec uvicorn et curl (connexion, session, déconnexion refusée sans CSRF puis acceptée, session révoquée).
 
+### Étape 1.3 — Autorisation par workspace
+- **Ajouté** : `auth/permissions.py` — rôles ordonnés (`viewer` < `editor` < `admin` < `owner`) et contrôles d'accès qui retrouvent le workspace à partir de la ressource (workspace, projet, séquence, plan) par jointure sur l'appartenance de l'utilisateur ; `404` hors workspace (existence non révélée), `403` rôle insuffisant ; verrouillage de ligne optionnel pour les modifications.
+- **Ajouté** : `core/pagination.py` (pagination par curseur opaque sur `(created_at, id)`), `routes/workspaces.py` (création avec rôle `owner`, liste paginée de mes workspaces, lecture, renommage `admin`, suppression `owner`), `routes/schemas.py` (noms nettoyés et bornés).
+- **Ajouté** : `tests/support.py` et fixtures partagées (`api_settings`, `db_factory`, `clients` : un client connecté par utilisateur), `test_integration_workspaces.py` (isolation entre deux utilisateurs, rôles, CSRF, pagination, curseur invalide), `test_permissions_units.py`.
+- **Objectif** : garantir qu'aucun utilisateur n'accède aux données d'un workspace dont il n'est pas membre, avant d'exposer projets, séquences et plans.
+- **Vérifications** : ruff, mypy strict ; 61 tests unitaires ; 52 tests d'intégration (PostgreSQL, Redis).
+

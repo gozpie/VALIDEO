@@ -67,6 +67,33 @@ Session courante (même forme que ci-dessus) ou `401`.
 
 Exige `X-CSRF-Token`. Révoque la session en base et efface le cookie : `204`.
 
+## Autorisation (étape 1.3)
+
+Chaque ressource appartient à un workspace, retrouvé en base à partir de la ressource elle-même : un
+`workspaceId` envoyé par le client n'est jamais cru. Rôles cumulatifs :
+
+| Rôle     | Droits                                                                     |
+| -------- | -------------------------------------------------------------------------- |
+| `viewer` | lecture                                                                    |
+| `editor` | + créer, modifier, réordonner et supprimer séquences et plans ; projets    |
+| `admin`  | + renommer le workspace, gérer membres et invitations, supprimer un projet |
+| `owner`  | + supprimer le workspace                                                   |
+
+Ressource d'un workspace dont on n'est pas membre (ou inexistante) : `404`. Membre au rôle insuffisant : `403`.
+
+## Workspaces
+
+| Méthode et chemin                   | Rôle minimal | Réponse                                               |
+| ----------------------------------- | ------------ | ----------------------------------------------------- |
+| `POST /workspaces` `{ name }`       | connecté     | `201` ; le créateur devient `owner`                   |
+| `GET /workspaces?cursor=&limit=`    | connecté     | `{ items, nextCursor }`, uniquement mes workspaces    |
+| `GET /workspaces/{id}`              | `viewer`     | `{ id, name, ownerId, role, createdAt, updatedAt }`   |
+| `PATCH /workspaces/{id}` `{ name }` | `admin`      | workspace renommé                                     |
+| `DELETE /workspaces/{id}`           | `owner`      | `204` ; supprime membres, projets, séquences et plans |
+
+`role` est le rôle de l'utilisateur connecté. `limit` : 1 à 200 (50 par défaut) ; `cursor` : valeur
+`nextCursor` de la page précédente (opaque), `422` si invalide.
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`

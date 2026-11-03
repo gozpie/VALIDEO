@@ -6,7 +6,6 @@ La base temporaire du module est fournie par ``database_url`` (conftest.py).
 import os
 import uuid
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -15,6 +14,8 @@ from alembic.config import Config
 from sqlalchemy import Connection, Engine, create_engine, inspect, text
 from sqlalchemy.exc import IntegrityError
 
+from .support import ALEMBIC_INI
+
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
@@ -22,8 +23,6 @@ pytestmark = [
     ),
 ]
 
-ROOT = Path(__file__).resolve().parents[3]
-ALEMBIC_INI = ROOT / "infrastructure/migrations/alembic.ini"
 PHASE_1_TABLES = {
     "users",
     "user_sessions",
