@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 4.1 : portage Python de l'évaluation (animation + contraintes) pour le rendu, vérifié au milliardième près
+  contre les références TypeScript ; nouvelle fixture `look-at.v2.json` et sa référence.
+
 ## [0.4.0] — 2026-11-03 — Phase 3 : caméras et animation
 
 ### Ajouté

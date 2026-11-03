@@ -228,3 +228,21 @@ déplacement, copier-coller) ; 3.5 clôture (E2E, CI, bilan).
 - **Limitations et risques** : voir `KNOWN_LIMITATIONS.md` ; l'identité visuelle entre la vue Three.js et le futur rendu Blender ne sera vérifiée que sur les transformations, focales et le cadrage (phase 4) ; la référence de déterminisme couvre la fixture animée, pas encore des scènes complexes.
 - **Prochaine étape** : phase 4 (rendu technique : export de scène, worker Blender, passes, FFmpeg), après validation de la phase 3. Elle exigera Blender en mode headless et des décisions d'infrastructure (version de Blender, rendu CPU ou GPU).
 
+## AI Scene Studio — Phase 4 (rendu technique)
+
+Demande de Pierre en cours de phase : « se rapprocher le plus de l'application Blender ». Choix retenus : le rendu
+final est fait par le **vrai Blender** (4.5 LTS, Cycles sur CPU dans un conteneur, sans GPU), chaque rendu fournit
+aussi un **fichier .blend** ouvrable dans Blender avec les clés converties en courbes Blender, et l'éditeur reçoit
+des **raccourcis façon Blender** (sans copier son apparence, conformément au cahier des charges).
+
+Plan suivi : 4.1 portage Python de l'évaluation ; 4.2 jobs de rendu (table, file Redis, API, reprise, annulation,
+délais) ; 4.3 construction de la scène dans Blender (script bpy) et passes ; 4.4 worker de rendu (Blender, FFmpeg,
+assets de sortie, image Docker) ; 4.5 tests de cohérence Blender ; 4.6 éditeur (panneau Rendu, raccourcis façon
+Blender) ; 4.7 clôture.
+
+### Étape 4.1 — Évaluation en Python
+- **Ajouté** : `apps/api/src/ass_api/animation/` (`evaluate.py`, `math3d.py`) — portage exact de `evaluateTrack`, `evaluateScene` et de la contrainte de visée (hiérarchie, roulis), en Python pur.
+- **Ajouté** : fixture `tests/fixtures/scenes/look-at.v2.json` (caméra enfant d'un rig tourné et mis à l'échelle, visée d'un cube animé en Bézier, roulis animé en cycle, visibilité en palier, marqueur) et référence `tests/fixtures/animation/look-at.expected.json` produite par TypeScript (`packages/scene-engine/test/golden.test.ts`).
+- **Tests** : `test_animation_port.py` — les deux références (10 et 11 frames, dont fractionnaires et hors plage) sont reproduites à 1e-9 près ; l'entrée n'est pas modifiée.
+- **Objectif** : Blender recevra exactement les valeurs que l'éditeur affiche (déterminisme inter-langages).
+
