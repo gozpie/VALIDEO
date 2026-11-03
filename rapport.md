@@ -352,4 +352,10 @@ Décision de Pierre (pivot du 03/11) : un studio de fabrication de film IA centr
 - **Modifié** : le refus des garde-fous de Claude (faux positif rencontré avec Sonnet sur un découpage) devient une erreur claire « relancez, ou choisissez un autre modèle Claude » ; l'onglet IA de l'éditeur masque les modes du studio.
 - **Vérifié en réel** : découpage d'un court script (« Le dernier gardien ») par **Claude Opus** en 163 s — intention, 6 étapes rédigées, 5 séquences et 13 plans fidèles au script ; bible par **Claude Sonnet** via le worker Docker en 25 s, reprenant exactement les noms du découpage (tous les plans reliés à leurs personnages, décors et accessoires). Projet de démo laissé dans « Démo Gozpie ».
 - **Tests** : E2E `studio.spec.ts` (script en 2 versions, personnage créé et illustré par la simulation, plan relié à la bible, image générée → v1 retenue visible sur la carte, v2, comparaison A/B ; découpage par Claude réel avec `E2E_CLAUDE=1`) ; unitaires du rapprochement des noms et du refus des garde-fous.
+- **Corrigé** : refus systématique du découpage par le worker Docker (Opus et Sonnet, « safeguards flagged… AUP ») reproduit 2/2 avec l'outil `claude` 2.1.317, absent avec la 2.1.233 (2/2 réussis, 82-88 s) : version **figée à 2.1.233** dans `ai-worker.Dockerfile`. E2E « Claude découpe le script puis le découpage s'applique au storyboard » réussi par l'interface (1,6 min).
+
+### Bilan de la phase 6
+- **Livrable** (« du script au storyboard fabriqué ») : atteint — un script versionné est découpé par Claude selon la méthode réalisateur / chef-op de VALIDEO, la bible est établie et reliée aux plans, chaque plan est généré en versions successives (arbre, version retenue, A/B) avec les images clés de la bible en références ; vérifié avec Claude réel et la simulation.
+- **CI** : verte (run 41727373587) — 124 unitaires et 123 d'intégration Python, tests web, 10 E2E dont le studio.
+- **Reste** : premier test réel Higgsfield (GO de Pierre) ; import d'images de référence depuis le disque ; montage (phase 7).
 

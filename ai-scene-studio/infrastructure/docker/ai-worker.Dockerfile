@@ -14,7 +14,9 @@ COPY apps/api apps/api
 RUN uv sync --frozen --no-dev --package ass-api --no-editable
 
 FROM node:22.23.4-trixie-slim AS claude
-ARG CLAUDE_CODE_VERSION=2.1.317
+# Version figée et vérifiée : la 2.1.317 refuse à tort le découpage d'un script de fiction ordinaire
+# (garde-fous « AUP » sur Opus et Sonnet), la 2.1.233 l'accepte (essais du 03/11/2026).
+ARG CLAUDE_CODE_VERSION=2.1.233
 RUN npm install --global --omit=dev "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && npm cache clean --force
 
