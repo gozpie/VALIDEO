@@ -3973,6 +3973,60 @@
         }
       }
     },
+    "/projects/{project_id}/edit-list": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Edit List",
+        "description": "Le film dans l'ordre : pour chaque plan, le média à monter (ou rien s'il n'existe pas).",
+        "operationId": "edit_list_projects__project_id__edit_list_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditListOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects/{project_id}/breakdown/apply": {
       "post": {
         "tags": [
@@ -4548,6 +4602,130 @@
         ],
         "title": "CreatedInvitationOut"
       },
+      "EditItemOut": {
+        "properties": {
+          "shotId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Shotid"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sequence": {
+            "type": "string",
+            "title": "Sequence"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditMediaOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "shotId",
+          "label",
+          "name",
+          "sequence",
+          "status",
+          "seconds",
+          "media"
+        ],
+        "title": "EditItemOut"
+      },
+      "EditListOut": {
+        "properties": {
+          "project": {
+            "type": "string",
+            "title": "Project"
+          },
+          "fps": {
+            "type": "number",
+            "title": "Fps"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EditItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project",
+          "fps",
+          "width",
+          "height",
+          "items"
+        ],
+        "title": "EditListOut"
+      },
+      "EditMediaOut": {
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assetid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind"
+          },
+          "mimeType": {
+            "type": "string",
+            "title": "Mimetype"
+          },
+          "versionNumber": {
+            "type": "integer",
+            "title": "Versionnumber"
+          },
+          "retained": {
+            "type": "boolean",
+            "title": "Retained"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assetId",
+          "kind",
+          "mimeType",
+          "versionNumber",
+          "retained"
+        ],
+        "title": "EditMediaOut"
+      },
       "EstimateOut": {
         "properties": {
           "amount": {
@@ -4641,7 +4819,8 @@
               "image_analysis",
               "script_breakdown",
               "bible_from_script",
-              "shot_prompts"
+              "shot_prompts",
+              "gozcut_project"
             ],
             "title": "Mode"
           },
@@ -5651,7 +5830,8 @@
               "official",
               "subscription",
               "bridge",
-              "simulation"
+              "simulation",
+              "tool"
             ],
             "title": "Kind"
           },

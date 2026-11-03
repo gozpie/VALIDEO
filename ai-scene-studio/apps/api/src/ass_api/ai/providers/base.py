@@ -61,6 +61,8 @@ class RunContext:
     documents: dict[str, str] = field(default_factory=dict)
     # Contexte court du projet (titre, format, cadence), repris dans la consigne.
     brief: str = ""
+    # Copie un asset du workspace vers un fichier local (fournisseurs qui montent des médias).
+    fetch_asset: Callable[[str, Path], None] | None = None
 
 
 class ProviderError(Exception):
@@ -75,8 +77,8 @@ class ProviderAdapter:
     id: str = ""
     label: str = ""
     # official : API documentée ; subscription : abonnement via outil officiel ; bridge : passerelle
-    # non officielle ; simulation : aucune IA (tests).
-    kind: Literal["official", "subscription", "bridge", "simulation"] = "official"
+    # non officielle ; simulation : aucune IA (tests) ; tool : outil local, sans IA (gozCut).
+    kind: Literal["official", "subscription", "bridge", "simulation", "tool"] = "official"
 
     def get_capabilities(self) -> list[ModelCapabilities]:
         raise NotImplementedError

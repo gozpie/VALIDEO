@@ -367,3 +367,18 @@ Décision de Pierre (pivot du 03/11) : un studio de fabrication de film IA centr
 - **Tests** : `pnpm check`, intégration Python (affiche de projet), E2E adaptés (10 réussis, 2 ignorés sans `E2E_CLAUDE`).
 - **Décision de Pierre pour la suite** : le montage doit être un vrai logiciel complet et l'écran central où l'on revient voir le film se construire. Il demande de repartir de gozCut ; constat : gozCut est en Swift natif Mac (ne tourne pas dans le navigateur), le moteur web `nle` (branche `claude/video-editing-software-analysis-om0bn7`) gère déjà le montage mais ni la composition ni l'export. Choix à trancher avant la phase 7.
 
+## AI Scene Studio (Chagomi) — Phase 7 (montage) — en cours
+
+Décision de Pierre : option C — le pont gozCut d'abord, pour monter tout de suite, puis un écran Montage intégré à Chagomi, où l'on revient voir le film se construire.
+
+### Correctif — « Aucun worker IA actif » pendant une génération
+- **Constaté par Pierre** : pendant une bible Claude, tous les moteurs Claude passaient « indisponible ».
+- **Cause** : le worker n'envoyait son signe de vie qu'entre deux générations ; la bible a duré 62 s, le signal expire à 30 s.
+- **Corrigé** : `Heartbeat` (fil dédié) publie la disponibilité, entretient le signe de vie de la génération en cours et traite les jobs abandonnés ; message remplacé par ce qu'il faut relancer.
+- **Vérifié** : test d'intégration, et génération Claude réelle de 60 s : 7 relevés, aucun « indisponible ». Worker Mac lancé (`scripts/mac-worker.sh gozcut,higgsfield`, journal `~/Library/Logs/Chagomi/mac-worker.log`) : Higgsfield n'était pas lancé, d'où « indisponible » sur GPT Image.
+
+### Étape 7.1 — Pont gozCut et écran Montage
+- **Ajouté** : `ai/edit_list.py` et `GET /projects/{id}/edit-list` (le film dans l'ordre : version retenue, sinon dernière version, plan sans version signalé) ; `ai/providers/gozcut.py` (nouveau dossier dans `~/Movies/gozCut/`, images converties en clips, clip noir pour un plan sans version, ouverture de gozCut) ; étape **Montage** dans la barre latérale (durée, plans prêts, envoi, historique, film plan par plan).
+- **Non modifié** : le code de gozCut.
+- **Tests** : `test_edit_list_follows_the_film_and_builds_a_gozcut_project` (FFmpeg réel) ; essai réel sur « Jules Verne — Teaser » : 15 plans, 1:21, relu par gozCut (`--open … --frames`).
+

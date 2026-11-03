@@ -322,6 +322,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/edit-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Edit List
+         * @description Le film dans l'ordre : pour chaque plan, le média à monter (ou rien s'il n'existe pas).
+         */
+        get: operations["edit_list_projects__project_id__edit_list_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/generations": {
         parameters: {
             query?: never;
@@ -1041,6 +1061,57 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** EditItemOut */
+        EditItemOut: {
+            /** Label */
+            label: string;
+            media: components["schemas"]["EditMediaOut"] | null;
+            /** Name */
+            name: string;
+            /** Seconds */
+            seconds: number;
+            /** Sequence */
+            sequence: string;
+            /**
+             * Shotid
+             * Format: uuid
+             */
+            shotId: string;
+            /** Status */
+            status: string;
+        };
+        /** EditListOut */
+        EditListOut: {
+            /** Fps */
+            fps: number;
+            /** Height */
+            height: number;
+            /** Items */
+            items: components["schemas"]["EditItemOut"][];
+            /** Project */
+            project: string;
+            /** Width */
+            width: number;
+        };
+        /** EditMediaOut */
+        EditMediaOut: {
+            /**
+             * Assetid
+             * Format: uuid
+             */
+            assetId: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video";
+            /** Mimetype */
+            mimeType: string;
+            /** Retained */
+            retained: boolean;
+            /** Versionnumber */
+            versionNumber: number;
+        };
         /** EstimateOut */
         EstimateOut: {
             /** Amount */
@@ -1090,7 +1161,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis" | "script_breakdown" | "bible_from_script" | "shot_prompts";
+            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis" | "script_breakdown" | "bible_from_script" | "shot_prompts" | "gozcut_project";
             /** Model */
             model: string;
             /**
@@ -1460,7 +1531,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "official" | "subscription" | "bridge" | "simulation";
+            kind: "official" | "subscription" | "bridge" | "simulation" | "tool";
             /** Label */
             label: string;
             /** Models */
@@ -3016,6 +3087,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoryboardSequenceOut"][];
+                };
+            };
+        };
+    };
+    edit_list_projects__project_id__edit_list_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditListOut"];
                 };
             };
         };

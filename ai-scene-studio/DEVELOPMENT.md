@@ -42,7 +42,7 @@ Les valeurs par défaut de l'API correspondent à cet environnement local : aucu
 utilise l'abonnement : mettre `CLAUDE_CODE_OAUTH_TOKEN` dans `.env` (fichier en `chmod 600`, jamais
 versionné). Higgsfield passe par le Chrome du Mac (port de débogage 9222, onglet higgsfield.ai connecté)
 et les scripts de `VALIDEO/tools/magnific_pipeline` (`ASS_HIGGSFIELD_SCRIPTS_DIR`) : lancer
-`./scripts/higgsfield-worker.sh` sur le Mac. Un fournisseur sans worker actif est signalé indisponible.
+`./scripts/mac-worker.sh gozcut,higgsfield` sur le Mac (ce worker sert aussi le pont gozCut). Un fournisseur sans worker actif est signalé indisponible.
 
 ## Commandes
 

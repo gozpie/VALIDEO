@@ -4,6 +4,7 @@ from functools import cache
 
 from ass_api.ai.providers.base import ProviderAdapter
 from ass_api.ai.providers.claude import ClaudeProvider
+from ass_api.ai.providers.gozcut import GozCutBridgeProvider
 from ass_api.ai.providers.higgsfield import HiggsfieldBridgeProvider
 from ass_api.ai.providers.simulation import SimulationProvider
 from ass_api.core.config import Settings
@@ -19,6 +20,9 @@ def build_providers(settings: Settings) -> dict[str, ProviderAdapter]:
         SimulationProvider(settings.ffmpeg_path),
         ClaudeProvider(settings.claude_path, token),
         HiggsfieldBridgeProvider(settings.higgsfield_scripts_dir),
+        GozCutBridgeProvider(
+            settings.ffmpeg_path, settings.gozcut_projects_dir, settings.gozcut_app_path
+        ),
     ]
     return {provider.id: provider for provider in providers}
 

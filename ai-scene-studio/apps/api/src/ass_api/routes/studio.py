@@ -16,6 +16,7 @@ from pydantic import Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ass_api.ai.edit_list import build_edit_list
 from ass_api.auth.dependencies import CurrentSessionDep
 from ass_api.auth.permissions import Role, project_access, shot_access
 from ass_api.core.api_model import ApiModel
@@ -493,6 +494,39 @@ def storyboard(
         )
         for sequence in sequences
     ]
+
+
+class EditMediaOut(ApiModel):
+    asset_id: uuid.UUID
+    kind: VersionKind
+    mime_type: str
+    version_number: int
+    retained: bool
+
+
+class EditItemOut(ApiModel):
+    shot_id: uuid.UUID
+    label: str
+    name: str
+    sequence: str
+    status: str
+    seconds: float
+    media: EditMediaOut | None
+
+
+class EditListOut(ApiModel):
+    project: str
+    fps: float
+    width: int
+    height: int
+    items: list[EditItemOut]
+
+
+@router.get("/projects/{project_id}/edit-list", response_model=EditListOut)
+def edit_list(project_id: uuid.UUID, current: CurrentSessionDep, db: DbDep) -> dict[str, Any]:
+    """Le film dans l'ordre : pour chaque plan, le média à monter (ou rien s'il n'existe pas)."""
+    project, _access = project_access(db, current.user, project_id, Role.VIEWER)
+    return build_edit_list(db, project)
 
 
 # --- Application des propositions de Claude ------------------------------------------------------

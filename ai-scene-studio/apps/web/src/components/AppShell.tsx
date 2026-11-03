@@ -3,6 +3,7 @@
 import type { Project, Workspace } from '@ass/api-client';
 import {
   Clapperboard,
+  Film,
   FileText,
   FolderKanban,
   LayoutGrid,
@@ -16,13 +17,14 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { api, call } from '@/lib/api';
 import { AppSidebar, type SidebarItem, type SidebarSection } from './AppSidebar';
 
-export type StudioStep = 'script' | 'proposals' | 'bible' | 'shots';
+export type StudioStep = 'script' | 'proposals' | 'bible' | 'shots' | 'montage';
 
 export const STUDIO_STEPS: { id: StudioStep; label: string; icon: ReactNode }[] = [
   { id: 'script', label: 'Script', icon: <FileText size={18} /> },
   { id: 'proposals', label: 'Propositions', icon: <Sparkles size={18} /> },
   { id: 'bible', label: 'Bible', icon: <Users size={18} /> },
   { id: 'shots', label: 'Plans', icon: <LayoutGrid size={18} /> },
+  { id: 'montage', label: 'Montage', icon: <Film size={18} /> },
 ];
 
 export type ShellPage = 'workspaces' | 'projects' | 'members' | 'structure' | StudioStep;

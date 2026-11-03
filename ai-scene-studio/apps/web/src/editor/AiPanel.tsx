@@ -43,6 +43,7 @@ const MODES: Record<GenerationMode, { label: string; hint: string }> = {
   script_breakdown: { label: 'Découpage', hint: 'Studio de production' },
   bible_from_script: { label: 'Bible', hint: 'Studio de production' },
   shot_prompts: { label: 'Prompts du plan', hint: 'Studio de production' },
+  gozcut_project: { label: 'Projet gozCut', hint: 'Montage' },
 };
 const STUDIO_ONLY = new Set<GenerationMode>([
   'script_breakdown',
@@ -60,6 +61,7 @@ const KIND_LABEL: Record<AiProvider['kind'], string> = {
   subscription: 'Abonnement',
   bridge: 'Passerelle',
   simulation: 'Simulation',
+  tool: 'Outil local',
 };
 const STATUS: Record<GenerationJob['status'], string> = {
   queued: 'En file',
@@ -124,7 +126,7 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
     let alive = true;
     const load = () =>
       call(api.GET('/ai/providers'))
-        .then((list) => alive && setProviders(list))
+        .then((list) => alive && setProviders(list.filter((p) => p.kind !== 'tool')))
         .catch(() => alive && setProviders([]));
     void load();
     const timer = setInterval(() => void load(), 15000);

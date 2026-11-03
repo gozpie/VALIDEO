@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from ass_api.ai.capabilities import MEDIA_MODES, GenerationRequest
+from ass_api.ai.edit_list import build_edit_list
 from ass_api.ai.providers.base import ProviderAdapter, ProviderError, RunContext
 from ass_api.ai.scene_summary import describe_scene
 from ass_api.ai.studio_context import (
@@ -139,10 +140,26 @@ def _download(db: Session, storage: ObjectStorage, asset_id: str, folder: Path, 
     return target
 
 
+def _fetch_asset(
+    db_factory: sessionmaker[Session], storage: ObjectStorage, asset_id: str, target: Path
+) -> None:
+    with db_factory() as db:
+        asset = db.get(Asset, uuid.UUID(asset_id))
+        if asset is None:
+            raise ProviderError("invalid_request", "Média introuvable")
+        key = asset.storage_key
+    body = storage.open_stream(key)
+    with target.open("wb") as handle:
+        for chunk in body.iter_chunks(1024 * 1024):
+            handle.write(chunk)
+
+
 def studio_documents(
     db: Session, job: GenerationJob, project: Project, shot: Shot | None
 ) -> dict[str, str]:
-    """Script, bible et fiche du plan pour les tâches du studio (aucun pour les autres modes)."""
+    """Script, bible, fiche du plan ou liste de montage selon le mode (rien pour les autres)."""
+    if job.mode == "gozcut_project":
+        return {"edit.json": json.dumps(build_edit_list(db, project), ensure_ascii=False)}
     if job.mode not in ("script_breakdown", "bible_from_script", "shot_prompts"):
         return {}
     documents: dict[str, str] = {}
@@ -317,6 +334,9 @@ def _execute(
             timeout_seconds=settings.ai_timeout_seconds,
             documents=documents,
             brief=project_brief(project),
+            fetch_asset=lambda asset_id, target: _fetch_asset(
+                db_factory, storage, asset_id, target
+            ),
         )
         external_id, outputs = provider.run(job.model_id, request, context)
         with db_factory() as db:

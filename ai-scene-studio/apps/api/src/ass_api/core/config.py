@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     higgsfield_scripts_dir: str = (
         "~/Desktop/TRANSFERT/--WORK--/GITHUB/VALIDEO/tools/magnific_pipeline"
     )
+    # Pont gozCut (worker sur le Mac) : dossier des projets et application.
+    gozcut_projects_dir: str = "~/Movies/gozCut"
+    gozcut_app_path: str = "~/Desktop/TRANSFERT/--WORK--/GITHUB/GOZCUT/dist/gozCut.app"
     ai_queue_prefix: str = Field(default="ass:ai", pattern=r"^[a-z0-9:_-]{1,60}$")
     ai_timeout_seconds: int = Field(default=1800, ge=10)
 

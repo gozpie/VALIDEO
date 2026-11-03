@@ -2,8 +2,10 @@
 
 import json
 import os
+import subprocess
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -11,13 +13,15 @@ import redis
 from sqlalchemy import insert, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from ass_api.ai.providers.base import ProviderAdapter
+from ass_api.ai.capabilities import GenerationRequest
+from ass_api.ai.providers.base import ProviderAdapter, RunContext
+from ass_api.ai.providers.gozcut import GozCutBridgeProvider
 from ass_api.ai.providers.simulation import SimulationProvider
 from ass_api.ai.service import run_generation, studio_documents
 from ass_api.ai.worker import availability_key
 from ass_api.core.config import Settings
 from ass_api.core.storage import ObjectStorage
-from ass_api.db.models import Asset, GenerationJob, Project, Shot, WorkspaceMember
+from ass_api.db.models import Asset, GenerationJob, Project, Shot, ShotVersion, WorkspaceMember
 from ass_api.render.jobs import RenderQueue
 
 from .support import (
@@ -401,3 +405,104 @@ def test_shot_versions_tree_and_selection(
         ).status_code
         == 422
     )
+
+
+def test_edit_list_follows_the_film_and_builds_a_gozcut_project(
+    alice: ApiClient,
+    project: dict[str, str],
+    broker: Any,
+    ai_settings: Settings,
+    db_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    pid = project["id"]
+    # Storyboard vide : rien à monter.
+    body = {"provider": "gozcut", "model": "project", "mode": "gozcut_project"}
+    _beat(broker, ai_settings, "gozcut")
+    assert alice.post(f"/projects/{pid}/generations", json=body).status_code == 409
+
+    sequence = alice.post(f"/projects/{pid}/sequences", json={"name": "S"}).json()["id"]
+    shots = [
+        alice.post(
+            f"/sequences/{sequence}/shots", json={"name": name, "durationFrames": frames}
+        ).json()
+        for name, frames in (("Image/fixe", 24), ("Vidéo", 48), ("À faire", 12))
+    ]
+    png, mp4 = tmp_path / "a.png", tmp_path / "b.mp4"
+    for args, target in (
+        (["-f", "lavfi", "-i", "color=c=red:s=320x180", "-frames:v", "1"], png),
+        (
+            ["-f", "lavfi", "-i", "color=c=blue:s=320x180:r=24", "-t", "2", "-pix_fmt", "yuv420p"],
+            mp4,
+        ),
+    ):
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *args, str(target)], check=True)  # noqa: S603, S607
+    assets: dict[str, Path] = {}
+    with db_factory() as db:
+        for shot, path, kind, mime in (
+            (shots[0], png, "image", "image/png"),
+            (shots[1], mp4, "video", "video/mp4"),
+        ):
+            asset = Asset(
+                workspace_id=uuid.UUID(project["workspace"]),
+                name=path.name,
+                type=kind,
+                mime_type=mime,
+                size_bytes=path.stat().st_size,
+                sha256=uuid.uuid4().hex * 2,
+                storage_key=f"test/{uuid.uuid4()}",
+            )
+            db.add(asset)
+            db.flush()
+            assets[str(asset.id)] = path
+            db.add(
+                ShotVersion(shot_id=uuid.UUID(shot["id"]), number=1, kind=kind, asset_id=asset.id)
+            )
+        db.commit()
+
+    edit = alice.get(f"/projects/{pid}/edit-list").json()
+    assert [i["label"] for i in edit["items"]] == ["1.1", "1.2", "1.3"]
+    assert edit["items"][0]["seconds"] == 1
+    assert edit["items"][1]["media"]["kind"] == "video"
+    assert edit["items"][2]["media"] is None
+
+    job = alice.post(f"/projects/{pid}/generations", json=body).json()
+    assert job["estimatedCost"] == 0
+    assert job["provider"] == "gozcut"
+
+    # Le pont écrit un NOUVEAU dossier, au format lu par gozCut, sans lancer l'application.
+    provider = GozCutBridgeProvider("ffmpeg", str(tmp_path / "gozCut"), "", open_app=False)
+    existing = tmp_path / "gozCut" / "existant"
+    existing.mkdir(parents=True)
+    work = tmp_path / "work"
+    work.mkdir()
+
+    def fetch(asset_id: str, target: Path) -> None:
+        target.write_bytes(assets[asset_id].read_bytes())
+
+    context = RunContext(
+        work=work,
+        references=[],
+        scene_summary="",
+        progress=lambda _value, _message: False,
+        documents={"edit.json": json.dumps(edit)},
+        fetch_asset=fetch,
+    )
+    _, outputs = provider.run("project", GenerationRequest("gozcut_project", ""), context)
+    result = outputs[0].data
+    assert result["clips"] == 3
+    assert result["missing"] == ["1.3 À faire"]
+    assert abs(result["seconds"] - 3.5) < 0.1
+    folder = Path(result["folder"])
+    assert folder.parent == tmp_path / "gozCut"
+    saved = json.loads((folder / "project.json").read_text(encoding="utf-8"))
+    assert saved["settings"]["format"] == "16:9"
+    main = saved["timeline"]["tracks"][0]
+    assert main["isMain"] is True
+    assert main["clips"][0]["start"] == 0
+    assert main["clips"][1]["start"] == main["clips"][0]["duration"]
+    for item in saved["media"]:
+        assert (folder / "Media" / item["fileName"]).exists()
+        assert "/" not in item["fileName"]
+    assert saved["media"][0]["fileName"] == "1.1 Image fixe.mp4"
+    assert not [p for p in (folder / "Media").iterdir() if p.name.startswith(".")]

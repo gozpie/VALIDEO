@@ -8,6 +8,7 @@ import { useCommandSource } from '@/lib/commands';
 import { toast } from '@/lib/toast';
 import { BibleStep } from './BibleStep';
 import { useBible, useJobs, useProviders, useScripts, useStoryboard } from './data';
+import { formatTime, MontageStep } from './MontageStep';
 import { ProposalsStep } from './ProposalsStep';
 import { ScriptStep } from './ScriptStep';
 import { ShotsStep } from './ShotsStep';
@@ -56,7 +57,9 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
         return;
       }
       if (job.status !== 'completed') return;
-      if (job.mode === 'script_breakdown' || job.mode === 'bible_from_script') {
+      if (job.mode === 'gozcut_project') {
+        toast('Projet gozCut créé', { kind: 'success' });
+      } else if (job.mode === 'script_breakdown' || job.mode === 'bible_from_script') {
         toast(job.mode === 'script_breakdown' ? 'Découpage proposé' : 'Bible proposée', {
           kind: 'ai',
           duration: 0,
@@ -81,6 +84,7 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
     shots: shots.length
       ? `${shots.filter((s) => s.selectedVersionId).length}/${shots.length}`
       : '0',
+    montage: formatTime(shots.reduce((n, s) => n + s.durationFrames / fps, 0)),
   };
 
   useCommandSource(
@@ -140,6 +144,17 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
             refreshBoard();
             goTo(kind === 'breakdown' ? 'shots' : 'bible');
           }}
+        />
+      )}
+      {step === 'montage' && (
+        <MontageStep
+          projectId={projectId}
+          canEdit={canEdit}
+          board={board}
+          fps={fps}
+          providers={providers}
+          jobs={jobs}
+          onJob={track}
         />
       )}
       {step === 'bible' && (

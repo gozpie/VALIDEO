@@ -4,6 +4,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+### Ajouté
+
+- Étape 7.1 : étape Montage, liste de montage (`GET /projects/{id}/edit-list`), pont gozCut (`mode: gozcut_project`,
+  `scripts/mac-worker.sh`).
+
+### Corrigé
+
+- Un worker occupé par une longue génération n'est plus vu comme arrêté (signe de vie dans un fil dédié) ; message
+  d'indisponibilité explicite.
+
 ## [0.7.0] — 2026-11-03 — Phase 6 : studio de production
 
 ### Ajouté

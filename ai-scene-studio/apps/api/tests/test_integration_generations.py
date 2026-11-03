@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,7 +17,7 @@ from ass_api.ai.providers.base import ProviderAdapter
 from ass_api.ai.providers.simulation import SimulationProvider
 from ass_api.ai.registry import build_providers
 from ass_api.ai.service import run_generation
-from ass_api.ai.worker import availability_key
+from ass_api.ai.worker import Heartbeat, availability_key
 from ass_api.core.config import Settings
 from ass_api.core.storage import ObjectStorage
 from ass_api.db.models import GenerationJob, WorkspaceMember
@@ -112,7 +113,7 @@ def test_providers_report_worker_availability(
     alice: ApiClient, broker: Any, ai_settings: Settings
 ) -> None:
     listed = {p["id"]: p for p in alice.get("/ai/providers").json()}
-    assert set(listed) == {"simulation", "claude", "higgsfield"}
+    assert set(listed) == {"simulation", "claude", "higgsfield", "gozcut"}
     assert listed["higgsfield"]["available"] is False
     assert listed["higgsfield"]["kind"] == "bridge"
     assert "Seedance 2.5" in [m["label"] for m in listed["higgsfield"]["models"]]
@@ -120,6 +121,26 @@ def test_providers_report_worker_availability(
     assert {p["id"]: p for p in alice.get("/ai/providers").json()}["higgsfield"][
         "reason"
     ] == "Chrome fermé"
+
+
+def test_heartbeat_survives_a_long_generation(
+    alice: ApiClient, broker: Any, ai_settings: Settings, db_factory: sessionmaker[Session]
+) -> None:
+    # Le signe de vie part de son propre fil : un worker occupé plus longtemps que la durée de vie
+    # du signal (ici 1 s) reste vu comme disponible.
+    providers: dict[str, ProviderAdapter] = {"simulation": SimulationProvider("ffmpeg")}
+    heartbeat = Heartbeat(broker, ai_settings, providers, db_factory, "test", interval=0.2, ttl=1)
+    heartbeat.start()
+    try:
+        time.sleep(1.6)  # pendant ce temps, le fil principal est « occupé »
+        listed = {p["id"]: p for p in alice.get("/ai/providers").json()}
+        assert listed["simulation"]["available"] is True
+    finally:
+        heartbeat.stop()
+    time.sleep(1.2)
+    listed = {p["id"]: p for p in alice.get("/ai/providers").json()}
+    assert listed["simulation"]["available"] is False
+    assert "docker compose up -d ai-worker" in listed["simulation"]["reason"]
 
 
 def test_estimate_and_mismatches(alice: ApiClient, shot: dict[str, str]) -> None:
@@ -286,4 +307,4 @@ def test_roles_and_isolation(
 
 
 def test_registry_builds_all_providers(ai_settings: Settings) -> None:
-    assert set(build_providers(ai_settings)) == {"simulation", "claude", "higgsfield"}
+    assert set(build_providers(ai_settings)) == {"simulation", "claude", "higgsfield", "gozcut"}

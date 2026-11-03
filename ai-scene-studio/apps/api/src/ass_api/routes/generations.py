@@ -22,6 +22,7 @@ from ass_api.ai.capabilities import (
     MEDIA_MODES,
     PROJECT_MODES,
     SCENE_MODES,
+    SCRIPT_MODES,
     GenerationRequest,
 )
 from ass_api.ai.providers.base import ProviderAdapter, ProviderError
@@ -40,6 +41,8 @@ from ass_api.db.models import (
     ProjectScript,
     Scene,
     SceneRevision,
+    Sequence,
+    Shot,
     ShotVersion,
 )
 from ass_api.db.session import get_db
@@ -60,6 +63,7 @@ Mode = Literal[
     "script_breakdown",
     "bible_from_script",
     "shot_prompts",
+    "gozcut_project",
 ]
 JobStatus = Literal[
     "queued", "preparing", "running", "processing", "completed", "failed", "cancelled"
@@ -136,7 +140,7 @@ class ModelOut(ApiModel):
 class ProviderOut(ApiModel):
     id: str
     label: str
-    kind: Literal["official", "subscription", "bridge", "simulation"]
+    kind: Literal["official", "subscription", "bridge", "simulation", "tool"]
     available: bool
     reason: str
     models: list[ModelOut]
@@ -165,13 +169,22 @@ class GenerationJobOut(ApiModel):
     completed_at: datetime | None
 
 
+# Quand un moteur ne répond pas : ce qu'il faut relancer, en clair.
+STOPPED = {
+    "claude": "Le service Claude est arrêté : relancez « docker compose up -d ai-worker »",
+    "simulation": "Le service IA est arrêté : relancez « docker compose up -d ai-worker »",
+    "higgsfield": "Higgsfield n'est pas lancé : ./scripts/mac-worker.sh gozcut,higgsfield",
+    "gozcut": "Le pont gozCut n'est pas lancé : ./scripts/mac-worker.sh sur le Mac",
+}
+
+
 def _availability(client: "redis.Redis", settings: Settings, provider: str) -> tuple[bool, str]:
     try:
         beat = read_availability(client, settings, provider)
     except RedisError:
         return False, "File IA indisponible"
     if beat is None:
-        return False, "Aucun worker IA actif pour ce fournisseur"
+        return False, STOPPED.get(provider, "Ce moteur n'est pas lancé")
     return bool(beat.get("available")), str(beat.get("reason") or "")
 
 
@@ -315,7 +328,16 @@ def _project_target(
     project, access = project_access(db, current.user, project_id, Role.EDITOR)
     if body.scene_frames or body.revision_id or body.parent_version_id:
         raise _unprocessable("Scène et versions de plan : génération d'un plan uniquement")
-    if body.mode in PROJECT_MODES:
+    if body.mode == "gozcut_project":
+        shots = db.scalar(
+            select(Shot.id)
+            .join(Sequence, Sequence.id == Shot.sequence_id)
+            .where(Sequence.project_id == project.id)
+            .limit(1)
+        )
+        if shots is None:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Le storyboard est vide")
+    elif body.mode in SCRIPT_MODES:
         query = select(ProjectScript.id).where(ProjectScript.project_id == project.id)
         if body.script_id is not None:
             query = query.where(ProjectScript.id == body.script_id)
@@ -331,7 +353,7 @@ def _project_target(
             raise _unprocessable("Élément de bible inconnu dans ce projet")
     else:
         raise _unprocessable(
-            "Au niveau du projet : découpage, bible, ou image d'un élément de bible"
+            "Au niveau du projet : découpage, bible, gozCut ou image d'un élément de bible"
         )
     _check_references(db, access, body)
     return Target(access, project, None, None)

@@ -20,6 +20,8 @@ Mode = Literal[
     "script_breakdown",
     "bible_from_script",
     "shot_prompts",
+    # Montage : plans du film envoyés à gozCut.
+    "gozcut_project",
 ]
 Control = Literal[
     "first_frame",
@@ -36,7 +38,8 @@ VIDEO_MODES = frozenset({"text_to_video", "image_to_video"})
 MEDIA_MODES = frozenset({"text_to_image", "image_to_image", "text_to_video", "image_to_video"})
 # Modes qui lisent la scène 3D (révision obligatoire) et modes du studio rattachés au projet.
 SCENE_MODES = frozenset({"prompt_from_scene", "scene_from_text", "image_analysis"})
-PROJECT_MODES = frozenset({"script_breakdown", "bible_from_script"})
+PROJECT_MODES = frozenset({"script_breakdown", "bible_from_script", "gozcut_project"})
+SCRIPT_MODES = frozenset({"script_breakdown", "bible_from_script"})
 
 
 @dataclass(frozen=True)
