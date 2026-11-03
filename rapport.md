@@ -160,3 +160,8 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Tests** : 11 tests (toutes les opérations produisent des scènes valides, entrée jamais modifiée, position monde conservée, cycles refusés, dimensions et orientation des primitives, champ de vision 35 mm, aller-retour des transformations, couleurs linéaires).
 - **Objectif** : un cœur d'édition testable sans navigateur, sur lequel reposent l'historique et l'interface.
 
+### Étape 2.5 — État de l'éditeur (`@ass/editor-ui`)
+- **Ajouté** : `src/store.ts` — store Zustand : scène et scène enregistrée (modifications en attente), révision de départ, sélection (remplacer/ajouter/basculer, purgée des entités supprimées), outil, magnétisme, historique annuler/rétablir borné à 200 entrées, gestes continus inscrits en une seule entrée, opérations invalides ignorées sans perte d'état ; `topLevelSelection`.
+- **Écart** : Immer n'est pas utilisé (les opérations pures de `scene-engine` suffisent) ; documenté dans le README du package.
+- **Tests** : 7 tests (annuler/rétablir, gestes, opération refusée, borne de l'historique, sélection, modifications en attente, sélection de premier niveau).
+

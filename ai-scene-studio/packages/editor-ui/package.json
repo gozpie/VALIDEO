@@ -1,0 +1,19 @@
+{
+  "name": "@ass/editor-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "État de l'éditeur (sélection, outils, historique) et composants de l'éditeur 3D.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ass/scene-engine": "workspace:*",
+    "@ass/scene-schema": "workspace:*",
+    "zustand": "5.0.16"
+  }
+}

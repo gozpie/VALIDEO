@@ -13,6 +13,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Étape 2.3 : assets GLB (migration `0005`) — envoi validé, déduplication, liste, métadonnées, contenu servi en
   flux ; plafond global des corps de requête ; contrôle des assets référencés par une scène ; fixture `cube.glb`.
 - Étape 2.4 : `@ass/scene-engine` — fabriques d'objets, opérations d'édition pures, conversions Three.js.
+- Étape 2.5 : `@ass/editor-ui` — store de l'éditeur (sélection, outils, magnétisme, annuler/rétablir, gestes).
 
 ## [0.2.0] — 2026-11-03 — Phase 1 : projets persistants
 
