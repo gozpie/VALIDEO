@@ -272,3 +272,18 @@ Blender) ; 4.7 clôture.
 - **Tests** : E2E `render.spec.ts` (Maj+A, Maj+D, X, Ctrl+Z, Alt+G, I, caméra active, rendu Blender réel à 10 % jusqu'à « Terminé », vidéo affichée, `.blend` téléchargeable) ; contrôle visuel du panneau de rendu et de l'aide des raccourcis.
 - **Objectif** : répondre à la demande de Pierre de « se rapprocher le plus de Blender » (vrai rendu Blender, fichier `.blend`, conventions de raccourcis) sans copier son apparence.
 
+### Étape 4.7 — Clôture de la phase 4
+- **Corrigé** : en CI (Linux), les tests de cohérence lancent le conteneur Blender avec l'utilisateur de l'hôte (dossier de travail monté inaccessible sinon).
+- **Vérifié** : CI GitHub au vert (run 41693266774) : 116 tests unitaires Python, 118 tests d'intégration dont 7 rendus Blender de cohérence et 1 rendu de bout en bout par le worker, 7 E2E dont le rendu depuis l'éditeur.
+- **Modifié** : `README.md`, `ARCHITECTURE.md`, `CHANGELOG.md` (version 0.5.0).
+
+### Bilan de la phase 4
+- **Livrable** (« un plan animé peut être rendu hors navigateur ») : atteint — depuis l'éditeur, un plan animé est rendu par Blender 4.5 LTS dans le worker, avec vidéo H.264 lisible dans l'éditeur, passes OpenEXR (beauty RGBA, alpha, profondeur, normales, Object ID, Cryptomatte, vecteurs), aperçu et scène `.blend` téléchargeables ; vérifié en local et en CI.
+- **Demande de Pierre « se rapprocher le plus de Blender »** : vrai moteur Blender pour le rendu final, fichier `.blend` avec courbes d'animation natives (interpolations, poignées et cycles équivalents, correction des poignées identique à Blender adoptée par nos deux moteurs), raccourcis façon Blender par défaut. L'apparence de Blender n'est pas copiée (exigence du cahier des charges).
+- **Tests de cohérence** : axes, focales, orthographique, hiérarchie, timing et interpolation, GLB — écart < 1 pixel ; courbes évaluées par Blender = moteur à 1e-4 m ; moteur Python = moteur TypeScript à 1e-9.
+- **Commandes exécutées** : `docker build` (image du worker), `docker compose up --build --wait`, `blender -b … build_scene.py` (sonde et rendus), `ASS_BLENDER=docker ASS_RUN_RENDER=1 ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration`, `pnpm check`, `pnpm test:e2e`, `gh run watch`.
+- **Tests réussis** : 116 unitaires et 118 d'intégration Python ; 131 TypeScript ; 7 E2E ; CI au vert. **Échecs rencontrés et corrigés** : expiration de lecture Redis du worker, extension des fichiers de sortie, permissions du dossier monté en CI, attentes de tests (échantillons, noms de canaux EXR).
+- **Écarts** : file Redis maison au lieu de Celery (moins de pièces mobiles, état en base) ; suivi par interrogation (pas de SSE) ; Cycles CPU sans GPU ; envoi des sorties via l'API de stockage interne.
+- **Limitations et risques** : voir `KNOWN_LIMITATIONS.md` (CPU seulement, émulation sur Apple Silicon, éclairage d'aperçu approximatif, `receiveShadow` et portée des lumières ignorés, rotations échantillonnées dans le `.blend`, `.blend` pour Blender ≥ 4.5 — le Blender 3.5.1 installé sur le Mac de Pierre est trop ancien pour l'ouvrir correctement).
+- **Prochaine étape** : phase 5 (premier moteur IA : adaptateur fournisseur, génération image/vidéo conditionnée par les passes, estimation de coût, jobs). Elle exigera un choix de fournisseur et une clé d'API **payante** : aucune génération ne sera lancée sans GO explicite.
+

@@ -4,11 +4,10 @@ Plateforme web de conception d'images et de vidéos IA à partir d'une **scène 
 La 3D apporte la précision, l'IA la richesse visuelle, le compositing préserve le contrôle et le
 versioning préserve le travail.
 
-> **État : phase 3 livrée (caméras et animation), en attente de validation.** Connexion, workspaces, projets,
-> séquences et plans ; éditeur 3D par plan (primitives, caméras physiques, lumières, import GLB, gizmos,
-> hiérarchie, inspecteur, annuler/rétablir) ; animation par clés avec timeline, caméra active, visée, vue caméra ;
-> enregistrement en révisions immuables. Pas encore de rendu hors navigateur ni de génération IA. Voir
-> [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
+> **État : phase 4 livrée (rendu Blender hors navigateur), en attente de validation.** Éditeur 3D par plan
+> (raccourcis façon Blender), animation par clés, caméras physiques, révisions immuables ; rendu final par
+> **Blender 4.5 LTS** (Cycles) dans un worker : vidéo, passes OpenEXR, aperçu et fichier `.blend` éditable. Pas
+> encore de génération IA. Voir [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) et la feuille de route ci-dessous.
 
 ## Démarrage rapide
 
@@ -40,7 +39,8 @@ packages/generation-sdk/  Contrat ProviderAdapter et appariement des capacités 
 packages/scene-engine/    Opérations d'édition pures, scène canonique ↔ Three.js
 packages/animation-engine/Évaluation déterministe de l'animation, édition des clés
 packages/editor-ui/       État de l'éditeur (sélection, outils, annuler/rétablir)
-workers/                  (phases 4–5) render, media, ai
+workers/render-worker/    Script Blender (générateur de scène) ; worker : apps/api/src/ass_api/render
+workers/                  (phase 5) ai, media
 infrastructure/           Dockerfiles, nginx, migrations Alembic
 tests/                    Fixtures partagées, intégration, E2E transverses
 scripts/                  check-env.sh, check-all.sh
@@ -67,8 +67,8 @@ scripts/                  check-env.sh, check-all.sh
 | 0     | Environnement reproductible, contrats                                | ✅ terminé                            |
 | 1     | Projets persistants (auth, workspaces, projets, séquences, plans)    | ✅ terminé                            |
 | 2     | Scène éditable persistante (viewport, gizmos, undo/redo, import GLB) | ✅ terminé                            |
-| 3     | Plan animé relisible (caméras, timeline, keyframes)                  | ✅ terminé (en attente de validation) |
-| 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                      | à faire                               |
+| 3     | Plan animé relisible (caméras, timeline, keyframes)                  | ✅ terminé                            |
+| 4     | Rendu hors navigateur (Blender, passes, FFmpeg)                      | ✅ terminé (en attente de validation) |
 | 5     | Génération IA depuis la scène                                        | à faire                               |
 | 6     | Versioning (historique, A/B, restauration)                           | à faire                               |
 | 7     | Compositing hybride                                                  | à faire                               |

@@ -4,6 +4,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ## [Non publié]
 
+## [0.5.0] — 2026-11-03 — Phase 4 : rendu technique (Blender)
+
 ### Ajouté
 
 - Étape 4.1 : portage Python de l'évaluation (animation + contraintes) pour le rendu, vérifié au milliardième près
