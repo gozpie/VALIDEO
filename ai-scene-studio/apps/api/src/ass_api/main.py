@@ -29,6 +29,7 @@ from ass_api.routes import (
     scenes,
     sequences,
     shots,
+    studio,
     workspaces,
 )
 
@@ -95,6 +96,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         assets.router,
         renders.router,
         generations.router,
+        studio.router,
     ):
         app.include_router(router)
     return app

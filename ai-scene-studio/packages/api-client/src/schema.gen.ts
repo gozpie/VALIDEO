@@ -105,6 +105,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bible-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Bible Entry */
+        delete: operations["delete_bible_entry_bible_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Bible Entry */
+        patch: operations["update_bible_entry_bible_entries__entry_id__patch"];
+        trace?: never;
+    };
+    "/bible-entries/{entry_id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Bible Image
+         * @description Ajoute une image du workspace (référence importée, rendu, image générée) à l'élément.
+         */
+        post: operations["add_bible_image_bible_entries__entry_id__images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/generation-jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -226,6 +264,123 @@ export interface paths {
         patch: operations["update_project_projects__project_id__patch"];
         trace?: never;
     };
+    "/projects/{project_id}/bible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bible */
+        get: operations["list_bible_projects__project_id__bible_get"];
+        put?: never;
+        /** Create Bible Entry */
+        post: operations["create_bible_entry_projects__project_id__bible_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/bible/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Bible
+         * @description Ajoute les éléments proposés absents de la bible, puis les relie aux plans découpés.
+         */
+        post: operations["apply_bible_projects__project_id__bible_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/breakdown/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Breakdown
+         * @description Crée les séquences et plans du découpage, à la suite de l'existant, en une transaction.
+         */
+        post: operations["apply_breakdown_projects__project_id__breakdown_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Project Generations */
+        get: operations["list_project_generations_projects__project_id__generations_get"];
+        put?: never;
+        /**
+         * Create Project Generation
+         * @description Découpage, bible ou image d'un élément de bible : rattachés au projet, sans plan.
+         */
+        post: operations["create_project_generation_projects__project_id__generations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/generations/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Estimate Project Generation */
+        post: operations["estimate_project_generation_projects__project_id__generations_estimate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/scripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scripts */
+        get: operations["list_scripts_projects__project_id__scripts_get"];
+        put?: never;
+        /**
+         * Create Script
+         * @description Nouvelle version immuable (le projet est verrouillé pour numéroter sans conflit).
+         */
+        post: operations["create_script_projects__project_id__scripts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/sequences": {
         parameters: {
             query?: never;
@@ -254,6 +409,26 @@ export interface paths {
         get?: never;
         /** Reorder Sequences */
         put: operations["reorder_sequences_projects__project_id__sequences_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/storyboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Storyboard
+         * @description Séquences et plans avec leur version retenue : l'écran « Plans » du studio.
+         */
+        get: operations["storyboard_projects__project_id__storyboard_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -304,6 +479,23 @@ export interface paths {
         };
         /** Get Revision */
         get: operations["get_revision_scene_revisions__revision_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scripts/{script_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Script */
+        get: operations["get_script_scripts__script_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -364,6 +556,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/shot-versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Version */
+        patch: operations["update_version_shot_versions__version_id__patch"];
         trace?: never;
     };
     "/shots/{shot_id}": {
@@ -473,6 +682,27 @@ export interface paths {
         put?: never;
         /** Save Revision */
         post: operations["save_revision_shots__shot_id__scene_revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shots/{shot_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Versions */
+        get: operations["list_versions_shots__shot_id__versions_get"];
+        put?: never;
+        /**
+         * Add Version
+         * @description Version ajoutée à la main (rendu Blender, image importée, vidéo montée ailleurs).
+         */
+        post: operations["add_version_shots__shot_id__versions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -636,6 +866,14 @@ export interface components {
             /** Password */
             password?: string | null;
         };
+        /** ApplyIn */
+        ApplyIn: {
+            /**
+             * Jobid
+             * Format: uuid
+             */
+            jobId: string;
+        };
         /** AssetOut */
         AssetOut: {
             /**
@@ -672,6 +910,87 @@ export interface components {
              * Format: uuid
              */
             workspaceId: string;
+        };
+        /** BibleEntryIn */
+        BibleEntryIn: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "look" | "character" | "set" | "prop";
+            /** Name */
+            name: string;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt?: string;
+        };
+        /** BibleEntryOut */
+        BibleEntryOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Imageassetids */
+            imageAssetIds: string[];
+            /** Keyassetid */
+            keyAssetId: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "look" | "character" | "set" | "prop";
+            /** Name */
+            name: string;
+            /** Orderindex */
+            orderIndex: number;
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
+        /** BibleEntryPatch */
+        BibleEntryPatch: {
+            /** Description */
+            description?: string | null;
+            /** Keyassetid */
+            keyAssetId?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Orderindex */
+            orderIndex?: number | null;
+            /** Prompt */
+            prompt?: string | null;
+        };
+        /** BibleImageIn */
+        BibleImageIn: {
+            /**
+             * Assetid
+             * Format: uuid
+             */
+            assetId: string;
         };
         /** Body_upload_asset_workspaces__workspace_id__assets_post */
         Body_upload_asset_workspaces__workspace_id__assets_post: {
@@ -756,6 +1075,13 @@ export interface components {
         GenerationIn: {
             /** Aspectratio */
             aspectRatio?: string | null;
+            /** Bibleentryid */
+            bibleEntryId?: string | null;
+            /**
+             * Biblereferences
+             * @default false
+             */
+            bibleReferences?: boolean;
             /** Confirmedcost */
             confirmedCost?: number | null;
             /** Durationseconds */
@@ -764,7 +1090,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis";
+            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis" | "script_breakdown" | "bible_from_script" | "shot_prompts";
             /** Model */
             model: string;
             /**
@@ -776,6 +1102,8 @@ export interface components {
             options?: {
                 [key: string]: boolean | number | string;
             };
+            /** Parentversionid */
+            parentVersionId?: string | null;
             /**
              * Prompt
              * @default
@@ -789,6 +1117,8 @@ export interface components {
             revisionId?: string | null;
             /** Sceneframes */
             sceneFrames?: number[];
+            /** Scriptid */
+            scriptId?: string | null;
             /** Seed */
             seed?: number | null;
         };
@@ -828,6 +1158,11 @@ export interface components {
             };
             /** Progress */
             progress: number;
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
             /** Provider */
             provider: string;
             /** Renderjobid */
@@ -836,16 +1171,10 @@ export interface components {
             request: {
                 [key: string]: unknown;
             };
-            /**
-             * Scenerevisionid
-             * Format: uuid
-             */
-            sceneRevisionId: string;
-            /**
-             * Shotid
-             * Format: uuid
-             */
-            shotId: string;
+            /** Scenerevisionid */
+            sceneRevisionId: string | null;
+            /** Shotid */
+            shotId: string | null;
             /**
              * Status
              * @enum {string}
@@ -1292,6 +1621,86 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** ScriptIn */
+        ScriptIn: {
+            /** Content */
+            content: string;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+        };
+        /** ScriptOut */
+        ScriptOut: {
+            /** Content */
+            content: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Length */
+            length: number;
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+        };
+        /** ScriptSummaryOut */
+        ScriptSummaryOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Length */
+            length: number;
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+        };
+        /** SelectedVersionOut */
+        SelectedVersionOut: {
+            /**
+             * Assetid
+             * Format: uuid
+             */
+            assetId: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video";
+            /** Number */
+            number: number;
+        };
         /** SequenceIn */
         SequenceIn: {
             /** Name */
@@ -1349,13 +1758,33 @@ export interface components {
         };
         /** ShotIn */
         ShotIn: {
+            /** Approach */
+            approach?: ("image_to_video" | "multishot" | "text_to_video" | "still" | "scene_3d") | null;
+            /** Camera */
+            camera?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Dialogue */
+            dialogue?: string | null;
             /** Durationframes */
             durationFrames: number;
             fps?: components["schemas"]["Fps"] | null;
+            /** Imageprompt */
+            imagePrompt?: string | null;
+            /** Intention */
+            intention?: string | null;
             /** Name */
             name: string;
+            /** Negativeprompt */
+            negativePrompt?: string | null;
             /** Position */
             position?: number | null;
+            /** Shotsize */
+            shotSize?: string | null;
+            /** Status */
+            status?: ("todo" | "in_progress" | "review" | "approved") | null;
+            /** Videoprompt */
+            videoPrompt?: string | null;
         };
         /** ShotOrderIn */
         ShotOrderIn: {
@@ -1365,10 +1794,23 @@ export interface components {
         /** ShotOut */
         ShotOut: {
             /**
+             * Approach
+             * @enum {string}
+             */
+            approach: "image_to_video" | "multishot" | "text_to_video" | "still" | "scene_3d";
+            /** Bibleentryids */
+            bibleEntryIds: string[];
+            /** Camera */
+            camera: string;
+            /**
              * Createdat
              * Format: date-time
              */
             createdAt: string;
+            /** Description */
+            description: string;
+            /** Dialogue */
+            dialogue: string;
             /** Durationframes */
             durationFrames: number;
             effectiveFps: components["schemas"]["Fps"];
@@ -1378,8 +1820,14 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Imageprompt */
+            imagePrompt: string;
+            /** Intention */
+            intention: string;
             /** Name */
             name: string;
+            /** Negativeprompt */
+            negativePrompt: string;
             /** Orderindex */
             orderIndex: number;
             /**
@@ -1387,27 +1835,208 @@ export interface components {
              * Format: uuid
              */
             projectId: string;
+            /** Selectedversionid */
+            selectedVersionId: string | null;
             /**
              * Sequenceid
              * Format: uuid
              */
             sequenceId: string;
+            /** Shotsize */
+            shotSize: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "todo" | "in_progress" | "review" | "approved";
             /**
              * Updatedat
              * Format: date-time
              */
             updatedAt: string;
+            /** Videoprompt */
+            videoPrompt: string;
         };
         /**
          * ShotPatch
          * @description Champs absents inchangés ; ``fps: null`` revient à la cadence du projet.
          */
         ShotPatch: {
+            /** Approach */
+            approach?: ("image_to_video" | "multishot" | "text_to_video" | "still" | "scene_3d") | null;
+            /** Bibleentryids */
+            bibleEntryIds?: string[] | null;
+            /** Camera */
+            camera?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Dialogue */
+            dialogue?: string | null;
             /** Durationframes */
             durationFrames?: number | null;
             fps?: components["schemas"]["Fps"] | null;
+            /** Imageprompt */
+            imagePrompt?: string | null;
+            /** Intention */
+            intention?: string | null;
             /** Name */
             name?: string | null;
+            /** Negativeprompt */
+            negativePrompt?: string | null;
+            /** Selectedversionid */
+            selectedVersionId?: string | null;
+            /** Shotsize */
+            shotSize?: string | null;
+            /** Status */
+            status?: ("todo" | "in_progress" | "review" | "approved") | null;
+            /** Videoprompt */
+            videoPrompt?: string | null;
+        };
+        /** ShotVersionIn */
+        ShotVersionIn: {
+            /**
+             * Assetid
+             * Format: uuid
+             */
+            assetId: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Parentid */
+            parentId?: string | null;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt?: string;
+        };
+        /** ShotVersionOut */
+        ShotVersionOut: {
+            /**
+             * Assetid
+             * Format: uuid
+             */
+            assetId: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Generationjobid */
+            generationJobId: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video";
+            /** Note */
+            note: string;
+            /** Number */
+            number: number;
+            /** Parentid */
+            parentId: string | null;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Shotid
+             * Format: uuid
+             */
+            shotId: string;
+        };
+        /** ShotVersionPatch */
+        ShotVersionPatch: {
+            /** Note */
+            note: string;
+        };
+        /** StoryboardSequenceOut */
+        StoryboardSequenceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Orderindex */
+            orderIndex: number;
+            /** Shots */
+            shots: components["schemas"]["StoryboardShotOut"][];
+        };
+        /** StoryboardShotOut */
+        StoryboardShotOut: {
+            /**
+             * Approach
+             * @enum {string}
+             */
+            approach: "image_to_video" | "multishot" | "text_to_video" | "still" | "scene_3d";
+            /** Bibleentryids */
+            bibleEntryIds: string[];
+            /** Camera */
+            camera: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Description */
+            description: string;
+            /** Dialogue */
+            dialogue: string;
+            /** Durationframes */
+            durationFrames: number;
+            effectiveFps: components["schemas"]["Fps"];
+            fps: components["schemas"]["Fps"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Imageprompt */
+            imagePrompt: string;
+            /** Intention */
+            intention: string;
+            /** Name */
+            name: string;
+            /** Negativeprompt */
+            negativePrompt: string;
+            /** Orderindex */
+            orderIndex: number;
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
+            selectedVersion: components["schemas"]["SelectedVersionOut"] | null;
+            /** Selectedversionid */
+            selectedVersionId: string | null;
+            /**
+             * Sequenceid
+             * Format: uuid
+             */
+            sequenceId: string;
+            /** Shotsize */
+            shotSize: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "todo" | "in_progress" | "review" | "approved";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Versioncount */
+            versionCount: number;
+            /** Videoprompt */
+            videoPrompt: string;
         };
         /** UploadedAssetOut */
         UploadedAssetOut: {
@@ -1706,6 +2335,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    delete_bible_entry_bible_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_bible_entry_bible_entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BibleEntryPatch"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BibleEntryOut"];
+                };
+            };
+        };
+    };
+    add_bible_image_bible_entries__entry_id__images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BibleImageIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BibleEntryOut"];
                 };
             };
         };
@@ -2081,6 +2836,392 @@ export interface operations {
             };
         };
     };
+    list_bible_projects__project_id__bible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BibleEntryOut"][];
+                };
+            };
+        };
+    };
+    create_bible_entry_projects__project_id__bible_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BibleEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BibleEntryOut"];
+                };
+            };
+        };
+    };
+    apply_bible_projects__project_id__bible_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BibleEntryOut"][];
+                };
+            };
+        };
+    };
+    apply_breakdown_projects__project_id__breakdown_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryboardSequenceOut"][];
+                };
+            };
+        };
+    };
+    list_project_generations_projects__project_id__generations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"][];
+                };
+            };
+        };
+    };
+    create_project_generation_projects__project_id__generations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"];
+                };
+            };
+        };
+    };
+    estimate_project_generation_projects__project_id__generations_estimate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstimateOut"];
+                };
+            };
+        };
+    };
+    list_scripts_projects__project_id__scripts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptSummaryOut"][];
+                };
+            };
+        };
+    };
+    create_script_projects__project_id__scripts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScriptIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptOut"];
+                };
+            };
+        };
+    };
     list_sequences_projects__project_id__sequences_get: {
         parameters: {
             query?: never;
@@ -2209,6 +3350,46 @@ export interface operations {
             };
         };
     };
+    storyboard_projects__project_id__storyboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryboardSequenceOut"][];
+                };
+            };
+        };
+    };
     get_render_render_jobs__job_id__get: {
         parameters: {
             query?: never;
@@ -2325,6 +3506,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevisionWithSnapshotOut"];
+                };
+            };
+        };
+    };
+    get_script_scripts__script_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                script_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptOut"];
                 };
             };
         };
@@ -2575,6 +3796,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShotOut"][];
+                };
+            };
+        };
+    };
+    update_version_shot_versions__version_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShotVersionPatch"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShotVersionOut"];
                 };
             };
         };
@@ -3049,6 +4314,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SaveRevisionOut"];
+                };
+            };
+        };
+    };
+    list_versions_shots__shot_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShotVersionOut"][];
+                };
+            };
+        };
+    };
+    add_version_shots__shot_id__versions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShotVersionIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShotVersionOut"];
                 };
             };
         };

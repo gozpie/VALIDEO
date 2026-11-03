@@ -149,7 +149,7 @@ def test_estimate_and_mismatches(alice: ApiClient, shot: dict[str, str]) -> None
     )
 
 
-def test_estimate_before_first_save_but_not_generation(alice: ApiClient) -> None:
+def test_scene_is_required_only_when_it_conditions(alice: ApiClient) -> None:
     workspace = alice.post("/workspaces", json={"name": "Vide"}).json()["id"]
     project = alice.post(f"/workspaces/{workspace}/projects", json={"name": "P"}).json()["id"]
     sequence = alice.post(f"/projects/{project}/sequences", json={"name": "S"}).json()["id"]
@@ -159,9 +159,15 @@ def test_estimate_before_first_save_but_not_generation(alice: ApiClient) -> None
     estimate = alice.post(f"/shots/{shot_id}/generations/estimate", json=IMAGE)
     assert estimate.status_code == 200
     assert estimate.json()["amount"] == 3
-    created = alice.post(f"/shots/{shot_id}/generations", json={**IMAGE, "confirmedCost": 3})
+    # Cadrée par la caméra : la scène doit être enregistrée.
+    framed = {**IMAGE, "confirmedCost": 3, "sceneFrames": [0]}
+    created = alice.post(f"/shots/{shot_id}/generations", json=framed)
     assert created.status_code == 409
     assert "Enregistrez la scène" in created.json()["detail"]
+    # Sans la scène 3D (studio : image à partir du découpage), aucune révision n'est requise ;
+    # ici le refus vient seulement de l'absence de worker Higgsfield.
+    free = alice.post(f"/shots/{shot_id}/generations", json={**IMAGE, "confirmedCost": 3})
+    assert free.status_code == 503
 
 
 def test_paid_generation_requires_exact_cost_confirmation(

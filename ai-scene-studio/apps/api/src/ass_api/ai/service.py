@@ -15,10 +15,25 @@ from sqlalchemy.orm import Session, sessionmaker
 from ass_api.ai.capabilities import MEDIA_MODES, GenerationRequest
 from ass_api.ai.providers.base import ProviderAdapter, ProviderError, RunContext
 from ass_api.ai.scene_summary import describe_scene
+from ass_api.ai.studio_context import (
+    bible_document,
+    latest_script,
+    project_brief,
+    shot_document,
+)
 from ass_api.assets.store import store_file
 from ass_api.core.config import Settings
 from ass_api.core.storage import ObjectStorage
-from ass_api.db.models import Asset, GenerationJob, RenderJob, SceneRevision, Shot
+from ass_api.db.models import (
+    Asset,
+    BibleEntry,
+    GenerationJob,
+    Project,
+    RenderJob,
+    SceneRevision,
+    Shot,
+    ShotVersion,
+)
 from ass_api.render.jobs import RenderQueue, transition
 from ass_api.scenes.validation import parse_snapshot
 
@@ -123,6 +138,67 @@ def _download(db: Session, storage: ObjectStorage, asset_id: str, folder: Path, 
     return target
 
 
+def studio_documents(
+    db: Session, job: GenerationJob, project: Project, shot: Shot | None
+) -> dict[str, str]:
+    """Script, bible et fiche du plan pour les tâches du studio (aucun pour les autres modes)."""
+    if job.mode not in ("script_breakdown", "bible_from_script", "shot_prompts"):
+        return {}
+    documents: dict[str, str] = {}
+    script_id = job.request.get("scriptId")
+    script = latest_script(db, project.id, uuid.UUID(script_id) if script_id else None)
+    if script is not None:
+        documents["script.md"] = script.content
+    entries = list(db.scalars(select(BibleEntry).where(BibleEntry.project_id == project.id)))
+    if entries:
+        documents["bible.md"] = bible_document(entries)
+    if job.mode == "shot_prompts" and shot is not None:
+        documents["plan.md"] = shot_document(db, shot)
+    return documents
+
+
+def _publish_to_studio(db: Session, job: GenerationJob, result: dict[str, Any]) -> None:
+    """Images et vidéos d'un plan → versions du plan ; image d'un élément de bible → sa galerie."""
+    media = [a for a in result["assets"] if a["kind"] in ("image", "video")]
+    if not media:
+        return
+    from ass_api.routes.studio import add_entry_image, create_version  # import tardif (cycle)
+
+    if job.shot_id is not None:
+        shot = db.get(Shot, job.shot_id, with_for_update=True)
+        assert shot is not None  # noqa: S101
+        parent = job.request.get("parentVersionId")
+        parent_id = uuid.UUID(parent) if parent else None
+        versions = []
+        for item in media:
+            asset = db.get(Asset, uuid.UUID(item["assetId"]))
+            assert asset is not None  # noqa: S101
+            # Une version parente supprimée entre-temps ne bloque pas la publication.
+            if parent_id is not None and db.get(ShotVersion, parent_id) is None:
+                parent_id = None
+            version = create_version(
+                db,
+                shot,
+                asset,
+                parent_id=parent_id,
+                prompt=str(job.request.get("prompt", "")),
+                generation_job_id=job.id,
+                created_by_id=job.created_by_id,
+            )
+            versions.append(str(version.id))
+            item["versionId"] = str(version.id)
+        if shot.status == "todo":
+            shot.status = "in_progress"
+        result["versionIds"] = versions
+    entry_id = job.request.get("bibleEntryId")
+    if entry_id:
+        entry = db.get(BibleEntry, uuid.UUID(entry_id), with_for_update=True)
+        if entry is not None:
+            for item in media:
+                if item["kind"] == "image":
+                    add_entry_image(entry, uuid.UUID(item["assetId"]))
+
+
 def run_generation(
     job_id: uuid.UUID,
     providers: dict[str, ProviderAdapter],
@@ -164,13 +240,20 @@ def _execute(
             job = db.get(GenerationJob, job_id)
             assert job is not None  # noqa: S101
             provider = providers[job.provider]
-            revision = db.get(SceneRevision, job.scene_revision_id)
-            shot = db.get(Shot, job.shot_id)
-            assert revision is not None and shot is not None  # noqa: S101
-            scene = parse_snapshot(storage.get_bytes(revision.snapshot_key))
-            assert isinstance(scene, dict)  # noqa: S101
-            frames = job.request.get("sceneFrames") or [scene["renderSettings"]["frameStart"]]
-            summary = describe_scene(scene, min(frames), max(frames))
+            revision = (
+                db.get(SceneRevision, job.scene_revision_id) if job.scene_revision_id else None
+            )
+            shot = db.get(Shot, job.shot_id) if job.shot_id else None
+            project = db.get(Project, job.project_id)
+            assert project is not None  # noqa: S101
+            frames = list(job.request.get("sceneFrames") or [])
+            summary = "Aucune scène 3D pour cette génération."
+            if revision is not None:
+                scene = parse_snapshot(storage.get_bytes(revision.snapshot_key))
+                assert isinstance(scene, dict)  # noqa: S101
+                frames = frames or [scene["renderSettings"]["frameStart"]]
+                summary = describe_scene(scene, min(frames), max(frames))
+            documents = studio_documents(db, job, project, shot)
             caps = provider.capabilities_for(job.model_id)
             references: list[Path] = []
             used: list[dict[str, Any]] = []
@@ -199,7 +282,8 @@ def _execute(
                 "provider": job.provider,
                 "model": job.model_id,
                 "mode": job.mode,
-                "sceneRevisionId": str(job.scene_revision_id),
+                "sceneRevisionId": str(job.scene_revision_id) if job.scene_revision_id else None,
+                "documents": sorted(documents),
                 "frames": frames,
                 "prompt": request.prompt,
                 "negativePrompt": request.negative_prompt,
@@ -217,7 +301,8 @@ def _execute(
             transition(job, "running", f"{provider.label} : génération en cours")
             job.heartbeat_at = datetime.now(UTC)
             db.commit()
-            shot_name, workspace_id, created_by = shot.name, job.workspace_id, job.created_by_id
+            shot_name = shot.name if shot else project.name
+            workspace_id, created_by = job.workspace_id, job.created_by_id
             model_label = caps.label
         context = RunContext(
             work=work,
@@ -225,6 +310,8 @@ def _execute(
             scene_summary=summary,
             progress=lambda value, message: _touch(db_factory, job_id, value, message),
             timeout_seconds=settings.ai_timeout_seconds,
+            documents=documents,
+            brief=project_brief(project),
         )
         external_id, outputs = provider.run(job.model_id, request, context)
         with db_factory() as db:
@@ -258,6 +345,7 @@ def _execute(
                     )
                     result["assets"].append({"assetId": str(asset.id), "kind": output.kind})
                 actual = output.metadata.get("actualCost", actual)
+            _publish_to_studio(db, job, result)
             job.outputs = result
             job.external_id = external_id
             job.actual_cost = actual if actual is not None else job.estimated_cost

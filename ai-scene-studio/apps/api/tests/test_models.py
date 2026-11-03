@@ -35,6 +35,10 @@ def test_phase_1_tables() -> None:
         "assets",
         "render_jobs",
         "generation_jobs",
+        "project_scripts",
+        "bible_entries",
+        "shot_bible_links",
+        "shot_versions",
     }
 
 

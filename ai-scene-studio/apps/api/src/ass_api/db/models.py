@@ -50,6 +50,11 @@ JOB_STATUSES: Final = (
     "cancelled",
 )
 TERMINAL_JOB_STATUSES: Final = frozenset({"completed", "failed", "cancelled"})
+# Studio de production (phase 6).
+BIBLE_KINDS: Final = ("look", "character", "set", "prop")
+SHOT_APPROACHES: Final = ("image_to_video", "multishot", "text_to_video", "still", "scene_3d")
+SHOT_STATUSES: Final = ("todo", "in_progress", "review", "approved")
+VERSION_KINDS: Final = ("image", "video")
 ASSET_TYPES: Final = (
     "model",
     "texture",
@@ -235,6 +240,8 @@ class Shot(Base):
         CheckConstraint("length(name) > 0", name="name_not_empty"),
         CheckConstraint("order_index >= 0", name="order_index_positive"),
         CheckConstraint("duration_frames > 0", name="duration_positive"),
+        CheckConstraint(_in("approach", SHOT_APPROACHES), name="approach_valid"),
+        CheckConstraint(_in("status", SHOT_STATUSES), name="status_valid"),
         # fps propre au plan, ou hérité du projet (les deux colonnes NULL). Les IS NOT NULL sont
         # nécessaires : un CHECK évalué à NULL (une seule colonne renseignée) serait accepté.
         CheckConstraint(
@@ -261,8 +268,125 @@ class Shot(Base):
     duration_frames: Mapped[int] = mapped_column(Integer, nullable=False)
     fps_numerator: Mapped[int | None] = mapped_column(Integer, nullable=True)
     fps_denominator: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Découpage (phase 6) : description professionnelle du plan et choix de fabrication.
+    description: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    intention: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    dialogue: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    shot_size: Mapped[str] = mapped_column(String(80), nullable=False, server_default="")
+    camera: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    approach: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="image_to_video"
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="todo")
+    image_prompt: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    video_prompt: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    negative_prompt: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    # Version retenue du plan (image ou vidéo) ; NULL tant que rien n'est choisi.
+    selected_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("shot_versions.id", ondelete="SET NULL", use_alter=True), nullable=True
+    )
     created_at: Mapped[datetime] = _created_at()
     updated_at: Mapped[datetime] = _updated_at()
+
+
+class ProjectScript(Base):
+    """Version immuable du brief ou du script d'un projet (numérotée 1, 2, 3…)."""
+
+    __tablename__ = "project_scripts"
+    __table_args__ = (
+        CheckConstraint("version >= 1", name="version_positive"),
+        CheckConstraint("length(content) <= 500000", name="content_length"),
+        UniqueConstraint("project_id", "version", name="uq_project_scripts_project_id_version"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+
+
+class BibleEntry(Base):
+    """Bible du projet : LOOK, personnages, décors, accessoires, avec image clé et galerie."""
+
+    __tablename__ = "bible_entries"
+    __table_args__ = (
+        CheckConstraint(_in("kind", BIBLE_KINDS), name="kind_valid"),
+        CheckConstraint("length(name) > 0", name="name_not_empty"),
+        UniqueConstraint("project_id", "kind", "name", name="uq_bible_entries_project_kind_name"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    # Description visuelle en anglais, réutilisée telle quelle dans les prompts.
+    prompt: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    key_asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="SET NULL"), nullable=True
+    )
+    # Images candidates (identifiants d'assets du workspace), la plus récente en dernier.
+    image_asset_ids: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+
+class ShotBibleLink(Base):
+    """Éléments de la bible présents dans un plan (personnages, décor, accessoires)."""
+
+    __tablename__ = "shot_bible_links"
+
+    shot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), primary_key=True
+    )
+    entry_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("bible_entries.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+
+
+class ShotVersion(Base):
+    """Version d'un plan (image ou vidéo) ; `parent_id` forme l'arbre des allers-retours."""
+
+    __tablename__ = "shot_versions"
+    __table_args__ = (
+        CheckConstraint(_in("kind", VERSION_KINDS), name="kind_valid"),
+        CheckConstraint("number >= 1", name="number_positive"),
+        UniqueConstraint("shot_id", "number", name="uq_shot_versions_shot_id_number"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    shot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), nullable=False
+    )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("shot_versions.id", ondelete="SET NULL"), nullable=True
+    )
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String(8), nullable=False)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False
+    )
+    generation_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("generation_jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    prompt: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    note: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
 
 
 class Scene(Base):
@@ -403,6 +527,7 @@ class GenerationJob(Base):
             name="uq_generation_jobs_workspace_id_idempotency_key",
         ),
         Index("ix_generation_jobs_shot_id_created_at", "shot_id", "created_at"),
+        Index("ix_generation_jobs_project_id_created_at", "project_id", "created_at"),
         Index("ix_generation_jobs_status_provider", "status", "provider"),
     )
 
@@ -410,11 +535,16 @@ class GenerationJob(Base):
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
-    shot_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("shots.id", ondelete="CASCADE"), nullable=False
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
-    scene_revision_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("scene_revisions.id", ondelete="CASCADE"), nullable=False
+    # Plan concerné ; NULL pour une génération du studio (découpage, bible, image de la bible).
+    shot_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), nullable=True
+    )
+    # Révision de scène ; NULL quand la scène 3D ne conditionne pas la génération.
+    scene_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("scene_revisions.id", ondelete="CASCADE"), nullable=True
     )
     # Rendu de préparation (image de la caméra, profondeur, normales) quand la scène conditionne.
     render_job_id: Mapped[uuid.UUID | None] = mapped_column(

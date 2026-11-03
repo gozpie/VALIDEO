@@ -57,6 +57,10 @@ class RunContext:
     progress: Callable[[float, str], bool]
     """Rapporte la progression ; renvoie True si l'annulation est demandée."""
     timeout_seconds: float = 1800
+    # Documents texte du studio (script.md, bible.md, plan.md…) écrits dans le dossier de travail.
+    documents: dict[str, str] = field(default_factory=dict)
+    # Contexte court du projet (titre, format, cadence), repris dans la consigne.
+    brief: str = ""
 
 
 class ProviderError(Exception):

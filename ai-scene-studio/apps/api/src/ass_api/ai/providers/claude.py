@@ -22,6 +22,7 @@ from ass_api.ai.providers.base import (
     ProviderOutput,
     RunContext,
 )
+from ass_api.ai.providers.claude_studio import STUDIO_MODES, studio_task
 
 MODELS: Final = {"sonnet": "Claude Sonnet", "opus": "Claude Opus", "haiku": "Claude Haiku"}
 
@@ -170,10 +171,17 @@ class ClaudeProvider(ProviderAdapter):
                 provider=self.id,
                 model=model,
                 label=label,
-                modes=("prompt_from_scene", "scene_from_text", "image_analysis"),
+                modes=(
+                    "prompt_from_scene",
+                    "scene_from_text",
+                    "image_analysis",
+                    "script_breakdown",
+                    "bible_from_script",
+                    "shot_prompts",
+                ),
                 controls=("first_frame", "last_frame", "reference_images", "depth"),
                 max_reference_images=8,
-                notes="Lit les images et rédige ; ne génère ni image ni vidéo.",
+                notes="Lit les images et les documents, rédige ; ne génère ni image ni vidéo.",
             )
             for model, label in MODELS.items()
         ]
@@ -186,6 +194,9 @@ class ClaudeProvider(ProviderAdapter):
     def _instructions(
         self, request: GenerationRequest, context: RunContext, files: list[str]
     ) -> tuple[str, dict[str, Any]]:
+        if request.mode in STUDIO_MODES:
+            documents = sorted(context.documents) + files
+            return studio_task(request.mode, documents, context.brief, request.prompt)
         images = (
             "Images fournies dans le dossier courant (lis-les avec l'outil Read) : "
             + ", ".join(files)
@@ -213,6 +224,8 @@ class ClaudeProvider(ProviderAdapter):
             name = f"image_{index + 1}{path.suffix or '.png'}"
             shutil.copy(path, context.work / name)
             files.append(name)
+        for name, content in context.documents.items():
+            (context.work / name).write_text(content, encoding="utf-8")
         prompt, schema = self._instructions(request, context, files)
         config = context.work / ".claude-config"
         config.mkdir(exist_ok=True)
@@ -238,7 +251,12 @@ class ClaudeProvider(ProviderAdapter):
             "--allowedTools",
             "Read",
         ]
-        context.progress(0.2, f"{MODELS.get(model, model)} analyse la scène")
+        task = {
+            "script_breakdown": "découpe le film",
+            "bible_from_script": "établit la bible",
+            "shot_prompts": "écrit les prompts du plan",
+        }.get(request.mode, "analyse la scène")
+        context.progress(0.2, f"{MODELS.get(model, model)} {task}")
         try:
             result = subprocess.run(  # noqa: S603 (commande construite ici, sans shell)
                 command,

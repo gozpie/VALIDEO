@@ -2967,6 +2967,205 @@
         }
       }
     },
+    "/projects/{project_id}/generations/estimate": {
+      "post": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Estimate Project Generation",
+        "operationId": "estimate_project_generation_projects__project_id__generations_estimate_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstimateOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/generations": {
+      "post": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Create Project Generation",
+        "description": "Découpage, bible ou image d'un élément de bible : rattachés au projet, sans plan.",
+        "operationId": "create_project_generation_projects__project_id__generations_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "List Project Generations",
+        "operationId": "list_project_generations_projects__project_id__generations_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenerationJobOut"
+                  },
+                  "title": "Response List Project Generations Projects  Project Id  Generations Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/generation-jobs/{job_id}": {
       "get": {
         "tags": [
@@ -3072,6 +3271,843 @@
           }
         }
       }
+    },
+    "/projects/{project_id}/scripts": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "List Scripts",
+        "operationId": "list_scripts_projects__project_id__scripts_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScriptSummaryOut"
+                  },
+                  "title": "Response List Scripts Projects  Project Id  Scripts Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Create Script",
+        "description": "Nouvelle version immuable (le projet est verrouillé pour numéroter sans conflit).",
+        "operationId": "create_script_projects__project_id__scripts_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScriptIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scripts/{script_id}": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Get Script",
+        "operationId": "get_script_scripts__script_id__get",
+        "parameters": [
+          {
+            "name": "script_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Script Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/bible": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "List Bible",
+        "operationId": "list_bible_projects__project_id__bible_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BibleEntryOut"
+                  },
+                  "title": "Response List Bible Projects  Project Id  Bible Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Create Bible Entry",
+        "operationId": "create_bible_entry_projects__project_id__bible_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BibleEntryIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BibleEntryOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bible-entries/{entry_id}": {
+      "patch": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Update Bible Entry",
+        "operationId": "update_bible_entry_bible_entries__entry_id__patch",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BibleEntryPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BibleEntryOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Delete Bible Entry",
+        "operationId": "delete_bible_entry_bible_entries__entry_id__delete",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bible-entries/{entry_id}/images": {
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Add Bible Image",
+        "description": "Ajoute une image du workspace (référence importée, rendu, image générée) à l'élément.",
+        "operationId": "add_bible_image_bible_entries__entry_id__images_post",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BibleImageIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BibleEntryOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shots/{shot_id}/versions": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "List Versions",
+        "operationId": "list_versions_shots__shot_id__versions_get",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShotVersionOut"
+                  },
+                  "title": "Response List Versions Shots  Shot Id  Versions Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Add Version",
+        "description": "Version ajoutée à la main (rendu Blender, image importée, vidéo montée ailleurs).",
+        "operationId": "add_version_shots__shot_id__versions_post",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShotVersionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShotVersionOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shot-versions/{version_id}": {
+      "patch": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Update Version",
+        "operationId": "update_version_shot_versions__version_id__patch",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShotVersionPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShotVersionOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/storyboard": {
+      "get": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Storyboard",
+        "description": "Séquences et plans avec leur version retenue : l'écran « Plans » du studio.",
+        "operationId": "storyboard_projects__project_id__storyboard_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StoryboardSequenceOut"
+                  },
+                  "title": "Response Storyboard Projects  Project Id  Storyboard Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/breakdown/apply": {
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Apply Breakdown",
+        "description": "Crée les séquences et plans du découpage, à la suite de l'existant, en une transaction.",
+        "operationId": "apply_breakdown_projects__project_id__breakdown_apply_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StoryboardSequenceOut"
+                  },
+                  "title": "Response Apply Breakdown Projects  Project Id  Breakdown Apply Post"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/bible/apply": {
+      "post": {
+        "tags": [
+          "studio"
+        ],
+        "summary": "Apply Bible",
+        "description": "Ajoute les éléments proposés absents de la bible, puis les relie aux plans découpés.",
+        "operationId": "apply_bible_projects__project_id__bible_apply_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BibleEntryOut"
+                  },
+                  "title": "Response Apply Bible Projects  Project Id  Bible Apply Post"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3107,6 +4143,20 @@
         "type": "object",
         "title": "AcceptIn",
         "description": "Champs requis seulement pour créer le compte (adresse encore inconnue)."
+      },
+      "ApplyIn": {
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Jobid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobId"
+        ],
+        "title": "ApplyIn"
       },
       "AssetOut": {
         "properties": {
@@ -3187,6 +4237,210 @@
           "createdAt"
         ],
         "title": "AssetOut"
+      },
+      "BibleEntryIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "look",
+              "character",
+              "set",
+              "prop"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Description",
+            "default": ""
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Prompt",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "BibleEntryIn"
+      },
+      "BibleEntryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "look",
+              "character",
+              "set",
+              "prop"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "keyAssetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyassetid"
+          },
+          "imageAssetIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Imageassetids"
+          },
+          "orderIndex": {
+            "type": "integer",
+            "title": "Orderindex"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "kind",
+          "name",
+          "description",
+          "prompt",
+          "keyAssetId",
+          "imageAssetIds",
+          "orderIndex",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "BibleEntryOut"
+      },
+      "BibleEntryPatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "keyAssetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyassetid"
+          },
+          "orderIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orderindex"
+          }
+        },
+        "type": "object",
+        "title": "BibleEntryPatch"
+      },
+      "BibleImageIn": {
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assetid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assetId"
+        ],
+        "title": "BibleImageIn"
       },
       "Body_upload_asset_workspaces__workspace_id__assets_post": {
         "properties": {
@@ -3384,7 +4638,10 @@
               "image_to_video",
               "prompt_from_scene",
               "scene_from_text",
-              "image_analysis"
+              "image_analysis",
+              "script_breakdown",
+              "bible_from_script",
+              "shot_prompts"
             ],
             "title": "Mode"
           },
@@ -3493,6 +4750,47 @@
               }
             ],
             "title": "Confirmedcost"
+          },
+          "parentVersionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentversionid"
+          },
+          "bibleEntryId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bibleentryid"
+          },
+          "scriptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scriptid"
+          },
+          "bibleReferences": {
+            "type": "boolean",
+            "title": "Biblereferences",
+            "default": false
           }
         },
         "type": "object",
@@ -3510,14 +4808,33 @@
             "format": "uuid",
             "title": "Id"
           },
-          "shotId": {
+          "projectId": {
             "type": "string",
             "format": "uuid",
+            "title": "Projectid"
+          },
+          "shotId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Shotid"
           },
           "sceneRevisionId": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Scenerevisionid"
           },
           "renderJobId": {
@@ -3645,6 +4962,7 @@
         "type": "object",
         "required": [
           "id",
+          "projectId",
           "shotId",
           "sceneRevisionId",
           "renderJobId",
@@ -4800,6 +6118,147 @@
         ],
         "title": "SceneStateOut"
       },
+      "ScriptIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title",
+            "default": ""
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 500000,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ScriptIn"
+      },
+      "ScriptOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "length": {
+            "type": "integer",
+            "title": "Length"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "title",
+          "length",
+          "createdAt",
+          "content"
+        ],
+        "title": "ScriptOut"
+      },
+      "ScriptSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "length": {
+            "type": "integer",
+            "title": "Length"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "title",
+          "length",
+          "createdAt"
+        ],
+        "title": "ScriptSummaryOut"
+      },
+      "SelectedVersionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind"
+          },
+          "assetId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assetid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "kind",
+          "assetId"
+        ],
+        "title": "SelectedVersionOut"
+      },
       "SequenceIn": {
         "properties": {
           "name": {
@@ -4926,6 +6385,137 @@
       },
       "ShotIn": {
         "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "intention": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intention"
+          },
+          "dialogue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialogue"
+          },
+          "shotSize": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shotsize"
+          },
+          "camera": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "image_to_video",
+                  "multishot",
+                  "text_to_video",
+                  "still",
+                  "scene_3d"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "todo",
+                  "in_progress",
+                  "review",
+                  "approved"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "imagePrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imageprompt"
+          },
+          "videoPrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Videoprompt"
+          },
+          "negativePrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negativeprompt"
+          },
           "name": {
             "type": "string",
             "maxLength": 200,
@@ -5027,6 +6617,79 @@
           "effectiveFps": {
             "$ref": "#/components/schemas/Fps"
           },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "intention": {
+            "type": "string",
+            "title": "Intention"
+          },
+          "dialogue": {
+            "type": "string",
+            "title": "Dialogue"
+          },
+          "shotSize": {
+            "type": "string",
+            "title": "Shotsize"
+          },
+          "camera": {
+            "type": "string",
+            "title": "Camera"
+          },
+          "approach": {
+            "type": "string",
+            "enum": [
+              "image_to_video",
+              "multishot",
+              "text_to_video",
+              "still",
+              "scene_3d"
+            ],
+            "title": "Approach"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "todo",
+              "in_progress",
+              "review",
+              "approved"
+            ],
+            "title": "Status"
+          },
+          "imagePrompt": {
+            "type": "string",
+            "title": "Imageprompt"
+          },
+          "videoPrompt": {
+            "type": "string",
+            "title": "Videoprompt"
+          },
+          "negativePrompt": {
+            "type": "string",
+            "title": "Negativeprompt"
+          },
+          "bibleEntryIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Bibleentryids"
+          },
+          "selectedVersionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedversionid"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -5048,6 +6711,18 @@
           "durationFrames",
           "fps",
           "effectiveFps",
+          "description",
+          "intention",
+          "dialogue",
+          "shotSize",
+          "camera",
+          "approach",
+          "status",
+          "imagePrompt",
+          "videoPrompt",
+          "negativePrompt",
+          "bibleEntryIds",
+          "selectedVersionId",
           "createdAt",
           "updatedAt"
         ],
@@ -5055,6 +6730,137 @@
       },
       "ShotPatch": {
         "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "intention": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intention"
+          },
+          "dialogue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialogue"
+          },
+          "shotSize": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shotsize"
+          },
+          "camera": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "image_to_video",
+                  "multishot",
+                  "text_to_video",
+                  "still",
+                  "scene_3d"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "todo",
+                  "in_progress",
+                  "review",
+                  "approved"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "imagePrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imageprompt"
+          },
+          "videoPrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Videoprompt"
+          },
+          "negativePrompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negativeprompt"
+          },
           "name": {
             "anyOf": [
               {
@@ -5090,11 +6896,374 @@
                 "type": "null"
               }
             ]
+          },
+          "bibleEntryIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bibleentryids"
+          },
+          "selectedVersionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedversionid"
           }
         },
         "type": "object",
         "title": "ShotPatch",
         "description": "Champs absents inchangés ; ``fps: null`` revient à la cadence du projet."
+      },
+      "ShotVersionIn": {
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assetid"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Note",
+            "default": ""
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Prompt",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "assetId"
+        ],
+        "title": "ShotVersionIn"
+      },
+      "ShotVersionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "shotId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Shotid"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind"
+          },
+          "assetId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assetid"
+          },
+          "generationJobId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generationjobid"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "shotId",
+          "parentId",
+          "number",
+          "kind",
+          "assetId",
+          "generationJobId",
+          "prompt",
+          "note",
+          "createdAt"
+        ],
+        "title": "ShotVersionOut"
+      },
+      "ShotVersionPatch": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note"
+        ],
+        "title": "ShotVersionPatch"
+      },
+      "StoryboardSequenceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "orderIndex": {
+            "type": "integer",
+            "title": "Orderindex"
+          },
+          "shots": {
+            "items": {
+              "$ref": "#/components/schemas/StoryboardShotOut"
+            },
+            "type": "array",
+            "title": "Shots"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "orderIndex",
+          "shots"
+        ],
+        "title": "StoryboardSequenceOut"
+      },
+      "StoryboardShotOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sequenceId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sequenceid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "orderIndex": {
+            "type": "integer",
+            "title": "Orderindex"
+          },
+          "durationFrames": {
+            "type": "integer",
+            "title": "Durationframes"
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fps"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effectiveFps": {
+            "$ref": "#/components/schemas/Fps"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "intention": {
+            "type": "string",
+            "title": "Intention"
+          },
+          "dialogue": {
+            "type": "string",
+            "title": "Dialogue"
+          },
+          "shotSize": {
+            "type": "string",
+            "title": "Shotsize"
+          },
+          "camera": {
+            "type": "string",
+            "title": "Camera"
+          },
+          "approach": {
+            "type": "string",
+            "enum": [
+              "image_to_video",
+              "multishot",
+              "text_to_video",
+              "still",
+              "scene_3d"
+            ],
+            "title": "Approach"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "todo",
+              "in_progress",
+              "review",
+              "approved"
+            ],
+            "title": "Status"
+          },
+          "imagePrompt": {
+            "type": "string",
+            "title": "Imageprompt"
+          },
+          "videoPrompt": {
+            "type": "string",
+            "title": "Videoprompt"
+          },
+          "negativePrompt": {
+            "type": "string",
+            "title": "Negativeprompt"
+          },
+          "bibleEntryIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Bibleentryids"
+          },
+          "selectedVersionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedversionid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "selectedVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelectedVersionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versionCount": {
+            "type": "integer",
+            "title": "Versioncount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sequenceId",
+          "projectId",
+          "name",
+          "orderIndex",
+          "durationFrames",
+          "fps",
+          "effectiveFps",
+          "description",
+          "intention",
+          "dialogue",
+          "shotSize",
+          "camera",
+          "approach",
+          "status",
+          "imagePrompt",
+          "videoPrompt",
+          "negativePrompt",
+          "bibleEntryIds",
+          "selectedVersionId",
+          "createdAt",
+          "updatedAt",
+          "selectedVersion",
+          "versionCount"
+        ],
+        "title": "StoryboardShotOut"
       },
       "UploadedAssetOut": {
         "properties": {
