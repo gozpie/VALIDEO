@@ -129,53 +129,70 @@ def _ffmpeg(settings: Settings, args: list[str]) -> None:
 
 
 def _encode(settings: Settings, out: Path, description: dict[str, Any]) -> dict[str, Path]:
+    frames: list[int] = description["renderFrames"]
+    contiguous = frames == list(range(frames[0], frames[-1] + 1))
     fps = f"{description['fps']['numerator']}/{description['fps']['denominator']}"
-    sequence = ["-framerate", fps, "-start_number", str(description["frameStart"])]
+    sequence = ["-framerate", fps, "-start_number", str(frames[0])]
     source = ["-i", str(out / "png" / "frame_%04d.png")]
-    files = {"video": out / "rendu.mp4"}
-    _ffmpeg(
-        settings,
-        [
-            *sequence,
-            *source,
-            "-c:v",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            "-crf",
-            "18",
-            "-vf",
-            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-            "-movflags",
-            "+faststart",
-            str(files["video"]),
-        ],
-    )
-    if description["render"]["transparentBackground"]:
-        files["alphaVideo"] = out / "rendu-alpha.mov"
+    files: dict[str, Path] = {}
+    # Vidéo seulement pour une plage continue de plusieurs frames (pas pour une préparation IA).
+    if contiguous and len(frames) > 1:
+        files["video"] = out / "rendu.mp4"
         _ffmpeg(
             settings,
             [
                 *sequence,
                 *source,
                 "-c:v",
-                "prores_ks",
-                "-profile:v",
-                "4444",
+                "libx264",
                 "-pix_fmt",
-                "yuva444p10le",
-                str(files["alphaVideo"]),
+                "yuv420p",
+                "-crf",
+                "18",
+                "-vf",
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                "-movflags",
+                "+faststart",
+                str(files["video"]),
             ],
         )
+        if description["render"]["transparentBackground"]:
+            files["alphaVideo"] = out / "rendu-alpha.mov"
+            _ffmpeg(
+                settings,
+                [
+                    *sequence,
+                    *source,
+                    "-c:v",
+                    "prores_ks",
+                    "-profile:v",
+                    "4444",
+                    "-pix_fmt",
+                    "yuva444p10le",
+                    str(files["alphaVideo"]),
+                ],
+            )
     files["passes"] = out / "passes-exr.zip"
     with zipfile.ZipFile(files["passes"], "w", zipfile.ZIP_STORED) as archive:
         for exr in sorted((out / "exr").glob("*.exr")):
             archive.write(exr, exr.name)
-    first = sorted((out / "png").glob("*.png"))[0]
     files["preview"] = out / "apercu.png"
-    shutil.copy(first, files["preview"])
+    shutil.copy(out / "png" / f"frame_{frames[0]:04d}.png", files["preview"])
     files["blend"] = out / "scene.blend"
     return files
+
+
+def _frame_files(out: Path, frames: list[int]) -> dict[str, dict[str, Path]]:
+    """Images par frame (aperçu et, si demandées, cartes de profondeur et de normales)."""
+    result: dict[str, dict[str, Path]] = {}
+    for frame in frames:
+        entry = {"beauty": out / "png" / f"frame_{frame:04d}.png"}
+        for kind in ("depth", "normal"):
+            path = out / kind / f"frame_{frame:04d}.png"
+            if path.exists():
+                entry[kind] = path
+        result[str(frame)] = entry
+    return result
 
 
 OUTPUT_TYPES = {
@@ -220,7 +237,7 @@ def run_job(
                 paths = _download_models(db, storage, job, scene, work / "assets")
                 description = build_description(scene, job.settings, paths)
                 (work / "description.json").write_text(json.dumps(description), encoding="utf-8")
-                total = job.settings["frameEnd"] - job.settings["frameStart"] + 1
+                total = len(description["renderFrames"])
                 shot_name = shot.name
                 transition(job, "running", f"Rendu Blender : 0/{total} frames")
                 db.commit()
@@ -251,6 +268,31 @@ def run_job(
                         created_by_id=job.created_by_id,
                     )
                     outputs[key] = str(asset.id)
+                if description["conditioningMaps"] or len(description["renderFrames"]) <= 8:
+                    labels = {"beauty": "Image", "depth": "Profondeur", "normal": "Normales"}
+                    per_frame: dict[str, dict[str, str]] = {}
+                    for frame, entry in _frame_files(
+                        work / "out", description["renderFrames"]
+                    ).items():
+                        per_frame[frame] = {}
+                        for kind, path in entry.items():
+                            asset = store_file(
+                                db,
+                                storage,
+                                workspace_id=job.workspace_id,
+                                path=path,
+                                name=f"{labels[kind]} {shot_name} frame {frame}.png",
+                                asset_type="image",
+                                mime_type="image/png",
+                                metadata={
+                                    "renderJobId": str(job.id),
+                                    "frame": int(frame),
+                                    "map": kind,
+                                },
+                                created_by_id=job.created_by_id,
+                            )
+                            per_frame[frame][kind] = str(asset.id)
+                    outputs["frames"] = per_frame
                 job.outputs = outputs
                 job.progress = 1.0
                 transition(job, "completed", f"Rendu terminé : {total} frame(s)")

@@ -402,8 +402,9 @@ def configure_render(scene, description: dict) -> None:
 
     layer = scene.view_layers[0]
     passes = set(render["passes"])
-    layer.use_pass_z = "depth" in passes
-    layer.use_pass_normal = "normal" in passes
+    maps = description["conditioningMaps"]
+    layer.use_pass_z = "depth" in passes or maps
+    layer.use_pass_normal = "normal" in passes or maps
     layer.use_pass_object_index = "object_id" in passes
     layer.use_pass_vector = "motion_vector" in passes and not render["motionBlur"]
     layer.use_pass_cryptomatte_object = "cryptomatte" in passes
@@ -434,6 +435,43 @@ def configure_render(scene, description: dict) -> None:
         tree.links.new(layers.outputs["Image"], over.inputs[2])
         tree.links.new(over.outputs["Image"], png.inputs[0])
     scene["ass_png_node"] = png.name
+    scene["ass_frames"] = description["renderFrames"]
+    if description["conditioningMaps"]:
+        add_conditioning_outputs(scene, tree, layers)
+
+
+def data_output(tree, path: str):
+    """Sortie PNG de données : valeurs brutes, sans transformation d'affichage."""
+    node = tree.nodes.new("CompositorNodeOutputFile")
+    node.format.file_format = "PNG"
+    node.format.color_mode = "RGB"
+    node.format.color_depth = "16"
+    node.format.color_management = "OVERRIDE"
+    node.format.view_settings.view_transform = "Raw"
+    node.file_slots[0].path = path
+    return node
+
+
+def add_conditioning_outputs(scene, tree, layers) -> None:
+    """Cartes de contrôle IA : profondeur (blanc = proche), normales monde (n/2 + 0,5)."""
+    normalize = tree.nodes.new("CompositorNodeNormalize")
+    invert = tree.nodes.new("CompositorNodeInvert")
+    tree.links.new(layers.outputs["Depth"], normalize.inputs[0])
+    tree.links.new(normalize.outputs[0], invert.inputs["Color"])
+    depth = data_output(tree, "frame_")
+    tree.links.new(invert.outputs[0], depth.inputs[0])
+    scene["ass_depth_node"] = depth.name
+    half = tree.nodes.new("CompositorNodeMixRGB")
+    half.blend_type = "MULTIPLY"
+    half.inputs[2].default_value = (0.5, 0.5, 0.5, 1)
+    offset = tree.nodes.new("CompositorNodeMixRGB")
+    offset.blend_type = "ADD"
+    offset.inputs[2].default_value = (0.5, 0.5, 0.5, 1)
+    tree.links.new(layers.outputs["Normal"], half.inputs[1])
+    tree.links.new(half.outputs[0], offset.inputs[1])
+    normal = data_output(tree, "frame_")
+    tree.links.new(offset.outputs[0], normal.inputs[0])
+    scene["ass_normal_node"] = normal.name
 
 
 def probe(scene, objects: dict, root, frames: list[int], path: Path) -> None:
@@ -460,7 +498,10 @@ def render_frames(scene, output: Path) -> None:
     (output / "exr").mkdir(parents=True, exist_ok=True)
     png = scene.node_tree.nodes[scene["ass_png_node"]]
     png.base_path = str(output / "png")
-    for frame in range(scene.frame_start, scene.frame_end + 1):
+    for name, folder in (("ass_depth_node", "depth"), ("ass_normal_node", "normal")):
+        if name in scene:
+            scene.node_tree.nodes[scene[name]].base_path = str(output / folder)
+    for frame in scene["ass_frames"]:
         scene.frame_set(frame)
         # Blender ajoute .exr ; le nœud de sortie PNG ajoute le numéro de frame et .png.
         scene.render.filepath = str(output / "exr" / f"frame_{frame:04d}")

@@ -388,3 +388,63 @@ class RenderJob(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class GenerationJob(Base):
+    """Génération IA (texte, image ou vidéo) liée à une révision de scène immuable."""
+
+    __tablename__ = "generation_jobs"
+    __table_args__ = (
+        CheckConstraint(_in("status", JOB_STATUSES), name="status_valid"),
+        CheckConstraint("progress >= 0 AND progress <= 1", name="progress_range"),
+        UniqueConstraint(
+            "workspace_id",
+            "idempotency_key",
+            name="uq_generation_jobs_workspace_id_idempotency_key",
+        ),
+        Index("ix_generation_jobs_shot_id_created_at", "shot_id", "created_at"),
+        Index("ix_generation_jobs_status_provider", "status", "provider"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    shot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("shots.id", ondelete="CASCADE"), nullable=False
+    )
+    scene_revision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scene_revisions.id", ondelete="CASCADE"), nullable=False
+    )
+    # Rendu de préparation (image de la caméra, profondeur, normales) quand la scène conditionne.
+    render_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("render_jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    model_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    mode: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="queued")
+    request: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    progress: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
+    message: Mapped[str] = mapped_column(String(500), nullable=False, server_default="")
+    input_manifest_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    output_manifest_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    outputs: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    external_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    estimated_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    actual_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cost_unit: Mapped[str] = mapped_column(String(40), nullable=False, server_default="")
+    error_details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cancel_requested: Mapped[bool] = mapped_column(nullable=False, server_default=text("false"))
+    worker_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

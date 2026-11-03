@@ -40,6 +40,10 @@ class RenderIn(ApiModel):
     resolution_percent: Annotated[int, Field(ge=1, le=100)] = 100
     samples: Annotated[int, Field(ge=1, le=4096)] | None = None
     passes: list[Pass] = Field(default_factory=lambda: list(DEFAULT_PASSES))
+    # Frames isolées à rendre (préparation IA, au plus 16) ; toute la plage si absent.
+    frames: Annotated[list[Annotated[int, Field(ge=0)]], Field(max_length=16)] | None = None
+    # Cartes PNG de profondeur et de normales par frame, pour conditionner un générateur IA.
+    conditioning_maps: bool = False
 
 
 class RenderJobOut(ApiModel):
@@ -106,7 +110,12 @@ def create_render(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"Plage de frames invalide (0 à {snapshot['durationFrames'] - 1})",
         )
-    if frame_end - frame_start + 1 > settings.render_max_frames:
+    frames = sorted(set(body.frames)) if body.frames else None
+    if frames is not None:
+        if frames[-1] >= snapshot["durationFrames"]:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Frame hors du plan")
+        frame_start, frame_end = frames[0], frames[-1]
+    if frames is None and frame_end - frame_start + 1 > settings.render_max_frames:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"Au plus {settings.render_max_frames} frames par rendu",
@@ -125,6 +134,8 @@ def create_render(
             "resolutionPercent": body.resolution_percent,
             "samples": body.samples or render["samples"],
             "passes": passes,
+            **({"frames": frames} if frames is not None else {}),
+            **({"conditioningMaps": True} if body.conditioning_maps else {}),
         },
         message="En attente d'un worker de rendu",
         idempotency_key=idempotency_key,

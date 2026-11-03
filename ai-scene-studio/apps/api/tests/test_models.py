@@ -34,6 +34,7 @@ def test_phase_1_tables() -> None:
         "scene_revisions",
         "assets",
         "render_jobs",
+        "generation_jobs",
     }
 
 

@@ -3,6 +3,23 @@
  */
 
 export interface paths {
+    "/ai/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Providers */
+        get: operations["list_providers_ai_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assets/{asset_id}": {
         parameters: {
             query?: never;
@@ -82,6 +99,40 @@ export interface paths {
         get: operations["get_session_auth_session_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/generation-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Generation */
+        get: operations["get_generation_generation_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/generation-jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Generation */
+        post: operations["cancel_generation_generation_jobs__job_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -332,6 +383,41 @@ export interface paths {
         head?: never;
         /** Update Shot */
         patch: operations["update_shot_shots__shot_id__patch"];
+        trace?: never;
+    };
+    "/shots/{shot_id}/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Generations */
+        get: operations["list_generations_shots__shot_id__generations_get"];
+        put?: never;
+        /** Create Generation */
+        post: operations["create_generation_shots__shot_id__generations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shots/{shot_id}/generations/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Estimate Generation */
+        post: operations["estimate_generation_shots__shot_id__generations_estimate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/shots/{shot_id}/renders": {
@@ -636,6 +722,23 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** EstimateOut */
+        EstimateOut: {
+            /** Amount */
+            amount: number;
+            /** Available */
+            available: boolean;
+            /** Basis */
+            basis: string;
+            /** Mismatches */
+            mismatches: components["schemas"]["MismatchOut"][];
+            /** Paid */
+            paid: boolean;
+            /** Reason */
+            reason: string;
+            /** Unit */
+            unit: string;
+        };
         /**
          * Fps
          * @description Cadence rationnelle (ex. 24000/1001), entre 1 et 1000 images par seconde.
@@ -648,6 +751,106 @@ export interface components {
             denominator?: number;
             /** Numerator */
             numerator: number;
+        };
+        /** GenerationIn */
+        GenerationIn: {
+            /** Aspectratio */
+            aspectRatio?: string | null;
+            /** Confirmedcost */
+            confirmedCost?: number | null;
+            /** Durationseconds */
+            durationSeconds?: number | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis";
+            /** Model */
+            model: string;
+            /**
+             * Negativeprompt
+             * @default
+             */
+            negativePrompt?: string;
+            /** Options */
+            options?: {
+                [key: string]: boolean | number | string;
+            };
+            /**
+             * Prompt
+             * @default
+             */
+            prompt?: string;
+            /** Provider */
+            provider: string;
+            /** Referenceassetids */
+            referenceAssetIds?: string[];
+            /** Revisionid */
+            revisionId?: string | null;
+            /** Sceneframes */
+            sceneFrames?: number[];
+            /** Seed */
+            seed?: number | null;
+        };
+        /** GenerationJobOut */
+        GenerationJobOut: {
+            /** Actualcost */
+            actualCost: number | null;
+            /** Completedat */
+            completedAt: string | null;
+            /** Costunit */
+            costUnit: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyid */
+            createdById: string | null;
+            /** Errordetails */
+            errorDetails: string | null;
+            /** Estimatedcost */
+            estimatedCost: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Mode */
+            mode: string;
+            /** Modelid */
+            modelId: string;
+            /** Outputs */
+            outputs: {
+                [key: string]: unknown;
+            };
+            /** Progress */
+            progress: number;
+            /** Provider */
+            provider: string;
+            /** Renderjobid */
+            renderJobId: string | null;
+            /** Request */
+            request: {
+                [key: string]: unknown;
+            };
+            /**
+             * Scenerevisionid
+             * Format: uuid
+             */
+            sceneRevisionId: string;
+            /**
+             * Shotid
+             * Format: uuid
+             */
+            shotId: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "preparing" | "running" | "processing" | "completed" | "failed" | "cancelled";
         };
         /** HealthOut */
         HealthOut: {
@@ -753,6 +956,37 @@ export interface components {
              * @enum {string}
              */
             role: "admin" | "editor" | "viewer";
+        };
+        /** MismatchOut */
+        MismatchOut: {
+            /** Field */
+            field: string;
+            /** Message */
+            message: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "blocking" | "ignored";
+        };
+        /** ModelOut */
+        ModelOut: {
+            /** Aspectratios */
+            aspectRatios: string[];
+            /** Controls */
+            controls: string[];
+            /** Durationsseconds */
+            durationsSeconds: number[];
+            /** Label */
+            label: string;
+            /** Maxreferenceimages */
+            maxReferenceImages: number;
+            /** Model */
+            model: string;
+            /** Modes */
+            modes: string[];
+            /** Notes */
+            notes: string;
         };
         /** Page[AssetOut] */
         Page_AssetOut_: {
@@ -875,10 +1109,35 @@ export interface components {
             name?: string | null;
             resolution?: components["schemas"]["Resolution"] | null;
         };
+        /** ProviderOut */
+        ProviderOut: {
+            /** Available */
+            available: boolean;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "official" | "subscription" | "bridge" | "simulation";
+            /** Label */
+            label: string;
+            /** Models */
+            models: components["schemas"]["ModelOut"][];
+            /** Reason */
+            reason: string;
+        };
         /** RenderIn */
         RenderIn: {
+            /**
+             * Conditioningmaps
+             * @default false
+             */
+            conditioningMaps?: boolean;
             /** Frameend */
             frameEnd?: number | null;
+            /** Frames */
+            frames?: number[] | null;
             /** Framestart */
             frameStart?: number | null;
             /** Passes */
@@ -1217,6 +1476,44 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_providers_ai_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderOut"][];
+                };
+            };
+        };
+    };
     get_asset_assets__asset_id__get: {
         parameters: {
             query?: never;
@@ -1409,6 +1706,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    get_generation_generation_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"];
+                };
+            };
+        };
+    };
+    cancel_generation_generation_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"];
                 };
             };
         };
@@ -2320,6 +2697,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShotOut"];
+                };
+            };
+        };
+    };
+    list_generations_shots__shot_id__generations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"][];
+                };
+            };
+        };
+    };
+    create_generation_shots__shot_id__generations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationJobOut"];
+                };
+            };
+        };
+    };
+    estimate_generation_shots__shot_id__generations_estimate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstimateOut"];
                 };
             };
         };

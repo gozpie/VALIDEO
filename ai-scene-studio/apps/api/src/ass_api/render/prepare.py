@@ -69,7 +69,8 @@ def build_description(
     asset_paths: dict[str, str],
 ) -> dict[str, Any]:
     frame_start, frame_end = settings["frameStart"], settings["frameEnd"]
-    frames = list(range(frame_start, frame_end + 1))
+    # Frames explicites (préparation IA : première et dernière image), sinon toute la plage.
+    frames = sorted(set(settings.get("frames") or range(frame_start, frame_end + 1)))
     evaluated = {frame: evaluate_frame(scene, frame) for frame in frames}
     tracks: dict[str, dict[str, Any]] = {}
     for track in scene["animations"]:
@@ -161,6 +162,8 @@ def build_description(
         "fps": scene["fps"],
         "frameStart": frame_start,
         "frameEnd": frame_end,
+        "renderFrames": frames,
+        "conditioningMaps": bool(settings.get("conditioningMaps")),
         "activeCameraId": scene["activeCameraId"],
         "render": {
             "width": width,

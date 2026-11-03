@@ -3,7 +3,15 @@
 from functools import lru_cache
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    Field,
+    PostgresDsn,
+    RedisDsn,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -53,6 +61,19 @@ class Settings(BaseSettings):
     render_timeout_seconds: int = Field(default=6 * 3600, ge=10)
     blender_path: str = "blender"
     ffmpeg_path: str = "ffmpeg"
+
+    # IA : jeton de l'abonnement Claude (CLAUDE_CODE_OAUTH_TOKEN, nom standard de l'outil claude),
+    # scripts de la passerelle Higgsfield (VALIDEO), préfixe des files par fournisseur.
+    claude_code_oauth_token: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("ASS_CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"),
+    )
+    claude_path: str = "claude"
+    higgsfield_scripts_dir: str = (
+        "~/Desktop/TRANSFERT/--WORK--/GITHUB/VALIDEO/tools/magnific_pipeline"
+    )
+    ai_queue_prefix: str = Field(default="ass:ai", pattern=r"^[a-z0-9:_-]{1,60}$")
+    ai_timeout_seconds: int = Field(default=1800, ge=10)
 
     # Limitation des échecs de connexion (fenêtre glissante simple, comptée dans Redis).
     login_max_failures_per_email: int = Field(default=10, ge=1)

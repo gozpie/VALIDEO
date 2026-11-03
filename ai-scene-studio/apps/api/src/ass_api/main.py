@@ -3,6 +3,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import redis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,6 +20,7 @@ from ass_api.render.jobs import RenderQueue
 from ass_api.routes import (
     assets,
     auth,
+    generations,
     health,
     invitations,
     members,
@@ -46,11 +48,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.storage = ObjectStorage.from_settings(settings)
         render_queue = RenderQueue.from_settings(settings)
         app.state.render_queue = render_queue
+        app.state.redis = redis.Redis.from_url(
+            settings.redis_url.get_secret_value(),
+            socket_connect_timeout=settings.health_check_timeout_seconds,
+            socket_timeout=settings.health_check_timeout_seconds,
+        )
         try:
             yield
         finally:
             limiter.close()
             render_queue.close()
+            app.state.redis.close()
             engine.dispose()
 
     app = FastAPI(
@@ -86,6 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         scenes.router,
         assets.router,
         renders.router,
+        generations.router,
     ):
         app.include_router(router)
     return app

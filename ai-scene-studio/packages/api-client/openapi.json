@@ -2723,6 +2723,355 @@
           }
         }
       }
+    },
+    "/ai/providers": {
+      "get": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "List Providers",
+        "operationId": "list_providers_ai_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Providers Ai Providers Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shots/{shot_id}/generations/estimate": {
+      "post": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Estimate Generation",
+        "operationId": "estimate_generation_shots__shot_id__generations_estimate_post",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstimateOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shots/{shot_id}/generations": {
+      "post": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Create Generation",
+        "operationId": "create_generation_shots__shot_id__generations_post",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "List Generations",
+        "operationId": "list_generations_shots__shot_id__generations_get",
+        "parameters": [
+          {
+            "name": "shot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Shot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenerationJobOut"
+                  },
+                  "title": "Response List Generations Shots  Shot Id  Generations Get"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generation-jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Get Generation",
+        "operationId": "get_generation_generation_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generation-jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Cancel Generation",
+        "operationId": "cancel_generation_generation_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationJobOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2945,6 +3294,52 @@
         ],
         "title": "CreatedInvitationOut"
       },
+      "EstimateOut": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          },
+          "paid": {
+            "type": "boolean",
+            "title": "Paid"
+          },
+          "mismatches": {
+            "items": {
+              "$ref": "#/components/schemas/MismatchOut"
+            },
+            "type": "array",
+            "title": "Mismatches"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "unit",
+          "basis",
+          "paid",
+          "mismatches",
+          "available",
+          "reason"
+        ],
+        "title": "EstimateOut"
+      },
       "Fps": {
         "properties": {
           "numerator": {
@@ -2967,6 +3362,309 @@
         ],
         "title": "Fps",
         "description": "Cadence rationnelle (ex. 24000/1001), entre 1 et 1000 images par seconde."
+      },
+      "GenerationIn": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Model"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "text_to_image",
+              "image_to_image",
+              "text_to_video",
+              "image_to_video",
+              "prompt_from_scene",
+              "scene_from_text",
+              "image_analysis"
+            ],
+            "title": "Mode"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Prompt",
+            "default": ""
+          },
+          "negativePrompt": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Negativeprompt",
+            "default": ""
+          },
+          "revisionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revisionid"
+          },
+          "sceneFrames": {
+            "items": {
+              "type": "integer",
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Sceneframes"
+          },
+          "referenceAssetIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Referenceassetids"
+          },
+          "aspectRatio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspectratio"
+          },
+          "durationSeconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 60.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Durationseconds"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "options": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Options"
+          },
+          "confirmedCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmedcost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "mode"
+        ],
+        "title": "GenerationIn"
+      },
+      "GenerationJobOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "shotId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Shotid"
+          },
+          "sceneRevisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scenerevisionid"
+          },
+          "renderJobId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renderjobid"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "modelId": {
+            "type": "string",
+            "title": "Modelid"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "preparing",
+              "running",
+              "processing",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "request": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "outputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outputs"
+          },
+          "estimatedCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedcost"
+          },
+          "actualCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualcost"
+          },
+          "costUnit": {
+            "type": "string",
+            "title": "Costunit"
+          },
+          "errorDetails": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errordetails"
+          },
+          "createdById": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdbyid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "shotId",
+          "sceneRevisionId",
+          "renderJobId",
+          "provider",
+          "modelId",
+          "mode",
+          "status",
+          "request",
+          "progress",
+          "message",
+          "outputs",
+          "estimatedCost",
+          "actualCost",
+          "costUnit",
+          "errorDetails",
+          "createdById",
+          "createdAt",
+          "completedAt"
+        ],
+        "title": "GenerationJobOut"
       },
       "HealthOut": {
         "properties": {
@@ -3184,6 +3882,93 @@
           "role"
         ],
         "title": "MemberRoleIn"
+      },
+      "MismatchOut": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "blocking",
+              "ignored"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "severity",
+          "message"
+        ],
+        "title": "MismatchOut"
+      },
+      "ModelOut": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "modes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modes"
+          },
+          "controls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Controls"
+          },
+          "maxReferenceImages": {
+            "type": "integer",
+            "title": "Maxreferenceimages"
+          },
+          "durationsSeconds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Durationsseconds"
+          },
+          "aspectRatios": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aspectratios"
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "label",
+          "modes",
+          "controls",
+          "maxReferenceImages",
+          "durationsSeconds",
+          "aspectRatios",
+          "notes"
+        ],
+        "title": "ModelOut"
       },
       "Page_AssetOut_": {
         "properties": {
@@ -3510,6 +4295,53 @@
         "type": "object",
         "title": "ProjectPatch"
       },
+      "ProviderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "official",
+              "subscription",
+              "bridge",
+              "simulation"
+            ],
+            "title": "Kind"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelOut"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "available",
+          "reason",
+          "models"
+        ],
+        "title": "ProviderOut"
+      },
       "RenderIn": {
         "properties": {
           "revisionId": {
@@ -3583,6 +4415,27 @@
             },
             "type": "array",
             "title": "Passes"
+          },
+          "frames": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "minimum": 0.0
+                },
+                "type": "array",
+                "maxItems": 16
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frames"
+          },
+          "conditioningMaps": {
+            "type": "boolean",
+            "title": "Conditioningmaps",
+            "default": false
           }
         },
         "type": "object",

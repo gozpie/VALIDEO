@@ -14,7 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ass_api.core.config import Settings
-from ass_api.db.models import RenderJob
+from ass_api.db.models import GenerationJob, RenderJob
 
 TRANSITIONS: Final[dict[str, frozenset[str]]] = {
     "queued": frozenset({"preparing", "cancelled", "failed"}),
@@ -32,7 +32,7 @@ class InvalidTransitionError(ValueError):
     pass
 
 
-def transition(job: RenderJob, status: str, message: str | None = None) -> None:
+def transition(job: RenderJob | GenerationJob, status: str, message: str | None = None) -> None:
     if status not in TRANSITIONS[job.status]:
         raise InvalidTransitionError(f"Transition interdite : {job.status} → {status}")
     now = datetime.now(UTC)
@@ -47,19 +47,25 @@ def transition(job: RenderJob, status: str, message: str | None = None) -> None:
         job.completed_at = now
 
 
-def fail_stale_jobs(db: Session, timeout: timedelta) -> int:
+def fail_stale_jobs(
+    db: Session, timeout: timedelta, model: type[RenderJob] | type[GenerationJob] = RenderJob
+) -> int:
     """Passe en échec les jobs actifs sans signe de vie depuis `timeout` (worker arrêté)."""
     limit = datetime.now(UTC) - timeout
-    stale = list(
+    stale: list[RenderJob | GenerationJob] = list(
         db.scalars(
-            select(RenderJob)
-            .where(RenderJob.status.in_(ACTIVE_STATUSES), RenderJob.heartbeat_at < limit)
+            select(model)
+            .where(model.status.in_(ACTIVE_STATUSES), model.heartbeat_at < limit)
             .with_for_update(skip_locked=True)
         )
     )
     for job in stale:
-        transition(job, "failed", "Rendu interrompu : le worker ne répond plus")
-        job.error = f"Aucun signe de vie du worker depuis plus de {int(timeout.total_seconds())} s"
+        transition(job, "failed", "Interrompu : le worker ne répond plus")
+        detail = f"Aucun signe de vie du worker depuis plus de {int(timeout.total_seconds())} s"
+        if isinstance(job, RenderJob):
+            job.error = detail
+        else:
+            job.error_details = detail
     db.commit()
     return len(stale)
 
