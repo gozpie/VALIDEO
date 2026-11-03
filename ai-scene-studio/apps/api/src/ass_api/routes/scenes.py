@@ -20,12 +20,13 @@ from ass_api.auth.dependencies import CurrentSessionDep
 from ass_api.auth.permissions import Role, shot_access
 from ass_api.core.api_model import ApiModel
 from ass_api.core.storage import ObjectStorage, get_storage
-from ass_api.db.models import Scene, SceneRevision, Shot
+from ass_api.db.models import Asset, Scene, SceneRevision, Shot
 from ass_api.db.session import get_db
 from ass_api.scenes.validation import (
     MAX_SNAPSHOT_BYTES,
     SceneIssue,
     SceneValidationError,
+    asset_references,
     canonical_json,
     parse_snapshot,
     validate_scene,
@@ -156,6 +157,23 @@ def save_revision(
             ]
         ) from exc
     scene_id = uuid.UUID(snapshot["sceneId"])
+    # Une scène ne peut référencer que des assets de son propre workspace.
+    references = asset_references(snapshot)
+    known = set(
+        db.scalars(
+            select(Asset.id).where(
+                Asset.workspace_id == access.workspace.id,
+                Asset.id.in_({uuid.UUID(asset_id) for _path, asset_id in references}),
+            )
+        )
+    )
+    missing = [
+        SceneIssue(f"snapshot.{path}", f"Asset inconnu dans ce workspace : {asset_id}")
+        for path, asset_id in references
+        if uuid.UUID(asset_id) not in known
+    ]
+    if missing:
+        raise SceneValidationError(missing)
 
     # Verrou de la scène (ou du plan s'il n'a pas encore de scène) : enregistrements sérialisés.
     db.execute(select(Shot.id).where(Shot.id == shot.id).with_for_update())

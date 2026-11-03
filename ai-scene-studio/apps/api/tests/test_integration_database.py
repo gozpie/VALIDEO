@@ -34,6 +34,7 @@ PHASE_1_TABLES = {
     "shots",
     "scenes",
     "scene_revisions",
+    "assets",
 }
 
 

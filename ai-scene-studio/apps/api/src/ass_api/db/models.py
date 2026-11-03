@@ -14,9 +14,10 @@ cahier des charges) est ``scenes.head_revision_id``.
 
 import uuid
 from datetime import datetime
-from typing import Final
+from typing import Any, Final
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -28,7 +29,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ass_api.db.base import Base
@@ -38,6 +39,16 @@ WORKSPACE_ROLES: Final = ("owner", "admin", "editor", "viewer")
 INVITABLE_ROLES: Final = ("admin", "editor", "viewer")
 COLOR_SPACES: Final = ("srgb", "rec709", "acescg", "linear_rec709")
 MAX_RESOLUTION: Final = 16384
+ASSET_TYPES: Final = (
+    "model",
+    "texture",
+    "hdri",
+    "image",
+    "video",
+    "reference",
+    "render",
+    "render_pass",
+)
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -284,6 +295,39 @@ class SceneRevision(Base):
     snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     message: Mapped[str] = mapped_column(String(500), nullable=False, server_default="")
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = _created_at()
+
+
+class Asset(Base):
+    """Fichier d'un workspace, référencé par son ID (jamais par son nom) depuis les scènes."""
+
+    __tablename__ = "assets"
+    __table_args__ = (
+        CheckConstraint(_in("type", ASSET_TYPES), name="type_valid"),
+        CheckConstraint("length(sha256) = 64", name="sha256_hex"),
+        CheckConstraint("size_bytes > 0", name="size_positive"),
+        CheckConstraint("length(name) > 0", name="name_not_empty"),
+        # Un même contenu n'est stocké qu'une fois par workspace.
+        UniqueConstraint("workspace_id", "sha256", name="uq_assets_workspace_id_sha256"),
+        Index("ix_assets_workspace_id_created_at", "workspace_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    type: Mapped[str] = mapped_column(String(16), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(300), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    metadata_: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

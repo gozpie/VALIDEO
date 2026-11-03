@@ -8,6 +8,8 @@ export type IsoDateTime = string;
 
 // Entités de la phase 1 : générées depuis le contrat OpenAPI de l'API (source unique).
 export type {
+  Asset,
+  AssetType,
   ColorSpace,
   Fps,
   Member as WorkspaceMember,
@@ -23,24 +25,6 @@ export type {
 } from '@ass/api-client';
 
 // Entités des phases suivantes : forme cible, remplacée par les types générés à leur implémentation.
-export type AssetType =
-  'model' | 'texture' | 'hdri' | 'image' | 'video' | 'reference' | 'render' | 'render_pass';
-
-export interface Asset {
-  id: Uuid;
-  workspaceId: Uuid;
-  type: AssetType;
-  mimeType: string;
-  /** URI de stockage interne (s3://…), jamais exposée directement : accès par URL signée courte. */
-  storageUri: string;
-  sha256: string;
-  sizeBytes: number;
-  name: string;
-  tags: string[];
-  metadata: Record<string, unknown>;
-  createdAt: IsoDateTime;
-}
-
 export interface RenderVersion {
   id: Uuid;
   shotId: Uuid;

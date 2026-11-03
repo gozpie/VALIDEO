@@ -32,6 +32,7 @@ def test_phase_1_tables() -> None:
         "shots",
         "scenes",
         "scene_revisions",
+        "assets",
     }
 
 
@@ -68,6 +69,7 @@ def test_primary_key_is_uuid(table: str) -> None:
         ("scenes", "shot_id", "CASCADE"),
         ("scenes", "head_revision_id", "SET NULL"),
         ("scene_revisions", "scene_id", "CASCADE"),
+        ("assets", "workspace_id", "CASCADE"),
     ],
 )
 def test_foreign_key_delete_rule(table: str, column: str, ondelete: str) -> None:

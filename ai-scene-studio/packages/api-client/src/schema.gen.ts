@@ -3,6 +3,40 @@
  */
 
 export interface paths {
+    "/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Asset */
+        get: operations["get_asset_assets__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/{asset_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Asset Content */
+        get: operations["get_asset_content_assets__asset_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -341,6 +375,24 @@ export interface paths {
         patch: operations["rename_workspace_workspaces__workspace_id__patch"];
         trace?: never;
     };
+    "/workspaces/{workspace_id}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assets */
+        get: operations["list_assets_workspaces__workspace_id__assets_get"];
+        put?: never;
+        /** Upload Asset */
+        post: operations["upload_asset_workspaces__workspace_id__assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/invitations": {
         parameters: {
             query?: never;
@@ -442,6 +494,53 @@ export interface components {
             displayName?: string | null;
             /** Password */
             password?: string | null;
+        };
+        /** AssetOut */
+        AssetOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyid */
+            createdById: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Mimetype */
+            mimeType: string;
+            /** Name */
+            name: string;
+            /** Sha256 */
+            sha256: string;
+            /** Sizebytes */
+            sizeBytes: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "model" | "texture" | "hdri" | "image" | "video" | "reference" | "render" | "render_pass";
+            /**
+             * Workspaceid
+             * Format: uuid
+             */
+            workspaceId: string;
+        };
+        /** Body_upload_asset_workspaces__workspace_id__assets_post */
+        Body_upload_asset_workspaces__workspace_id__assets_post: {
+            /**
+             * File
+             * @description Fichier GLB (glTF 2.0 binaire)
+             */
+            file: string;
+            /** Name */
+            name?: string | null;
         };
         /** CheckOut */
         CheckOut: {
@@ -599,6 +698,13 @@ export interface components {
              * @enum {string}
              */
             role: "admin" | "editor" | "viewer";
+        };
+        /** Page[AssetOut] */
+        Page_AssetOut_: {
+            /** Items */
+            items: components["schemas"]["AssetOut"][];
+            /** Nextcursor */
+            nextCursor: string | null;
         };
         /** Page[ProjectOut] */
         Page_ProjectOut_: {
@@ -923,6 +1029,12 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /** UploadedAssetOut */
+        UploadedAssetOut: {
+            asset: components["schemas"]["AssetOut"];
+            /** Created */
+            created: boolean;
+        };
         /** UserOut */
         UserOut: {
             /**
@@ -984,6 +1096,86 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_asset_assets__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+        };
+    };
+    get_asset_content_assets__asset_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Contenu binaire de l'asset */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "model/gltf-binary": unknown;
+                };
+            };
+        };
+    };
     login_auth_login_post: {
         parameters: {
             query?: never;
@@ -2268,6 +2460,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+        };
+    };
+    list_assets_workspaces__workspace_id__assets_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+                type?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AssetOut_"];
+                };
+            };
+        };
+    };
+    upload_asset_workspaces__workspace_id__assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_asset_workspaces__workspace_id__assets_post"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedAssetOut"];
                 };
             };
         };

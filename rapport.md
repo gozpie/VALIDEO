@@ -146,3 +146,11 @@ import GLB, sauvegarde et rechargement) ; 2.7 clôture.
 - **Objectif** : rendre la scène persistante et versionnée avant l'éditeur.
 - **Vérifications** : ruff, mypy ; 94 tests unitaires et 90 tests d'intégration Python (PostgreSQL, Redis, S3) ; `pnpm check`.
 
+### Étape 2.3 — Assets GLB
+- **Ajouté** : table `assets` (migration `0005`, SHA-256 unique par workspace, métadonnées JSONB) ; `assets/glb.py` (validation : en-tête et version, longueur, chunks, JSON glTF 2.0, refus des ressources externes et des extensions obligatoires sans décodeur, métadonnées descriptives) ; `routes/assets.py` (envoi multipart validé puis écrit en S3 sous une clé construite par le serveur, déduplication, liste paginée, métadonnées, contenu servi en flux après contrôle des droits) ; `core/body_limit.py` (plafond des corps de requête appliqué avant lecture, y compris en transfert « chunked »).
+- **Modifié** : l'enregistrement d'une scène refuse les assets d'un autre workspace ou inconnus ; nginx `client_max_body_size` aligné ; `@ass/api-client` et `@ass/shared-types` (type `Asset` généré) ; dépendance `python-multipart`.
+- **Ajouté** : `tests/glb_factory.py` (GLB de test sans dépendance) et `tests/fixtures/assets/cube.glb` ; `test_glb.py` (9 tests) et `test_integration_assets.py` (8 tests : envoi et contenu, déduplication, fichiers invalides dont URI externe, limites de taille, rôles et isolation, références depuis une scène).
+- **Corrigé** : les tests de scène utilisaient une fixture référençant une image inexistante, désormais refusée par le contrôle des assets.
+- **Objectif** : permettre l'import de modèles GLB dans l'éditeur sans jamais exposer le stockage ni accepter de contenu non autonome.
+- **Vérifications** : 104 tests unitaires et 98 tests d'intégration Python ; `pnpm check`.
+

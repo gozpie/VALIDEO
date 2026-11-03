@@ -313,6 +313,21 @@ def validate_scene(scene: object) -> dict[str, Any]:
     return scene
 
 
+def asset_references(scene: dict[str, Any]) -> list[tuple[str, str]]:
+    """Couples (chemin, assetId) de tous les assets référencés par la scène."""
+    found: list[tuple[str, str]] = []
+    for index, node in enumerate(scene["nodes"]):
+        if node["assetId"] is not None:
+            found.append((_path("nodes", index, "assetId"), node["assetId"]))
+    for index, material in enumerate(scene["materials"]):
+        for key in ("baseColorTextureAssetId", "normalTextureAssetId"):
+            if material[key] is not None:
+                found.append((_path("materials", index, key), material[key]))
+    for index, reference in enumerate(scene["references"]):
+        found.append((_path("references", index, "assetId"), reference["assetId"]))
+    return found
+
+
 def canonical_json(scene: dict[str, Any]) -> bytes:
     """Sérialisation canonique (clés triées, sans espaces) : base de l'empreinte SHA-256."""
     return json.dumps(scene, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()

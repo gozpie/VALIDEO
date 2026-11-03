@@ -93,6 +93,9 @@ adresse et par workspace, `accepted_at`).
 plan) et `scene_revisions` (immuables : parent, empreinte SHA-256, clé S3, taille, auteur, message). La clé
 étrangère circulaire `scenes.head_revision_id` est créée après les deux tables.
 
+Étape 2.3 : `assets` (workspace, nom-libellé, type, MIME, clé de stockage, SHA-256 unique par workspace, taille,
+métadonnées JSONB, auteur).
+
 Suppression d'un workspace : cascade sur membres, projets, séquences et plans. `scenes` et
 `shots.active_scene_revision_id` arrivent en phase 2 avec les révisions de scène.
 

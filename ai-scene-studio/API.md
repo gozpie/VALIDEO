@@ -153,6 +153,21 @@ paginées (elles restent courtes et doivent être affichées en entier pour êtr
 - Révisions **immuables** : le snapshot canonique (clés triées) est stocké en S3 sous
   `workspaces/<workspace>/scenes/<sha256>.json` ; la base garde l'empreinte, la taille, l'auteur et le parent.
 
+## Assets (étape 2.3)
+
+| Méthode et chemin                                            | Rôle minimal | Effet                                                                                    |
+| ------------------------------------------------------------ | ------------ | ---------------------------------------------------------------------------------------- |
+| `POST /workspaces/{id}/assets` (multipart : `file`, `name?`) | `editor`     | `201 { created: true, asset }` ; `200 { created: false }` si le même contenu existe déjà |
+| `GET /workspaces/{id}/assets?type=&cursor=&limit=`           | `viewer`     | `{ items, nextCursor }`                                                                  |
+| `GET /assets/{id}`                                           | `viewer`     | `{ id, workspaceId, name, type, mimeType, sha256, sizeBytes, metadata, … }`              |
+| `GET /assets/{id}/content`                                   | `viewer`     | contenu binaire en flux (`Cache-Control: private, immutable`)                            |
+
+Phase 2 : seuls les **GLB** (glTF 2.0 binaire) sont acceptés. Le serveur vérifie l'en-tête, les chunks, le JSON
+glTF, refuse toute ressource externe (`uri`) et les extensions obligatoires sans décodeur (Draco, meshopt) ;
+`422` avec le motif. Taille maximale `ASS_ASSET_MAX_BYTES` (100 Mo, `413`), contrôlée avant lecture du corps.
+Le contenu est dédupliqué par SHA-256 dans le workspace et stocké sous `workspaces/<workspace>/assets/<sha256>` ;
+le nom du fichier n'est qu'un libellé. Une scène ne peut référencer que des assets de son workspace (`422`).
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`

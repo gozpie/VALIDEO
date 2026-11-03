@@ -43,6 +43,9 @@ class Settings(BaseSettings):
         default="http://localhost:3000", pattern=r"^https?://[^\s/]+(/[^\s]*)?$"
     )
 
+    # Taille maximale d'un asset envoyé à l'API (100 Mo par défaut).
+    asset_max_bytes: int = Field(default=100 * 1024 * 1024, ge=1024, le=2 * 1024**3)
+
     # Limitation des échecs de connexion (fenêtre glissante simple, comptée dans Redis).
     login_max_failures_per_email: int = Field(default=10, ge=1)
     login_max_failures_per_ip: int = Field(default=50, ge=1)

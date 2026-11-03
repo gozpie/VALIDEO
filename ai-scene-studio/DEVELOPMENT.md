@@ -75,6 +75,7 @@ API (préfixe `ASS_`, voir `apps/api/src/ass_api/core/config.py`) :
 | `ASS_LOGIN_MAX_FAILURES_PER_EMAIL` / `…_PER_IP`         | `10` / `50`                                       | Échecs tolérés par fenêtre avant `429`                                                       |
 | `ASS_INVITATION_TTL_HOURS`                              | `168`                                             | Validité d'un lien d'invitation (7 jours)                                                    |
 | `ASS_WEB_BASE_URL`                                      | `http://localhost:3000`                           | Base des liens d'invitation (`acceptUrl`)                                                    |
+| `ASS_ASSET_MAX_BYTES`                                   | `104857600`                                       | Taille maximale d'un asset envoyé (100 Mo)                                                   |
 | `ASS_LOGIN_FAILURE_WINDOW_SECONDS`                      | `900`                                             | Fenêtre de comptage des échecs                                                               |
 
 Web : `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`), figée au build.

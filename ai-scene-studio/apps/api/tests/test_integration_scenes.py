@@ -30,6 +30,8 @@ FIXTURE = Path(__file__).resolve().parents[3] / "tests/fixtures/scenes/cube-came
 def _scene() -> dict[str, Any]:
     scene: dict[str, Any] = json.loads(FIXTURE.read_text(encoding="utf-8"))
     scene["sceneId"] = str(uuid.uuid4())
+    # La fixture référence une image qui n'existe pas dans le workspace de test.
+    scene["references"] = []
     return scene
 
 

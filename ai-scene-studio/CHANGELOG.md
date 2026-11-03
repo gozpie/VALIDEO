@@ -10,6 +10,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   identique à TypeScript), cas invalides partagés TypeScript/Python, sérialisation canonique pour l'empreinte.
 - Étape 2.2 : scènes et révisions immuables (migration `0004`), stockage S3 adressé par contenu, concurrence
   optimiste (`409`), historique, lecture d'une révision ; module `core/storage.py`.
+- Étape 2.3 : assets GLB (migration `0005`) — envoi validé, déduplication, liste, métadonnées, contenu servi en
+  flux ; plafond global des corps de requête ; contrôle des assets référencés par une scène ; fixture `cube.glb`.
 
 ## [0.2.0] — 2026-11-03 — Phase 1 : projets persistants
 

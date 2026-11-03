@@ -11,6 +11,9 @@
   les suivants par invitation. **Aucun e-mail n'est envoyé** : l'admin reçoit le lien et le transmet lui-même ;
   il pourrait donc l'utiliser à la place de l'invité pour une adresse sans compte (le lien ne donne jamais accès
   à un compte existant).
+- Assets : seuls les GLB sont acceptés (pas encore de glTF à fichiers séparés, textures, HDRI, USD/FBX) ; l'envoi
+  transite par l'API (100 Mo maximum) au lieu d'un upload multipart direct vers le stockage avec reprise ; pas de
+  miniatures, de tags ni de suppression d'asset ; les objets orphelins du stockage ne sont pas encore nettoyés.
 - Un plan ne peut pas encore être déplacé d'une séquence à une autre ; la propriété d'un workspace ne peut pas
   être transférée.
 - Les sessions expirées sont supprimées quand elles sont présentées ; une purge périodique viendra avec les
