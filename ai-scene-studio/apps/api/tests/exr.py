@@ -1,10 +1,10 @@
 """Lecture minimale de l'en-tête d'un fichier OpenEXR (noms des canaux), sans dépendance."""
 
 import struct
-from typing import BinaryIO
+from typing import IO
 
 
-def exr_channels(stream: BinaryIO) -> list[str]:
+def exr_channels(stream: IO[bytes]) -> list[str]:
     if stream.read(4) != b"\x76\x2f\x31\x01":
         raise ValueError("Pas un fichier OpenEXR")
     flags = struct.unpack("<I", stream.read(4))[0]

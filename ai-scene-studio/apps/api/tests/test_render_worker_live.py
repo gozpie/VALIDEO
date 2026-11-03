@@ -27,7 +27,7 @@ FIXTURES = Path(__file__).resolve().parents[3] / "tests/fixtures"
 
 
 def _node(name: str, **values: Any) -> dict[str, Any]:
-    node = {
+    node: dict[str, Any] = {
         "id": str(uuid.uuid4()),
         "name": name,
         "type": "primitive",

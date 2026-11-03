@@ -89,8 +89,8 @@ jobs:
           printf '%s\n' "$E2E_PASSWORD" | docker compose exec -T api
           python -m ass_api.cli create-user --email "$E2E_EMAIL" --display-name E2E --password-stdin
       - run: uv sync --frozen
-      - name: Tests d'intégration (PostgreSQL, Redis, S3 réels)
-        run: ASS_RUN_INTEGRATION=1 uv run pytest apps/api -m integration
+      - name: Tests d'intégration (PostgreSQL, Redis, S3, rendu Blender réels)
+        run: ASS_RUN_INTEGRATION=1 ASS_RUN_RENDER=1 ASS_BLENDER=docker uv run pytest apps/api -m integration
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @ass/web exec playwright install --with-deps chromium
       - name: E2E contre le conteneur web

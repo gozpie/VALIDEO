@@ -259,3 +259,9 @@ Blender) ; 4.7 clôture.
 - **Corrigé en cours** : expiration de lecture Redis pendant l'attente bloquante du worker (délai de socket inférieur à l'attente).
 - **Vérifications** : sonde Blender sur la fixture `look-at` : positions monde identiques au moteur Python à 1,3e-6 près (précision float32 de Blender) sur 8 frames, Bézier, ease et cycle compris ; rendu réel de bout en bout par l'API (`test_render_worker_live.py` : GLB importé, caméra en visée, animation, 4 frames, vidéo MP4, aperçu PNG, `.blend`, archive de 4 EXR contenant Combined, Depth, Normal, IndexOB et CryptoObject).
 
+### Étape 4.5 — Tests de cohérence avec Blender
+- **Ajouté** : `apps/api/tests/test_blender_coherence.py` (7 tests sur de vrais rendus Cycles) — le barycentre de la couverture alpha de l'objet rendu est comparé à la projection calculée depuis la scène canonique et le moteur Python (sténopé à capteur horizontal) : axes (+X à droite, +Y en haut), focales 25 et 50 mm, caméra orthographique, hiérarchie avec rotation de 90°, timing et interpolation ease sur 5 frames, modèle GLB ; et sonde des courbes évaluées par Blender sur la fixture `look-at` (positions, focale, visibilité) face au moteur.
+- **Ajouté** : utilitaires de test sans dépendance `png.py` (décodage PNG) et `exr.py` (canaux d'un OpenEXR multicouche).
+- **Résultat** : tous les écarts sont inférieurs à 1 pixel (rendu 320 × 180) et à 1e-4 m pour les courbes.
+- **CI** : l'étape d'intégration exécute désormais le rendu réel de bout en bout et les tests de cohérence avec l'image du worker.
+

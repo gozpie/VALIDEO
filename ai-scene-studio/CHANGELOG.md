@@ -16,6 +16,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   Blender 4.5.15 LTS + FFmpeg, service `render-worker` avec quotas ; sorties vidéo, passes EXR, aperçu et `.blend`
   publiées comme assets.
 
+- Étape 4.5 : tests de cohérence avec de vrais rendus Blender (axes, cadrage et focales, orthographique,
+  hiérarchie et rotations, timing et interpolation, GLB, courbes évaluées par Blender) ; rendu réel de bout en bout
+  en CI.
+
 ### Modifié
 
 - Bézier : correction des poignées trop longues alignée sur Blender (réduction proportionnelle), dans les deux
