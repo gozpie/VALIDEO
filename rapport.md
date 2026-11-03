@@ -68,3 +68,12 @@ Le nouveau produit est développé dans le sous-dossier `ai-scene-studio/`, pour
 - **Objectif** : poser le socle persistant sur lequel reposeront l'authentification (1.2), les droits (1.3) et le CRUD (1.4).
 - **Vérifications** : ruff, format, mypy strict ; 37 tests unitaires Python ; 18 tests d'intégration contre PostgreSQL 16 réel.
 
+### Étape 1.2 — Authentification
+- **Ajouté** : `apps/api/src/ass_api/auth/` — hachage Argon2id (`passwords.py`, 12 caractères minimum, vérification à temps comparable même sans compte), jetons opaques (`tokens.py`), sessions en base (`sessions.py`, seule l'empreinte SHA-256 du jeton est stockée, expiration absolue), limitation des échecs de connexion par e-mail et par IP dans Redis (`rate_limit.py`, échec fermé si Redis est indisponible), dépendance « utilisateur courant » avec contrôle CSRF des requêtes modifiantes (`dependencies.py`).
+- **Ajouté** : routes `POST /auth/login`, `GET /auth/session`, `POST /auth/logout` (`routes/auth.py`), cookie `HttpOnly` / `SameSite=Lax` / `Secure`, nouvelle session à chaque connexion.
+- **Ajouté** : table `user_sessions` (migration `0002`), moteur et sessions SQLAlchemy par application (`db/session.py`), schémas JSON en camelCase (`core/api_model.py`), commande `python -m ass_api.cli create-user` (l'inscription publique est fermée).
+- **Modifié** : configuration (`ASS_SESSION_*`, `ASS_LOGIN_*`, cookie `Secure` obligatoire en production), gestionnaire d'erreurs (conserve `Retry-After`), `main.py` (cycle de vie : moteur et limiteur), fixture de base temporaire déplacée dans `conftest.py`.
+- **Documentation** : `API.md`, `SECURITY.md`, `DEVELOPMENT.md`, `DEPLOYMENT.md` (dont `FORWARDED_ALLOW_IPS` derrière un proxy), `KNOWN_LIMITATIONS.md`, `CHANGELOG.md`.
+- **Objectif** : permettre à un utilisateur de se connecter de façon sûre, préalable aux droits par workspace (1.3).
+- **Vérifications** : ruff, mypy strict ; 51 tests unitaires ; 36 tests d'intégration (PostgreSQL et Redis réels) ; essai manuel avec uvicorn et curl (connexion, session, déconnexion refusée sans CSRF puis acceptée, session révoquée).
+

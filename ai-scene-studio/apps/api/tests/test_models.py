@@ -32,6 +32,7 @@ def _foreign_key(table: str, column: str) -> ForeignKeyConstraint:
 def test_phase_1_tables() -> None:
     assert set(TABLES) == {
         "users",
+        "user_sessions",
         "workspaces",
         "workspace_members",
         "projects",
@@ -40,7 +41,9 @@ def test_phase_1_tables() -> None:
     }
 
 
-@pytest.mark.parametrize("table", ["users", "workspaces", "projects", "sequences", "shots"])
+@pytest.mark.parametrize(
+    "table", ["users", "user_sessions", "workspaces", "projects", "sequences", "shots"]
+)
 def test_primary_key_is_uuid(table: str) -> None:
     (column,) = TABLES[table].primary_key.columns
     assert column.name == "id"
@@ -50,6 +53,7 @@ def test_primary_key_is_uuid(table: str) -> None:
 @pytest.mark.parametrize(
     ("table", "column", "ondelete"),
     [
+        ("user_sessions", "user_id", "CASCADE"),
         ("workspaces", "owner_id", "RESTRICT"),
         ("workspace_members", "workspace_id", "CASCADE"),
         ("workspace_members", "user_id", "CASCADE"),

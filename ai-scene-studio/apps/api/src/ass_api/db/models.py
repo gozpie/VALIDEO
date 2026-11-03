@@ -71,6 +71,24 @@ class User(Base):
     updated_at: Mapped[datetime] = _updated_at()
 
 
+class UserSession(Base):
+    """Session de connexion. Seule l'empreinte SHA-256 du jeton du cookie est conservée."""
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Jeton anti-CSRF renvoyé au client, à présenter dans l'en-tête X-CSRF-Token.
+    csrf_token: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = _created_at()
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+
+
 class Workspace(Base):
     __tablename__ = "workspaces"
     __table_args__ = (CheckConstraint("length(name) > 0", name="name_not_empty"),)

@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     )
     health_check_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
 
+    # Sessions : cookie opaque HttpOnly, jeton haché en base, durée de vie absolue.
+    session_cookie_name: str = Field(default="ass_session", pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    session_cookie_secure: bool = True
+    session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)
+
+    # Limitation des échecs de connexion (fenêtre glissante simple, comptée dans Redis).
+    login_max_failures_per_email: int = Field(default=10, ge=1)
+    login_max_failures_per_ip: int = Field(default=50, ge=1)
+    login_failure_window_seconds: int = Field(default=15 * 60, ge=1)
+
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:
@@ -67,6 +77,8 @@ class Settings(BaseSettings):
             "s3_access_key_id": self.s3_access_key_id.get_secret_value() == "dev-access-key",
             "s3_secret_access_key": "change-me" in self.s3_secret_access_key.get_secret_value(),
         }
+        if not self.session_cookie_secure:
+            raise ValueError("ASS_SESSION_COOKIE_SECURE doit rester actif en production")
         if any(insecure.values()):
             fields = ", ".join(name for name, bad in insecure.items() if bad)
             raise ValueError(f"Identifiants de développement interdits en production : {fields}")

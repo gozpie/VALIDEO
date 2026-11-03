@@ -1,7 +1,6 @@
 """Migrations et contraintes contre un vrai PostgreSQL (ASS_RUN_INTEGRATION=1).
 
-Chaque module travaille dans une base temporaire créée puis supprimée : la base configurée
-(ASS_DATABASE_URL) ne sert qu'à se connecter au serveur, ses données ne sont jamais touchées.
+La base temporaire du module est fournie par ``database_url`` (conftest.py).
 """
 
 import os
@@ -14,10 +13,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import Connection, Engine, create_engine, inspect, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
-
-from ass_api.core.config import Settings
 
 pytestmark = [
     pytest.mark.integration,
@@ -28,22 +24,15 @@ pytestmark = [
 
 ROOT = Path(__file__).resolve().parents[3]
 ALEMBIC_INI = ROOT / "infrastructure/migrations/alembic.ini"
-PHASE_1_TABLES = {"users", "workspaces", "workspace_members", "projects", "sequences", "shots"}
-
-
-@pytest.fixture(scope="module")
-def database_url() -> Iterator[str]:
-    server_url = make_url(Settings().database_url.get_secret_value())
-    name = f"ass_test_{uuid.uuid4().hex[:12]}"
-    admin = create_engine(server_url, isolation_level="AUTOCOMMIT")
-    with admin.connect() as connection:
-        connection.execute(text(f'CREATE DATABASE "{name}"'))
-    try:
-        yield server_url.set(database=name).render_as_string(hide_password=False)
-    finally:
-        with admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
-        admin.dispose()
+PHASE_1_TABLES = {
+    "users",
+    "user_sessions",
+    "workspaces",
+    "workspace_members",
+    "projects",
+    "sequences",
+    "shots",
+}
 
 
 @pytest.fixture(scope="module")

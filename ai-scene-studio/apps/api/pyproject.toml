@@ -5,6 +5,7 @@ description = "API HTTP d'AI Scene Studio (FastAPI)."
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic==1.20.0",
+    "argon2-cffi==25.1.0",
     "boto3==1.43.120",
     "fastapi==0.161.1",
     "psycopg[binary]==3.3.6",

@@ -1,5 +1,6 @@
 """Format d'erreur unique (« problem details », RFC 9457 simplifiée)."""
 
+from collections.abc import Mapping
 from typing import Any
 
 import structlog
@@ -12,7 +13,12 @@ logger = structlog.get_logger("ass_api.errors")
 
 
 def _problem(
-    request: Request, status: int, title: str, detail: str, errors: list[dict[str, str]] | None
+    request: Request,
+    status: int,
+    title: str,
+    detail: str,
+    errors: list[dict[str, str]] | None,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {
         "type": "about:blank",
@@ -23,7 +29,9 @@ def _problem(
     }
     if errors is not None:
         body["errors"] = errors
-    return JSONResponse(body, status_code=status, media_type="application/problem+json")
+    return JSONResponse(
+        body, status_code=status, media_type="application/problem+json", headers=headers
+    )
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -31,7 +39,8 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        return _problem(request, exc.status_code, "Erreur HTTP", str(exc.detail), None)
+        # Les en-têtes portés par l'exception (Retry-After, WWW-Authenticate…) sont conservés.
+        return _problem(request, exc.status_code, "Erreur HTTP", str(exc.detail), None, exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:

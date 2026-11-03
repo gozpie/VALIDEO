@@ -34,6 +34,10 @@ Derrière un proxy TLS d'entreprise, fournir l'autorité de certification comme 
 - `ASS_ENVIRONMENT=production` : l'API **refuse de démarrer** avec les identifiants de développement et masque `/docs` et `/openapi.json`.
 - Secrets fournis par l'orchestrateur (variables d'environnement ou fichiers de secrets), jamais commités. `.env` est ignoré par git.
 - `ASS_CORS_ALLOWED_ORIGINS` : origines exactes du front.
+- `ASS_SESSION_COOKIE_SECURE` doit rester `true` (l'API refuse de démarrer sinon) : servir l'API en HTTPS.
+- Derrière un reverse proxy, définir `FORWARDED_ALLOW_IPS` (variable lue par uvicorn) avec l'adresse du proxy :
+  sans elle, toutes les connexions semblent venir du proxy et la limite d'échecs par IP devient commune à tous.
+- Premier compte : `docker compose exec api python -m ass_api.cli create-user --email … --display-name …`.
 - PostgreSQL, Redis, le stockage et les workers ne doivent **jamais** être exposés publiquement : seul le reverse proxy l'est (voir `infrastructure/nginx/nginx.conf`, à compléter par TLS).
 - Ressources : fixer des limites CPU, mémoire et disque par service ; les workers de rendu et d'IA auront des quotas dédiés (phases 4–5).
 

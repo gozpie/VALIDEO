@@ -52,21 +52,27 @@ Les valeurs par défaut de l'API correspondent à cet environnement local : aucu
 | `uv run mypy apps/api/src apps/api/tests infrastructure/migrations`                        | Typage Python strict                                                  |
 | `uv run alembic -c infrastructure/migrations/alembic.ini revision --autogenerate -m "..."` | Nouvelle migration                                                    |
 | `uv run python -m ass_api.cli ensure-bucket`                                               | Crée le bucket S3 s'il n'existe pas                                   |
+| `uv run python -m ass_api.cli create-user --email … --display-name …`                      | Crée un compte (mot de passe demandé ; `--password-stdin` possible)   |
 
 ## Variables d'environnement
 
 API (préfixe `ASS_`, voir `apps/api/src/ass_api/core/config.py`) :
 
-| Variable                                                | Défaut (dev)                                      | Rôle                                                                                        |
-| ------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `ASS_ENVIRONMENT`                                       | `development`                                     | `development`, `test` ou `production` (désactive `/docs` et refuse les identifiants de dev) |
-| `ASS_LOG_LEVEL` / `ASS_LOG_JSON`                        | `INFO` / `true`                                   | Journalisation                                                                              |
-| `ASS_DATABASE_URL`                                      | `postgresql+psycopg://ass:ass@localhost:5432/ass` | PostgreSQL                                                                                  |
-| `ASS_REDIS_URL`                                         | `redis://localhost:6379/0`                        | Redis                                                                                       |
-| `ASS_S3_ENDPOINT_URL`, `ASS_S3_REGION`, `ASS_S3_BUCKET` | `http://localhost:8333`, `us-east-1`, `ass-media` | Stockage                                                                                    |
-| `ASS_S3_ACCESS_KEY_ID`, `ASS_S3_SECRET_ACCESS_KEY`      | identifiants de dev                               | Stockage                                                                                    |
-| `ASS_CORS_ALLOWED_ORIGINS`                              | `http://localhost:3000`                           | Liste séparée par des virgules ; `*` interdit                                               |
-| `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`                      | `2`                                               | Timeout par dépendance                                                                      |
+| Variable                                                | Défaut (dev)                                      | Rôle                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ASS_ENVIRONMENT`                                       | `development`                                     | `development`, `test` ou `production` (désactive `/docs` et refuse les identifiants de dev)  |
+| `ASS_LOG_LEVEL` / `ASS_LOG_JSON`                        | `INFO` / `true`                                   | Journalisation                                                                               |
+| `ASS_DATABASE_URL`                                      | `postgresql+psycopg://ass:ass@localhost:5432/ass` | PostgreSQL                                                                                   |
+| `ASS_REDIS_URL`                                         | `redis://localhost:6379/0`                        | Redis                                                                                        |
+| `ASS_S3_ENDPOINT_URL`, `ASS_S3_REGION`, `ASS_S3_BUCKET` | `http://localhost:8333`, `us-east-1`, `ass-media` | Stockage                                                                                     |
+| `ASS_S3_ACCESS_KEY_ID`, `ASS_S3_SECRET_ACCESS_KEY`      | identifiants de dev                               | Stockage                                                                                     |
+| `ASS_CORS_ALLOWED_ORIGINS`                              | `http://localhost:3000`                           | Liste séparée par des virgules ; `*` interdit                                                |
+| `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`                      | `2`                                               | Timeout par dépendance                                                                       |
+| `ASS_SESSION_COOKIE_NAME`                               | `ass_session`                                     | Nom du cookie de session                                                                     |
+| `ASS_SESSION_COOKIE_SECURE`                             | `true`                                            | Attribut `Secure` ; obligatoire en production. Chrome et Firefox l'acceptent sur `localhost` |
+| `ASS_SESSION_TTL_HOURS`                                 | `336`                                             | Durée de vie absolue d'une session (14 jours)                                                |
+| `ASS_LOGIN_MAX_FAILURES_PER_EMAIL` / `…_PER_IP`         | `10` / `50`                                       | Échecs tolérés par fenêtre avant `429`                                                       |
+| `ASS_LOGIN_FAILURE_WINDOW_SECONDS`                      | `900`                                             | Fenêtre de comptage des échecs                                                               |
 
 Web : `NEXT_PUBLIC_API_URL` (défaut `http://localhost:8000`), figée au build.
 

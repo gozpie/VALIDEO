@@ -11,8 +11,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   migrations, `alembic check`, contraintes, cascades, réordonnancement).
 - `CLAUDE.md` : conventions, commandes et règles de contribution (prévu par le cahier des charges, absent de la phase 0).
 
+- Étape 1.2 : authentification — `POST /auth/login`, `GET /auth/session`, `POST /auth/logout` ; Argon2id,
+  sessions en base (empreinte du jeton) et cookie `HttpOnly`/`SameSite=Lax`/`Secure`, jeton CSRF,
+  limitation des échecs dans Redis, migration `0002` (`user_sessions`), commande `create-user`.
+
 ### Modifié
 
+- Les erreurs HTTP conservent les en-têtes de l'exception (`Retry-After`…).
 - `infrastructure/migrations/env.py` : enregistre les modèles et accepte une URL de base fournie par les tests.
 
 ## [0.1.0] — 2026-11-02 — Phase 0 : audit et initialisation

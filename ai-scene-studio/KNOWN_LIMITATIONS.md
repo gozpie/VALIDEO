@@ -2,8 +2,13 @@
 
 ## Fonctionnelles (phase 1 en cours)
 
-- Étape 1.1 : les tables utilisateurs, workspaces, membres, projets, séquences et plans existent, mais aucune
-  route API ni écran ne les expose encore (authentification et CRUD : étapes 1.2 à 1.6).
+- Étapes 1.1–1.2 : tables et authentification (connexion, session, déconnexion) en place côté API. Pas encore
+  de routes workspaces/projets/séquences/plans (1.3–1.4), ni d'écran de connexion (1.6).
+- Pas d'inscription publique ni de réinitialisation de mot de passe : comptes créés en ligne de commande ;
+  invitations prévues à l'étape 1.4, réinitialisation par e-mail non planifiée (pas de service d'envoi).
+- Les sessions expirées sont supprimées quand elles sont présentées ; une purge périodique viendra avec les
+  workers (phase 4). La limite d'échecs par e-mail permet à un tiers de bloquer temporairement un compte
+  (compromis classique, fenêtre de 15 minutes).
 - Pas d'éditeur, d'animation, de rendu ni de génération IA. L'interface web se limite à l'état des services.
 - `packages/scene-engine`, `animation-engine`, `editor-ui` et `workers/*` ne contiennent qu'une description de leur rôle.
 - Les types de `shared-types` décrivent la forme cible des entités ; ils seront générés depuis l'OpenAPI en phase 1.
