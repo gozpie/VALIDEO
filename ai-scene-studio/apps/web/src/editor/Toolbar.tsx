@@ -3,16 +3,33 @@
 import { isDirty, type CameraView, type Tool } from '@ass/editor-ui';
 import { setActiveCamera } from '@ass/scene-engine';
 import type { Keymap } from './keymap';
+import {
+  ArrowLeft,
+  Command as CommandIcon,
+  Keyboard,
+  Magnet,
+  Move3d,
+  Redo2,
+  Rotate3d,
+  Save,
+  Scaling,
+  Scan,
+  SquareDashedMousePointer,
+  Undo2,
+} from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { Tooltip } from '@/components/Kbd';
+import { commandStore } from '@/lib/commands';
 import { useEditor, useEditorContext } from './context';
 import type { ViewDirection, ViewSettings } from './Viewport';
 
 export type SaveStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
 
-const TOOLS: { tool: Tool; label: string; key: string }[] = [
-  { tool: 'translate', label: 'Déplacer', key: 'W' },
-  { tool: 'rotate', label: 'Pivoter', key: 'E' },
-  { tool: 'scale', label: 'Échelle', key: 'R' },
+const TOOLS: { tool: Tool; label: string; key: [string, string]; icon: ReactNode }[] = [
+  { tool: 'translate', label: 'Déplacer', key: ['G', 'W'], icon: <Move3d size={15} /> },
+  { tool: 'rotate', label: 'Pivoter', key: ['R', 'E'], icon: <Rotate3d size={15} /> },
+  { tool: 'scale', label: 'Échelle', key: ['S', 'R'], icon: <Scaling size={15} /> },
 ];
 
 const VIEWS: { direction: ViewDirection; label: string }[] = [
@@ -39,8 +56,12 @@ interface Props {
 }
 
 const button =
-  'rounded border border-border px-2 py-1 text-xs hover:border-accent disabled:opacity-40';
-const active = 'border-accent bg-accent/20';
+  'flex h-7 items-center gap-1.5 rounded-md border border-transparent px-2 text-xs text-muted transition-colors hover:bg-hover hover:text-text disabled:pointer-events-none disabled:opacity-35';
+const iconButton = `${button} w-7 justify-center px-0`;
+const active = 'border-accent/60 bg-accent/20 text-text';
+const select =
+  'h-7 rounded-md border border-border bg-surface px-1.5 text-xs text-text hover:border-border-strong focus:border-accent focus:outline-none disabled:opacity-50';
+const divider = <span className="mx-1 h-5 w-px bg-border" />;
 
 export function Toolbar({
   title,
@@ -76,62 +97,88 @@ export function Toolbar({
           : 'Enregistré';
 
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b border-border bg-panel px-4 py-2">
-      <Link href={backHref} className="text-sm text-accent hover:underline">
-        ←
-      </Link>
-      <h1 className="text-sm font-semibold">{title}</h1>
+    <header className="relative z-20 flex items-center gap-1.5 border-b border-border bg-panel px-3 py-1.5">
+      <Tooltip label="Retour au projet">
+        <Link href={backHref} aria-label="Retour au projet" className={iconButton}>
+          <ArrowLeft size={15} />
+        </Link>
+      </Tooltip>
+      <h1 className="ml-1 max-w-56 truncate text-sm font-semibold">{title}</h1>
       <span
         role="status"
-        className={`text-xs ${saveStatus.kind === 'error' ? 'text-error' : dirty ? 'text-warn' : 'text-muted'}`}
+        className={`ml-2 flex items-center gap-1.5 text-xs ${saveStatus.kind === 'error' ? 'text-error' : dirty ? 'text-warn' : 'text-faint'}`}
       >
         {status}
       </span>
-      <div className="flex-1" />
+      {canEdit && (
+        <Tooltip label="Enregistrer" shortcut="⌘S">
+          <button
+            type="button"
+            className="ml-2 flex h-7 items-center gap-1.5 rounded-md bg-accent px-3 text-xs font-medium text-white shadow-card transition-colors hover:bg-accent-strong disabled:opacity-40"
+            disabled={!dirty || saveStatus.kind === 'saving'}
+            onClick={onSave}
+          >
+            <Save size={13} />
+            Enregistrer
+          </button>
+        </Tooltip>
+      )}
+      <div className="min-w-2 flex-1" />
       {canEdit && (
         <>
-          <button
-            type="button"
-            className={button}
-            disabled={!canUndo}
-            onClick={state.undo}
-            title="Annuler (⌘Z)"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            className={button}
-            disabled={!canRedo}
-            onClick={state.redo}
-            title="Rétablir (⇧⌘Z)"
-          >
-            Rétablir
-          </button>
-          <span className="mx-1 h-5 w-px bg-border" />
-          {TOOLS.map((item) => (
+          <Tooltip label="Annuler" shortcut="⌘Z">
             <button
-              key={item.tool}
               type="button"
-              aria-pressed={tool === item.tool}
-              className={`${button} ${tool === item.tool ? active : ''}`}
-              onClick={() => state.setTool(item.tool)}
-              title={`${item.label} (${item.key})`}
+              aria-label="Annuler"
+              className={iconButton}
+              disabled={!canUndo}
+              onClick={state.undo}
             >
-              {item.label}
+              <Undo2 size={15} />
             </button>
-          ))}
-          <label
-            className="flex items-center gap-1 text-xs"
-            title="Magnétisme : pas de déplacement (m), de rotation (°) et d'échelle"
-          >
-            <input
-              type="checkbox"
-              checked={snapping.enabled}
-              onChange={(event) => state.setSnapping({ enabled: event.target.checked })}
-            />
-            Magnétisme
-          </label>
+          </Tooltip>
+          <Tooltip label="Rétablir" shortcut="⇧⌘Z">
+            <button
+              type="button"
+              aria-label="Rétablir"
+              className={iconButton}
+              disabled={!canRedo}
+              onClick={state.redo}
+            >
+              <Redo2 size={15} />
+            </button>
+          </Tooltip>
+          {divider}
+          <div className="flex rounded-lg bg-surface p-0.5" role="group" aria-label="Outils">
+            {TOOLS.map((item) => (
+              <Tooltip
+                key={item.tool}
+                label={item.label}
+                shortcut={keymap === 'blender' ? item.key[0] : item.key[1]}
+              >
+                <button
+                  type="button"
+                  aria-label={item.label}
+                  aria-pressed={tool === item.tool}
+                  className={`${iconButton} ${tool === item.tool ? active : ''}`}
+                  onClick={() => state.setTool(item.tool)}
+                >
+                  {item.icon}
+                </button>
+              </Tooltip>
+            ))}
+          </div>
+          <Tooltip label="Magnétisme (pas de déplacement, rotation, échelle)">
+            <button
+              type="button"
+              aria-label="Magnétisme"
+              aria-pressed={snapping.enabled}
+              className={`${iconButton} ${snapping.enabled ? active : ''}`}
+              onClick={() => state.setSnapping({ enabled: !snapping.enabled })}
+            >
+              <Magnet size={15} />
+            </button>
+          </Tooltip>
           {snapping.enabled && (
             <span className="flex items-center gap-1 text-xs">
               {(
@@ -153,29 +200,31 @@ export function Toolbar({
                       if (Number.isFinite(value) && value >= min)
                         state.setSnapping({ [key]: value });
                     }}
-                    className="w-14 rounded border border-border bg-surface px-1"
+                    className="h-6 w-14 rounded-md border border-border bg-surface px-1 font-mono"
                   />
                   {unit}
                 </label>
               ))}
             </span>
           )}
-          <button
-            type="button"
-            aria-pressed={boxSelect}
-            className={`${button} ${boxSelect ? active : ''}`}
-            onClick={onBoxSelect}
-            title="Sélection rectangle (B)"
-          >
-            Rectangle
-          </button>
+          <Tooltip label="Sélection rectangle" shortcut="B">
+            <button
+              type="button"
+              aria-label="Sélection rectangle"
+              aria-pressed={boxSelect}
+              className={`${iconButton} ${boxSelect ? active : ''}`}
+              onClick={onBoxSelect}
+            >
+              <SquareDashedMousePointer size={15} />
+            </button>
+          </Tooltip>
         </>
       )}
-      <span className="mx-1 h-5 w-px bg-border" />
+      {divider}
       <select
         aria-label="Caméra active"
         disabled={!canEdit}
-        className="max-w-40 rounded border border-border bg-surface px-1 py-1 text-xs"
+        className={`${select} max-w-32`}
         value={activeCameraId ?? ''}
         onChange={(event) => state.apply((s) => setActiveCamera(s, event.target.value || null))}
       >
@@ -188,7 +237,7 @@ export function Toolbar({
       </select>
       <select
         aria-label="Disposition des vues"
-        className="rounded border border-border bg-surface px-1 py-1 text-xs"
+        className={select}
         value={cameraView}
         onChange={(event) => state.setCameraView(event.target.value as CameraView)}
       >
@@ -211,7 +260,7 @@ export function Toolbar({
       </button>
       <select
         aria-label="Vue"
-        className="rounded border border-border bg-surface px-1 py-1 text-xs"
+        className={select}
         value=""
         onChange={(event) =>
           onView({ ...view, direction: event.target.value as ViewDirection, nonce: view.nonce + 1 })
@@ -226,43 +275,45 @@ export function Toolbar({
           </option>
         ))}
       </select>
-      <button
-        type="button"
-        className={button}
-        onClick={() => viewport.current?.frameSelection()}
-        title="Cadrer la sélection (F)"
-      >
-        Cadrer
-      </button>
+      <Tooltip label="Cadrer la sélection" shortcut={keymap === 'blender' ? 'Pavé .' : 'F'}>
+        <button
+          type="button"
+          aria-label="Cadrer la sélection"
+          className={iconButton}
+          onClick={() => viewport.current?.frameSelection()}
+        >
+          <Scan size={15} />
+        </button>
+      </Tooltip>
       <select
         aria-label="Disposition des raccourcis"
-        className="rounded border border-border bg-surface px-1 py-1 text-xs"
+        className={select}
         value={keymap}
         onChange={(event) => onKeymap(event.target.value as Keymap)}
       >
-        <option value="blender">Raccourcis Blender</option>
-        <option value="standard">Raccourcis standard</option>
+        <option value="blender">Clavier Blender</option>
+        <option value="standard">Clavier standard</option>
       </select>
-      <button
-        type="button"
-        className={button}
-        onClick={onHelp}
-        aria-label="Aide des raccourcis"
-        title="Raccourcis clavier"
-      >
-        ?
-      </button>
-      {canEdit && (
+      <Tooltip label="Aide des raccourcis" shortcut="?">
         <button
           type="button"
-          className="rounded bg-accent px-3 py-1 text-xs text-white disabled:opacity-50"
-          disabled={!dirty || saveStatus.kind === 'saving'}
-          onClick={onSave}
-          title="Enregistrer (⌘S)"
+          className={iconButton}
+          onClick={onHelp}
+          aria-label="Aide des raccourcis"
         >
-          Enregistrer
+          <Keyboard size={15} />
         </button>
-      )}
+      </Tooltip>
+      <Tooltip label="Palette de commandes" shortcut="⌘K">
+        <button
+          type="button"
+          className={iconButton}
+          aria-label="Palette de commandes"
+          onClick={() => commandStore.getState().setOpen(true)}
+        >
+          <CommandIcon size={15} />
+        </button>
+      </Tooltip>
     </header>
   );
 }

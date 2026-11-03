@@ -1,15 +1,56 @@
 @import 'tailwindcss';
 
+/*
+ * Jetons de design : surfaces en couches (fond → panneau → élément surélevé), une couleur d'accent,
+ * états sémantiques, ombres et animations courtes. Toute l'interface les utilise via Tailwind
+ * (bg-panel, border-border, text-muted, shadow-pop, animate-pop-in…).
+ */
 @theme {
-  --color-surface: #0f1115;
-  --color-panel: #171a21;
-  --color-border: #2a2f3a;
-  --color-text: #e6e8ee;
-  --color-muted: #9aa3b2;
-  --color-accent: #4f8cff;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, ui-sans-serif,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --color-surface: #0b0d12;
+  --color-panel: #12151c;
+  --color-elevated: #1a1e27;
+  --color-hover: #222733;
+  --color-border: #272c37;
+  --color-border-strong: #394050;
+  --color-text: #eceef3;
+  --color-muted: #8f98a8;
+  --color-faint: #5d6575;
+  --color-accent: #4f6bed;
+  --color-accent-strong: #7088ff;
   --color-ok: #3fb950;
   --color-error: #f85149;
   --color-warn: #d29922;
+  --color-ai: #b48cff;
+
+  --shadow-pop: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.05);
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 4px 16px -8px rgb(0 0 0 / 0.5);
+
+  --animate-pop-in: pop-in 120ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-slide-up: slide-up 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-4px);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
 }
 
 :root {
@@ -19,4 +60,27 @@
 body {
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-strong);
+  outline-offset: 1px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

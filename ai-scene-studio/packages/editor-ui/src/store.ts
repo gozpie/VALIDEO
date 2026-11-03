@@ -154,10 +154,13 @@ export function createEditorStore(initial: SceneDocument): StoreApi<EditorState>
         return false;
       }
       if (next === scene) return true;
+      // Pendant un geste (glisser un champ, le gizmo…), les modifications forment une seule
+      // étape d'historique, enregistrée par `endGesture`.
+      const inGesture = get().gestureStart !== null;
       set({
         scene: next,
-        past: [...past, scene].slice(-HISTORY_LIMIT),
-        future: [],
+        past: inGesture ? past : [...past, scene].slice(-HISTORY_LIMIT),
+        future: inGesture ? get().future : [],
         selection: prune(next, selection),
         keySelection: pruneKeys(next, get().keySelection),
         frame: clampFrame(next, get().frame),

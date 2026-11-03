@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { evaluateExpression, tidy } from '@/lib/expression';
+import { useOptionalEditorContext } from './context';
 
-/** Champ numérique validé à la sortie du champ ou sur Entrée ; Échap rétablit la valeur. */
+/**
+ * Champ numérique : saisie d'une valeur ou d'une expression (« 2*1.5 », « 90/4 »), validée à la
+ * sortie du champ ou sur Entrée ; Échap rétablit la valeur. Glisser l'étiquette horizontalement
+ * fait varier la valeur (Maj : précis ×0,1, Alt : rapide ×10) ; dans l'éditeur, tout le glissé
+ * forme une seule étape d'annulation.
+ */
 export function NumberField({
   label,
   value,
@@ -10,6 +17,7 @@ export function NumberField({
   disabled = false,
   step = 0.1,
   min,
+  max,
 }: {
   label: string;
   value: number;
@@ -17,32 +25,102 @@ export function NumberField({
   disabled?: boolean;
   step?: number;
   min?: number;
+  max?: number;
 }) {
   const id = useId();
+  const editor = useOptionalEditorContext();
   const [draft, setDraft] = useState(String(value));
+  const [scrubbing, setScrubbing] = useState(false);
+  const last = useRef(value);
+  // Après un glissé, le clic qui suit ne doit pas donner le focus au champ (raccourcis actifs).
+  const dragged = useRef(false);
   useEffect(() => setDraft(String(value)), [value]);
+  const clamp = (v: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v));
   const commit = () => {
-    const parsed = Number(draft.replace(',', '.'));
-    if (Number.isFinite(parsed) && (min === undefined || parsed >= min) && parsed !== value)
-      onCommit(parsed);
+    const parsed = evaluateExpression(draft);
+    const valid =
+      parsed !== null &&
+      (min === undefined || parsed >= min) &&
+      (max === undefined || parsed <= max);
+    if (valid && parsed !== value) onCommit(tidy(parsed));
     else setDraft(String(value));
   };
+  const integer = Number.isInteger(step);
   return (
-    <label htmlFor={id} className="flex min-w-0 flex-col text-xs">
-      <span className="text-muted">{label}</span>
+    <label
+      htmlFor={id}
+      className="flex min-w-0 flex-col text-xs"
+      onClick={(event) => {
+        if (dragged.current) event.preventDefault();
+        dragged.current = false;
+      }}
+    >
+      <span
+        className={`select-none text-muted ${disabled ? '' : 'cursor-ew-resize hover:text-text'} ${scrubbing ? 'text-accent-strong' : ''}`}
+        title={disabled ? undefined : 'Glisser pour ajuster (Maj : précis, Alt : rapide)'}
+        onPointerDown={(event) => {
+          if (disabled || event.button !== 0) return;
+          event.preventDefault();
+          const target = event.currentTarget;
+          target.setPointerCapture(event.pointerId);
+          const startX = event.clientX;
+          const startValue = value;
+          last.current = value;
+          let moved = false;
+          dragged.current = false;
+          const onMove = (move: PointerEvent) => {
+            const dx = move.clientX - startX;
+            if (!moved && Math.abs(dx) < 3) return;
+            if (!moved) {
+              moved = true;
+              dragged.current = true;
+              setScrubbing(true);
+              editor?.store.getState().beginGesture();
+            }
+            const factor = move.shiftKey ? 0.1 : move.altKey ? 10 : 1;
+            const raw = startValue + Math.round(dx / 4) * step * factor;
+            const next = clamp(integer && factor >= 1 ? Math.round(raw) : tidy(raw));
+            if (next === last.current) return;
+            last.current = next;
+            setDraft(String(next));
+            onCommit(next);
+          };
+          const onUp = () => {
+            target.removeEventListener('pointermove', onMove);
+            target.removeEventListener('pointerup', onUp);
+            target.removeEventListener('pointercancel', onUp);
+            if (moved) editor?.store.getState().endGesture();
+            setScrubbing(false);
+          };
+          target.addEventListener('pointermove', onMove);
+          target.addEventListener('pointerup', onUp);
+          target.addEventListener('pointercancel', onUp);
+        }}
+      >
+        {label}
+      </span>
       <input
         id={id}
-        type="number"
-        step={step}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        spellCheck={false}
         disabled={disabled}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
+        onFocus={(event) => event.currentTarget.select()}
         onBlur={commit}
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.currentTarget.blur();
           if (event.key === 'Escape') setDraft(String(value));
+          if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            const factor = event.shiftKey ? 0.1 : event.altKey ? 10 : 1;
+            const next = clamp(tidy(value + (event.key === 'ArrowUp' ? 1 : -1) * step * factor));
+            if (next !== value) onCommit(next);
+          }
         }}
-        className="w-full rounded border border-border bg-surface px-1.5 py-1 text-sm disabled:opacity-50"
+        className={`w-full rounded border bg-surface px-1.5 py-1 font-mono text-[13px] tabular-nums transition-colors hover:border-border-strong focus:border-accent focus:outline-none disabled:opacity-50 ${scrubbing ? 'border-accent' : 'border-border'}`}
       />
     </label>
   );

@@ -16,6 +16,7 @@ import {
   type Entity,
 } from '@ass/scene-engine';
 import type { StoreApi } from 'zustand/vanilla';
+import { toast } from '@/lib/toast';
 
 type Store = StoreApi<EditorState>;
 
@@ -37,7 +38,19 @@ export function addAndSelect(store: Store, entity: Entity): void {
 export function deleteSelection(store: Store): void {
   const { scene, selection, apply } = store.getState();
   const ids = editable(scene, topLevelSelection(scene, selection));
-  if (ids.length > 0) apply((current) => removeEntities(current, ids));
+  if (ids.length === 0) return;
+  const names = ids.map((id) => findEntity(scene, id)?.value.name ?? '');
+  if (!apply((current) => removeEntities(current, ids))) return;
+  // « Annuler » n'agit que si rien n'a été modifié depuis (sinon ⌘Z reste disponible).
+  const after = store.getState().scene;
+  toast(ids.length === 1 ? `« ${names[0]} » supprimé` : `${ids.length} éléments supprimés`, {
+    action: {
+      label: 'Annuler',
+      run: () => {
+        if (store.getState().scene === after) store.getState().undo();
+      },
+    },
+  });
 }
 
 export function duplicateSelection(store: Store): void {

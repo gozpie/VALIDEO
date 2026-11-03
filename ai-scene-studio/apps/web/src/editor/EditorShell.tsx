@@ -5,13 +5,18 @@ import { validateScene, type SceneDocument } from '@ass/scene-schema';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Object3D } from 'three';
+import { useStore } from 'zustand';
+import { ResizeHandle, useResizable } from '@/components/Resizable';
 import { api, call } from '@/lib/api';
+import { useCommandSource } from '@/lib/commands';
 import { API_URL } from '@/lib/config';
+import { toast } from '@/lib/toast';
 import { AddMenu } from './AddMenu';
 import { EditorContext, useEditor, type ViewportApi } from './context';
 import { Hierarchy } from './Hierarchy';
 import { Inspector } from './Inspector';
 import { SHORTCUTS, useKeymap } from './keymap';
+import { editorCommands, type EditorPanel } from './paletteCommands';
 import { RenderPanel } from './RenderPanel';
 import { Timeline } from './Timeline';
 import { Toolbar, type SaveStatus } from './Toolbar';
@@ -92,7 +97,10 @@ export function EditorShell({
     nonce: 0,
   });
   const [boxSelect, setBoxSelect] = useState(false);
-  const [panel, setPanel] = useState<'inspector' | 'render'>('inspector');
+  const [panel, setPanel] = useState<EditorPanel>('inspector');
+  const [leftWidth, setLeftWidth] = useResizable('editor.left', 256, 180, 480);
+  const [rightWidth, setRightWidth] = useResizable('editor.right', 304, 240, 560);
+  const [timelineHeight, setTimelineHeight] = useResizable('editor.timeline', 224, 120, 520);
   const [addMenu, setAddMenu] = useState(false);
   const [help, setHelp] = useState(false);
   const [keymap, setKeymap] = useKeymap();
@@ -128,6 +136,7 @@ export function EditorShell({
       return true;
     } catch (error) {
       setSaveStatus({ kind: 'error', message: (error as Error).message });
+      toast(`Enregistrement impossible : ${(error as Error).message}`, { kind: 'error' });
       return false;
     } finally {
       saving.current = false;
@@ -158,13 +167,34 @@ export function EditorShell({
       })),
     [],
   );
-  const tab = (id: 'inspector' | 'render', label: string) => (
+  // Les commandes de la palette suivent la sélection et l'historique (états désactivés à jour).
+  useStore(
+    store,
+    (state) => `${state.selection.length}:${state.past.length}:${state.future.length}`,
+  );
+  useCommandSource(
+    'editor',
+    editorCommands({
+      store,
+      canEdit,
+      keymap,
+      viewport,
+      save: () => void save(),
+      showView,
+      toggleProjection,
+      setPanel,
+      setKeymap,
+      toggleHelp: () => setHelp((value) => !value),
+    }),
+  );
+
+  const tab = (id: EditorPanel, label: string) => (
     <button
       type="button"
       role="tab"
       aria-selected={panel === id}
       onClick={() => setPanel(id)}
-      className={`flex-1 border-b-2 px-2 py-1 text-xs ${panel === id ? 'border-accent text-text' : 'border-transparent text-muted'}`}
+      className={`flex-1 border-b-2 px-2 py-2 text-xs font-medium transition-colors ${panel === id ? 'border-accent text-text' : 'border-transparent text-muted hover:text-text'}`}
     >
       {label}
     </button>
@@ -194,18 +224,29 @@ export function EditorShell({
           onKeymap={setKeymap}
           onHelp={() => setHelp((value) => !value)}
         />
-        <div className="grid min-h-0 flex-1 grid-cols-[16rem_1fr_19rem]">
-          <aside className="flex min-h-0 flex-col gap-4 overflow-auto border-r border-border bg-panel p-3">
+        <div className="flex min-h-0 flex-1">
+          <aside
+            style={{ width: leftWidth }}
+            className="flex min-h-0 shrink-0 flex-col gap-4 overflow-auto bg-panel p-3"
+          >
             {canEdit && <AddMenu workspaceId={workspaceId} />}
             <Hierarchy />
           </aside>
-          <div className="relative min-h-0">
+          <ResizeHandle
+            label="Largeur du panneau de gauche"
+            orientation="vertical"
+            size={leftWidth}
+            direction={1}
+            defaultSize={256}
+            onResize={setLeftWidth}
+          />
+          <div className="relative min-h-0 min-w-0 flex-1">
             <Views view={view} boxSelect={boxSelect} />
             {addMenu && canEdit && (
               <div
                 role="dialog"
                 aria-label="Menu d’ajout"
-                className="absolute left-1/2 top-1/3 z-20 w-80 -translate-x-1/2 rounded-lg border border-border bg-panel p-3 shadow-xl"
+                className="absolute left-1/2 top-1/3 z-20 w-80 -translate-x-1/2 animate-pop-in rounded-lg border border-border bg-elevated p-3 shadow-pop"
                 onClick={(event) => {
                   if ((event.target as HTMLElement).tagName === 'BUTTON') setAddMenu(false);
                 }}
@@ -225,7 +266,7 @@ export function EditorShell({
               <div
                 role="dialog"
                 aria-label="Raccourcis clavier"
-                className="absolute right-3 top-3 z-20 max-h-[80%] w-[28rem] overflow-auto rounded-lg border border-border bg-panel p-3 text-xs shadow-xl"
+                className="absolute right-3 top-3 z-20 max-h-[80%] w-[28rem] animate-pop-in overflow-auto rounded-lg border border-border bg-elevated p-3 text-xs shadow-pop"
               >
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="font-semibold">
@@ -250,7 +291,15 @@ export function EditorShell({
               </div>
             )}
           </div>
-          <aside className="flex min-h-0 flex-col border-l border-border bg-panel">
+          <ResizeHandle
+            label="Largeur du panneau de droite"
+            orientation="vertical"
+            size={rightWidth}
+            direction={-1}
+            defaultSize={304}
+            onResize={setRightWidth}
+          />
+          <aside style={{ width: rightWidth }} className="flex min-h-0 shrink-0 flex-col bg-panel">
             <div role="tablist" className="flex border-b border-border">
               {tab('inspector', 'Inspecteur')}
               {tab('render', 'Rendu')}
@@ -264,7 +313,15 @@ export function EditorShell({
             </div>
           </aside>
         </div>
-        <div className="h-56 shrink-0">
+        <ResizeHandle
+          label="Hauteur de la timeline"
+          orientation="horizontal"
+          size={timelineHeight}
+          direction={-1}
+          defaultSize={224}
+          onResize={setTimelineHeight}
+        />
+        <div style={{ height: timelineHeight }} className="shrink-0">
           <Timeline />
         </div>
       </div>

@@ -53,6 +53,18 @@ describe('store de l’éditeur', () => {
     expect(store.getState().past).toHaveLength(0);
   });
 
+  it('regroupe dans le geste en cours les opérations appliquées', () => {
+    const store = createEditorStore(addEntity(empty(), { kind: 'node', value: cube }));
+    store.getState().beginGesture();
+    for (let x = 1; x <= 5; x++) store.getState().apply(move(x));
+    expect(store.getState().past).toHaveLength(0);
+    store.getState().endGesture();
+    expect(store.getState().past).toHaveLength(1);
+    expect(store.getState().scene.nodes[0]!.transform.position[0]).toBe(5);
+    store.getState().undo();
+    expect(store.getState().scene.nodes[0]!.transform.position[0]).toBe(0);
+  });
+
   it('ignore une opération invalide sans perdre l’état', () => {
     const store = createEditorStore(empty());
     const ok = store.getState().apply(() => {

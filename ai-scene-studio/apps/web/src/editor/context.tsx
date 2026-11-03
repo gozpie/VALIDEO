@@ -32,3 +32,8 @@ export function useEditorContext(): EditorContextValue {
 export function useEditor<T>(selector: (state: EditorState) => T): T {
   return useStore(useEditorContext().store, selector);
 }
+
+/** Contexte de l'éditeur s'il existe (composants utilisables aussi hors de l'éditeur). */
+export function useOptionalEditorContext(): EditorContextValue | null {
+  return useContext(EditorContext);
+}

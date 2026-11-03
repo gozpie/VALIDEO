@@ -23,11 +23,12 @@ export function AddMenu({ workspaceId }: { workspaceId: string }) {
   const [status, setStatus] = useState<{ kind: 'idle' | 'busy' | 'error'; message?: string }>({
     kind: 'idle',
   });
-  const button = 'rounded border border-border px-2 py-1 text-xs hover:border-accent';
+  const button =
+    'rounded-md border border-border bg-surface px-2 py-1 text-xs text-text/90 transition-colors hover:border-border-strong hover:bg-hover disabled:opacity-50';
 
   return (
     <section aria-label="Ajouter" className="flex flex-col gap-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Ajouter</h2>
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-faint">Ajouter</h2>
       <div className="flex flex-wrap gap-1">
         {PRIMITIVES.map((kind) => (
           <button

@@ -10,6 +10,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   contraintes indicatives, jobs de génération (migration `0007`), rendu Blender de préparation (images, profondeur,
   normales), estimation et confirmation exacte du coût, worker par fournisseur.
 - Étape 5.2 : service `ai-worker` (image Python + FFmpeg + `claude`) et script du worker Higgsfield sur le Mac.
+- Étape 5.3 : jetons de design et icônes ; palette de commandes (⌘K, F3) ; notifications avec « Annuler » ; menu
+  contextuel de la hiérarchie ; panneaux redimensionnables mémorisés ; infobulles avec raccourcis ; champs
+  numériques à expressions et étiquette glissable (une seule annulation par glissé).
 
 ## [0.5.0] — 2026-11-03 — Phase 4 : rendu technique (Blender)
 

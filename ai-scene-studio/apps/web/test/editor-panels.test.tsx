@@ -48,7 +48,7 @@ describe('panneaux de l’éditeur', () => {
     expect(screen.getByRole('treeitem', { name: 'Décor' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('treeitem', { name: 'Cube' }));
     expect(store.getState().selection).toEqual([cube.id]);
-    expect(screen.getByLabelText('Position Y')).toHaveValue(0.5);
+    expect(screen.getByLabelText('Position Y')).toHaveValue('0.5');
   });
 
   it('modifie la position depuis l’inspecteur et l’inscrit dans l’historique', () => {
