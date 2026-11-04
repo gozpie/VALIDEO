@@ -15,9 +15,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   lecture vidéo et son, images fixes, bande d'images et forme d'onde sur la timeline, galerie « Plans du film », panneaux
   déplaçables, import de musique et de sons conservés avec le projet. Enregistrement automatique sur le serveur
   (`GET/PUT /projects/{id}/edit`, `POST /projects/{id}/edit/media`, migration 0009, assets de type `audio`).
+- Étape 7.3 : composition dans le montage. Le moniteur empile toutes les pistes (opacité, modes de fusion, position,
+  échelle, rotation, déplacement du calque à la souris). Transitions : fondu enchaîné, au noir, au blanc, volet, poussée ;
+  fondus d'entrée et de sortie ; fondu sonore à puissance constante. Titres (texte, police, taille, couleur, bandeau,
+  place). Images clés sur l'image et le volume, zoom lent en un clic. Panneaux Réglages, Transitions et titres, Mixage
+  (faders de piste, volume général, muet, solo, vumètres réels).
 
 ### Corrigé
 
+- Vidéos avec images B (la plupart des H.264) : le moniteur n'affichait qu'une image sur deux environ, désormais toutes
+  (décodage en continu en lecture, sans attente : 24 i/s mesurées en 1080p).
+- Glisser un plan de la galerie vers la timeline : la dépose était refusée, ou posait le mauvais média.
 - Un worker occupé par une longue génération n'est plus vu comme arrêté (signe de vie dans un fil dédié) ; message
   d'indisponibilité explicite.
 

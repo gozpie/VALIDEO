@@ -32,6 +32,8 @@ export type Outil =
 export interface EtatEditeur {
   readonly sequence: SequenceDoc;
   readonly selection: ReadonlySet<string>;
+  /** Transition sélectionnée sur la timeline : elle exclut les clips, et l'inverse. */
+  readonly transitionSelectionnee: string | null;
   readonly tete: number;
   readonly outil: Outil;
   readonly accrochage: boolean;
@@ -69,6 +71,7 @@ export interface ActionsEditeur {
   enregistrer(): void;
   definirSelection(ids: Iterable<string>): void;
   basculerSelection(id: string, additive: boolean): void;
+  definirTransition(id: string | null): void;
   definirTete(image: number): void;
   definirOutil(outil: Outil): void;
   definirEnLecture(valeur: boolean): void;
@@ -124,6 +127,7 @@ export function useEditeur(initial: ProjectDoc): [EtatEditeur, ActionsEditeur] {
   const [sequence, setSequence] = useState<SequenceDoc>(() => history.current());
   const [instantane, setInstantane] = useState(() => history.snapshot());
   const [selection, setSelection] = useState<ReadonlySet<string>>(() => new Set<string>());
+  const [transitionSelectionnee, setTransition] = useState<string | null>(null);
   const [tete, setTete] = useState(0);
   const [outil, setOutil] = useState<Outil>('selection');
   const [accrochage, setAccrochage] = useState(true);
@@ -191,7 +195,14 @@ export function useEditeur(initial: ProjectDoc): [EtatEditeur, ActionsEditeur] {
         history.markSaved();
         rafraichir();
       },
-      definirSelection: (ids: Iterable<string>) => setSelection(new Set(ids)),
+      definirSelection: (ids: Iterable<string>) => {
+        setSelection(new Set(ids));
+        setTransition(null);
+      },
+      definirTransition: (id: string | null) => {
+        setTransition(id);
+        if (id !== null) setSelection(new Set<string>());
+      },
       basculerSelection: (id: string, additive: boolean) =>
         setSelection((courante) => {
           if (!additive) return new Set([id]);
@@ -309,6 +320,7 @@ export function useEditeur(initial: ProjectDoc): [EtatEditeur, ActionsEditeur] {
     sourcesVideo,
     sequence,
     selection,
+    transitionSelectionnee,
     tete,
     outil,
     accrochage,

@@ -9,7 +9,16 @@
  */
 import type { Noeud } from './modele';
 
-export const PANNEAUX = ['plans', 'programme', 'projet', 'info', 'timeline'] as const;
+export const PANNEAUX = [
+  'plans',
+  'programme',
+  'projet',
+  'effets',
+  'reglages',
+  'mixage',
+  'info',
+  'timeline',
+] as const;
 
 export type IdPanneau = (typeof PANNEAUX)[number];
 
@@ -17,6 +26,9 @@ export const TITRES: Readonly<Record<IdPanneau, string>> = {
   plans: 'Plans du film',
   programme: 'Film',
   projet: 'Médias',
+  effets: 'Transitions et titres',
+  reglages: 'Réglages',
+  mixage: 'Mixage',
   info: 'Historique',
   timeline: 'Timeline',
 };
@@ -33,8 +45,8 @@ export function estIdPanneau(x: string): x is IdPanneau {
 }
 
 /**
- * Disposition par défaut : les plans à gauche (les médias en second onglet), le film au centre,
- * l'historique à droite, et la timeline en bas sur toute la largeur.
+ * Disposition par défaut : les plans à gauche (médias et effets en onglets), le film au centre,
+ * les réglages à droite (mixage et historique en onglets), et la timeline en bas sur toute la largeur.
  */
 export function dispositionParDefaut(): Noeud {
   return {
@@ -47,14 +59,19 @@ export function dispositionParDefaut(): Noeud {
       id: 'd2',
       axe: 'colonnes',
       fraction: 0.27,
-      premier: { type: 'zone', id: 'z1', panneaux: ['plans', 'projet'], actif: 'plans' },
+      premier: { type: 'zone', id: 'z1', panneaux: ['plans', 'projet', 'effets'], actif: 'plans' },
       second: {
         type: 'division',
         id: 'd3',
         axe: 'colonnes',
-        fraction: 0.74,
+        fraction: 0.68,
         premier: { type: 'zone', id: 'z2', panneaux: ['programme'], actif: 'programme' },
-        second: { type: 'zone', id: 'z3', panneaux: ['info'], actif: 'info' },
+        second: {
+          type: 'zone',
+          id: 'z3',
+          panneaux: ['reglages', 'mixage', 'info'],
+          actif: 'reglages',
+        },
       },
     },
     second: { type: 'zone', id: 'z5', panneaux: ['timeline'], actif: 'timeline' },

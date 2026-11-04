@@ -35,9 +35,11 @@ import {
   sourceOut,
   toTimelineFrames,
 } from './source';
+import { reconcilierTransitions } from './transitions';
 import {
   clearRange,
   closeGap,
+  decalerCles,
   mapTrack,
   openGap,
   placeClip,
@@ -93,7 +95,8 @@ function requireClip(
  * Derniere barriere avant de rendre un etat : les invariants de piste sont
  * re-verifies. Un montage qui aurait produit un chevauchement est refuse.
  */
-function finalize(sequence: SequenceDoc): EditResult {
+export function finalize(brute: SequenceDoc): EditResult {
+  const sequence = reconcilierTransitions(brute);
   const violations = checkSequence(sequence);
   if (violations.length > 0) {
     const first = violations[0];
@@ -595,7 +598,7 @@ export function trimClip(
   const trimmed: ClipDoc =
     options.edge === 'in'
       ? {
-          ...clip,
+          ...decalerCles(clip, delta),
           // En ripple, le clip ne se decale PAS a droite : il garde sa place et
           // c est la suite du montage qui remonte. En trim simple, il recule et
           // laisse un trou.
@@ -714,6 +717,7 @@ export function rollEdit(
   const tracks = mapTrack(sequence.tracks, trackId, (t) => {
     const a = updateClip(t, outgoing.id, { duration: outgoing.duration + d });
     return updateClip(a, incoming.id, {
+      ...decalerCles(incoming, d),
       start: incoming.start + d,
       duration: incoming.duration - d,
       sourceIn: shiftedSourceIn(incoming, d, ctx),
@@ -793,6 +797,7 @@ export function slideClip(
     }
     if (next !== undefined) {
       updated = updateClip(updated, next.id, {
+        ...decalerCles(next, d),
         start: next.start + d,
         duration: next.duration - d,
         sourceIn: shiftedSourceIn(next, d, ctx),
@@ -1204,6 +1209,7 @@ export interface TrackFlags {
   readonly targeted?: boolean;
   readonly syncLock?: boolean;
   readonly height?: number;
+  readonly gainDb?: number;
 }
 
 /**

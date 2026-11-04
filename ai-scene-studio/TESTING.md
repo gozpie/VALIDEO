@@ -73,7 +73,9 @@ Sans `E2E_EMAIL` / `E2E_PASSWORD`, ces tests sont explicitement ignorés (seul l
 Le moteur (`packages/nle/*`) garde ses tests d'origine, sauf `demux`, ignoré sans ses fixtures FFmpeg. Le lien film ↔
 studio est couvert par `apps/web/test/montage-film.test.ts` (assemblage, attentes, nouvelle version, son lié, plan
 retiré), l'API par `apps/api/tests/test_integration_montage.py` (révisions, droits, formats refusés), et le parcours
-complet par `apps/web/e2e/montage.spec.ts` (assemblage, ⌘K, annulation, rechargement, version reçue). L'E2E utilise des
+complet par `apps/web/e2e/montage.spec.ts` (assemblage, ⌘K, annulation, rechargement, version reçue ; composition vérifiée
+au pixel : fondu enchaîné, titre, images clés, mixage). La composition pure (`packages/nle/playback/src/composition.test.ts`),
+les transitions et les images clés (`packages/nle/timeline-model/src`) ont leurs tests. L'E2E utilise des
 images, car le Chromium de Playwright ne décode pas le H.264 : la lecture vidéo et le son se vérifient avec
 `channel: 'chrome'`.
 

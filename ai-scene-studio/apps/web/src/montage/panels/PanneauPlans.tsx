@@ -20,6 +20,7 @@ export function PanneauPlans({
   canEdit,
   allerA,
   remettre,
+  surGlisser,
 }: {
   plans: readonly PlanDuFilm[];
   liens: LiensFilm;
@@ -28,6 +29,8 @@ export function PanneauPlans({
   canEdit: boolean;
   allerA: (image: number) => void;
   remettre: (shotId: string) => void;
+  /** La timeline lit le média glissé pendant le survol : il faut le lui désigner au départ. */
+  surGlisser: (mediaId: string) => void;
 }): React.JSX.Element {
   if (plans.length === 0) return <div className="plans-vide">Les plans arrivent…</div>;
   const parPlan = (shotId: string) => clipsImageDuPlan(sequence, shotId, liens);
@@ -55,6 +58,7 @@ export function PanneauPlans({
               draggable={mediaId !== null}
               onDragStart={(e) => {
                 if (mediaId === null) return;
+                surGlisser(mediaId);
                 e.dataTransfer.setData('application/x-valideo-media', mediaId);
                 e.dataTransfer.effectAllowed = 'copy';
               }}

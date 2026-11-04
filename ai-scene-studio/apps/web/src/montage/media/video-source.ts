@@ -8,9 +8,10 @@
  *
  *   SCRUB   -- `imageA` decode a la demande depuis l image cle qui precede.
  *              Un saut long coute donc le decodage d un groupe d images.
- *   LECTURE -- `precharger` decode EN AVANT et garde les images dans un cache
- *              borne. La demande suivante est alors servie sans decoder, ce qui
- *              rend possible une lecture a la cadence de la sequence.
+ *   LECTURE -- `precharger` alimente le decodeur EN CONTINU et chaque image entre
+ *              dans un cache borne des qu elle sort. `imagePrete` la sert alors
+ *              sans decoder, ce qui rend possible une lecture a la cadence de la
+ *              sequence.
  *
  * Le cache est borne en PIXELS et non en nombre d images : vingt-quatre images
  * de 320x240 coutent 7 Mo, les memes en 4K en couteraient 800 (section 57).
@@ -19,6 +20,7 @@ import type { AppError, Result } from '@valideo/shared';
 import { appError, err, ok } from '@valideo/shared';
 import type { EchantillonMp4, FichierMp4, PisteMp4, RangeReader } from '@valideo/demux';
 import { demultiplexerMp4, imageCleAvant, premierePiste } from '@valideo/demux';
+import { dernierADecoder, ordreAffichage, rangAuPlusTard } from './ordre-affichage';
 
 /** Lecteur par plage sur un `File` : `Blob.slice` ne charge que la tranche demandee. */
 export class FileRangeReader implements RangeReader {
@@ -46,7 +48,7 @@ export interface InfosVideo {
 }
 
 /** Ce que le moniteur et les vignettes attendent d'une source d'images. */
-export type SourceVisuelle = Pick<VideoSource, 'infos' | 'precharger' | 'fermer'> & {
+export type SourceVisuelle = Pick<VideoSource, 'infos' | 'precharger' | 'imagePrete' | 'fermer'> & {
   imageA(secondes: number): Promise<VideoFrame | null>;
 };
 
@@ -87,6 +89,11 @@ export interface OuvertureVideo {
  * l alimenter. Il n est reinitialise que lorsqu on recule ou qu on saute
  * au-dela du groupe d images courant.
  */
+/** Images qu'un décodeur H.264 peut garder pour lui avant de les rendre (réordonnancement). */
+const IMAGES_RETENUES_PAR_LE_DECODEUR = 16;
+/** Au-delà, on attend le décodeur : inutile de lire le fichier plus vite qu'il ne décode. */
+const FILE_DECODEUR_MAX = 6;
+
 export class VideoSource {
   private decodeur: VideoDecoder | null = null;
   /** Images emises par le decodeur pendant la demande en cours. */
@@ -97,6 +104,15 @@ export class VideoSource {
   /** Budget du cache, en pixels. 64 Mpx : environ 250 Mo en RGBA. */
   private budgetPixels = 64_000_000;
   private derniereCle = -1;
+  /** Image que la lecture demande en ce moment : ce qui est derrière s'évince en premier. */
+  private positionLecture = 0;
+  private enPrechargement = false;
+  /**
+   * Prochain echantillon a donner au decodeur en lecture continue, ou `null` si le decodeur ne suit
+   * pas de flux. Tant qu un flux tourne, chaque image va au cache des qu elle sort.
+   */
+  private fluxProchain: number | null = null;
+  private fluxUtileDepuis = 0;
   /**
    * File d attente d une seule voie.
    *
@@ -106,12 +122,19 @@ export class VideoSource {
    */
   private file: Promise<unknown> = Promise.resolve();
 
+  /** Échantillons dans l'ordre d'affichage. Le cache et les positions sont en rangs de cet ordre. */
+  private readonly ordre: readonly EchantillonMp4[];
+  /** Image manquante au dernier tour, et depuis combien de tours elle l'est. */
+  private attendue = { rang: -1, tours: 0 };
+
   private constructor(
     private readonly reader: RangeReader,
     readonly fichier: FichierMp4,
     readonly piste: PisteMp4,
     readonly infos: InfosVideo,
-  ) {}
+  ) {
+    this.ordre = ordreAffichage(piste.echantillons);
+  }
 
   static async ouvrir(fichier: File): Promise<Result<OuvertureVideo, AppError>> {
     const reader = new FileRangeReader(fichier);
@@ -171,8 +194,13 @@ export class VideoSource {
       // on choisit apres coup ; attendre « la » prochaine image serait faux.
       output: (image) => {
         const collecte = this.collecte;
-        if (collecte !== null) collecte.push(image);
-        else image.close();
+        if (collecte !== null) {
+          collecte.push(image);
+          return;
+        }
+        const index = this.fluxProchain === null ? null : this.indexParHorodatage(image.timestamp);
+        if (index === null || index < this.fluxUtileDepuis) image.close();
+        else this.mettreEnCache(index, image);
       },
       error: () => {
         this.reinitialiser();
@@ -192,6 +220,7 @@ export class VideoSource {
     if (this.decodeur !== null && this.decodeur.state !== 'closed') this.decodeur.close();
     this.decodeur = null;
     this.derniereCle = -1;
+    this.fluxProchain = null;
   }
 
   /** Convertit un instant en secondes vers les unites de la piste. */
@@ -206,6 +235,12 @@ export class VideoSource {
    * atteinte dans le groupe d images -- que deux appels concurrents
    * corrompraient.
    */
+  /** Image deja decodee a cet instant, sans rien lancer : c est tout ce que la lecture peut se permettre. */
+  imagePrete(secondes: number): VideoFrame | null {
+    if (!this.infos.decodable) return null;
+    return this.cache.get(this.indexA(secondes))?.clone() ?? null;
+  }
+
   imageA(secondes: number): Promise<VideoFrame | null> {
     // Chemin rapide : l image est deja decodee. On en rend un clone, pour que
     // l appelant puisse la fermer sans vider le cache.
@@ -232,14 +267,14 @@ export class VideoSource {
     const echantillons = this.piste.echantillons;
     if (echantillons.length === 0) return null;
 
+    // Le préchargement qui précédait dans la file a pu décoder cette image entre-temps.
+    const dejaLa = this.cache.get(this.indexA(secondes));
+    if (dejaLa !== undefined) return dejaLa.clone();
+
     const cible = this.versTimescale(secondes);
 
     // Echantillon a afficher : le dernier dont le pts ne depasse pas la cible.
-    let vise = 0;
-    for (const e of echantillons) {
-      if (e.pts <= cible) vise = e.index;
-      else break;
-    }
+    const vise = this.ordre[rangAuPlusTard(this.ordre, cible)]?.index ?? 0;
 
     const cle = imageCleAvant(this.piste, echantillons[vise]?.pts ?? 0);
 
@@ -259,6 +294,7 @@ export class VideoSource {
     // vaut pas ce defaut. La vraie optimisation est un cache d images decodees,
     // qui viendra avec le moteur de lecture temps reel.
     this.derniereCle = cle;
+    this.fluxProchain = null;
     const depart = cle;
 
     const collecte: VideoFrame[] = [];
@@ -348,13 +384,16 @@ export class VideoSource {
     this.elaguer();
   }
 
-  /** Evince les plus anciennes jusqu a rentrer dans le budget. */
+  /** Evince d abord ce que la lecture a depasse, puis les plus anciennes, jusqu a rentrer dans le budget. */
   private elaguer(): void {
-    for (const [index, image] of this.cache) {
-      if (this.pixelsEnCache <= this.budgetPixels) break;
-      this.pixelsEnCache -= this.coutImage(image);
-      image.close();
-      this.cache.delete(index);
+    for (const derriereSeulement of [true, false]) {
+      for (const [index, image] of this.cache) {
+        if (this.pixelsEnCache <= this.budgetPixels) return;
+        if (derriereSeulement && index >= this.positionLecture) continue;
+        this.pixelsEnCache -= this.coutImage(image);
+        image.close();
+        this.cache.delete(index);
+      }
     }
   }
 
@@ -369,15 +408,9 @@ export class VideoSource {
     return { images: this.cache.size, pixels: this.pixelsEnCache, budget: this.budgetPixels };
   }
 
-  /** Index d echantillon correspondant a un instant. */
+  /** Rang d affichage de l image a montrer a cet instant. */
   private indexA(secondes: number): number {
-    const cible = this.versTimescale(secondes);
-    let vise = 0;
-    for (const e of this.piste.echantillons) {
-      if (e.pts <= cible) vise = e.index;
-      else break;
-    }
-    return vise;
+    return rangAuPlusTard(this.ordre, this.versTimescale(secondes));
   }
 
   /**
@@ -387,10 +420,14 @@ export class VideoSource {
    * chaque image coute un aller-retour de decodage et la cadence s effondre.
    */
   precharger(secondes: number, nombreImages: number): Promise<void> {
-    const suivante = this.file.then(
-      () => this.precargerInterne(secondes, nombreImages),
-      () => this.precargerInterne(secondes, nombreImages),
-    );
+    // Un préchargement est déjà en route : en empiler d'autres ne ferait que retarder l'affichage.
+    if (this.enPrechargement) return Promise.resolve();
+    this.enPrechargement = true;
+    const lancer = (): Promise<void> =>
+      this.precargerInterne(secondes, nombreImages).finally(() => {
+        this.enPrechargement = false;
+      });
+    const suivante = this.file.then(lancer, lancer);
     this.file = suivante.catch(() => undefined);
     return suivante;
   }
@@ -401,40 +438,68 @@ export class VideoSource {
     if (echantillons.length === 0) return;
 
     const depart = this.indexA(secondes);
-    const fin = Math.min(echantillons.length - 1, depart + nombreImages);
-    // Tout est deja en cache : rien a faire, et surtout rien a decoder.
-    let manquant = false;
-    for (let i = depart; i <= fin; i += 1) {
-      if (!this.cache.has(i)) {
-        manquant = true;
+    this.positionLecture = depart;
+    // Jamais plus que ce que le cache peut tenir : au-delà, il évincerait ce qu'on vient de décoder,
+    // et tout serait à refaire au tour suivant.
+    const pixelsImage = Math.max(1, this.infos.largeur * this.infos.hauteur);
+    const capacite = Math.max(2, Math.floor((this.budgetPixels * 0.8) / pixelsImage));
+    const fin = Math.min(this.ordre.length - 1, depart + Math.min(nombreImages, capacite));
+    // On reprend à la première image manquante : tout est en cache, rien à décoder.
+    let manquante: number | null = null;
+    for (let rang = depart; rang <= fin; rang += 1) {
+      if (!this.cache.has(rang)) {
+        manquante = rang;
         break;
       }
     }
-    if (!manquant) return;
+    if (manquante === null) return;
+    this.attendue =
+      this.attendue.rang === manquante
+        ? { rang: manquante, tours: this.attendue.tours + 1 }
+        : { rang: manquante, tours: 0 };
 
-    await this.decoderPlage(imageCleAvant(this.piste, echantillons[depart]?.pts ?? 0), fin);
+    const echantillon = this.ordre[manquante];
+    if (echantillon === undefined) return;
+    const dernier = dernierADecoder(this.ordre, depart, fin);
+
+    // Le flux en cours arrive à cette image (le décodeur en garde quelques-unes pour lui) : on continue.
+    // Sinon, ou si elle n'arrive décidément pas, on repart de l'image clé qui la précède.
+    const flux = this.fluxProchain;
+    if (
+      flux !== null &&
+      echantillon.index >= flux - IMAGES_RETENUES_PAR_LE_DECODEUR &&
+      manquante >= this.fluxUtileDepuis &&
+      this.attendue.tours < 3
+    ) {
+      await this.alimenterFlux(flux, dernier);
+      return;
+    }
+    this.reinitialiser();
+    this.fluxUtileDepuis = manquante;
+    this.attendue = { rang: manquante, tours: 0 };
+    await this.alimenterFlux(imageCleAvant(this.piste, echantillon.pts), dernier);
   }
 
   /**
-   * Decode les echantillons de `depart` a `fin` et met TOUT en cache.
-   * Les images intermediaires ne sont pas jetees : elles seront demandees juste
-   * apres par la lecture.
+   * Donne au decodeur les echantillons de `depart` a `fin`, sans le vider : un `flush` a chaque tour
+   * obligerait a repartir d une image cle, et rien ne sortirait avant la fin de la tranche. Il n est
+   * vide qu a la fin du fichier, ou il retiendrait sinon ses dernieres images.
    */
-  private async decoderPlage(depart: number, fin: number): Promise<void> {
+  private async alimenterFlux(depart: number, fin: number): Promise<void> {
     let decodeur: VideoDecoder;
     try {
       decodeur = this.configurer();
     } catch {
       return;
     }
-
-    const collecte: VideoFrame[] = [];
-    this.collecte = collecte;
+    const echantillons = this.piste.echantillons;
     try {
       for (let i = depart; i <= fin; i += 1) {
-        const echantillon = this.piste.echantillons[i];
+        const echantillon = echantillons[i];
         if (echantillon === undefined) continue;
         const octets = await this.reader.lire(echantillon.offset, echantillon.taille);
+        if (decodeur.state !== 'configured') return;
+        this.fluxProchain = i + 1;
         decodeur.decode(
           new EncodedVideoChunk({
             type: echantillon.cle ? 'key' : 'delta',
@@ -443,31 +508,26 @@ export class VideoSource {
             data: octets,
           }),
         );
+        while (decodeur.decodeQueueSize > FILE_DECODEUR_MAX) {
+          await new Promise((fait) => {
+            decodeur.addEventListener('dequeue', fait, { once: true });
+          });
+        }
       }
-      await decodeur.flush();
+      if (fin === echantillons.length - 1) {
+        await decodeur.flush();
+        this.fluxProchain = null;
+      }
     } catch {
-      this.collecte = null;
-      for (const image of collecte) image.close();
       this.reinitialiser();
-      return;
-    }
-    this.collecte = null;
-
-    // On retrouve l index de chaque image par son horodatage : le decodeur
-    // restitue en ordre d AFFICHAGE, pas dans l ordre ou on l a alimente.
-    for (const image of collecte) {
-      const index = this.indexParHorodatage(image.timestamp);
-      if (index === null) image.close();
-      else this.mettreEnCache(index, image);
     }
   }
 
   private indexParHorodatage(microsecondes: number): number | null {
     const pts = Math.round((microsecondes / 1_000_000) * this.piste.timescale);
-    for (const e of this.piste.echantillons) {
-      if (Math.abs(e.pts - pts) <= 1) return e.index;
-    }
-    return null;
+    const rang = rangAuPlusTard(this.ordre, pts + 1);
+    const echantillon = this.ordre[rang];
+    return echantillon !== undefined && Math.abs(echantillon.pts - pts) <= 1 ? rang : null;
   }
 
   fermer(): void {

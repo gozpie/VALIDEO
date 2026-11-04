@@ -149,6 +149,25 @@ export const ACTIONS: readonly ActionDefinition[] = [
   { id: 'edit.group', label: 'Grouper', category: 'montage', context: 'timeline' },
   { id: 'edit.linkToggle', label: 'Lier / Délier', category: 'montage', context: 'timeline' },
   { id: 'edit.speedDuration', label: 'Vitesse et durée', category: 'montage', context: 'timeline' },
+  {
+    id: 'edit.videoTransition',
+    label: 'Fondu enchaîné au raccord le plus proche',
+    category: 'montage',
+    context: 'timeline',
+  },
+  {
+    id: 'edit.audioTransition',
+    label: 'Fondu sonore au raccord le plus proche',
+    category: 'montage',
+    context: 'timeline',
+  },
+  {
+    id: 'edit.bothTransitions',
+    label: 'Fondu image et son au raccord le plus proche',
+    category: 'montage',
+    context: 'timeline',
+  },
+  { id: 'edit.newTitle', label: 'Nouveau titre', category: 'montage', context: 'timeline' },
 
   // Outils
   { id: 'tool.selection', label: 'Outil Sélection', category: 'outils', context: 'timeline' },

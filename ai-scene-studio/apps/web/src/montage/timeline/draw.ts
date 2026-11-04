@@ -16,6 +16,8 @@ import type { TimeBase } from '@valideo/time-core';
 import { formatTimecode, timebase, rational } from '@valideo/time-core';
 import type { RenderModel, Viewport } from '@valideo/timeline-engine';
 import { timeToX } from '@valideo/timeline-engine';
+import { nomTransition, transitionsEffectives } from '@valideo/timeline-model';
+import type { ClipDoc } from '@valideo/project-model';
 import type { WaveformColumn } from '@valideo/audio-engine';
 
 export const HAUTEUR_REGLE = 24;
@@ -151,6 +153,7 @@ export interface OptionsRendu {
   readonly depose?: ApercuDepose | null | undefined;
   readonly formeOnde?: FournisseurFormeOnde | undefined;
   readonly vignette?: FournisseurVignette | undefined;
+  readonly transitionSelectionnee?: string | null | undefined;
 }
 
 function baseDe(sequence: SequenceDoc): TimeBase {
@@ -188,6 +191,7 @@ export function dessinerTimeline(ctx: CanvasRenderingContext2D, o: OptionsRendu)
   dessinerFondsPistes(ctx, o);
   dessinerGraduationsVerticales(ctx, o);
   dessinerClips(ctx, o);
+  dessinerTransitions(ctx, o);
   dessinerApercu(ctx, o);
   dessinerApercuDepose(ctx, o);
 
@@ -413,6 +417,123 @@ function dessinerClips(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
   }
 }
 
+/** Hauteur de la bande d'une transition, posée au bas des clips. */
+const HAUTEUR_TRANSITION = 16;
+
+export interface ZoneTransition {
+  readonly id: string;
+  readonly x1: number;
+  readonly x2: number;
+  readonly y1: number;
+  readonly y2: number;
+}
+
+/** Bandes des transitions, en coordonnées de la zone des pistes (sous la règle). */
+export function zonesTransitions(
+  sequence: OptionsRendu['sequence'],
+  modele: RenderModel,
+  viewport: Viewport,
+): readonly ZoneTransition[] {
+  return modele.tracks.flatMap((disposition) => {
+    const piste = sequence.tracks.find((t) => t.id === disposition.trackId);
+    if (piste === undefined) return [];
+    const bas = disposition.y + disposition.height - 1;
+    return transitionsEffectives(piste).map((t) => ({
+      id: t.id,
+      x1: timeToX(viewport, t.debut),
+      x2: timeToX(viewport, t.fin),
+      y1: bas - Math.min(HAUTEUR_TRANSITION, disposition.height / 2),
+      y2: bas,
+    }));
+  });
+}
+
+function dessinerTransitions(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
+  const types = new Map(
+    o.sequence.tracks.flatMap((p) => transitionsEffectives(p)).map((t) => [t.id, t]),
+  );
+  for (const zone of zonesTransitions(o.sequence, o.modele, o.viewport)) {
+    if (zone.x2 < 0 || zone.x1 > o.largeur) continue;
+    const t = types.get(zone.id);
+    const l = Math.max(3, zone.x2 - zone.x1);
+    const h = zone.y2 - zone.y1;
+    const choisie = o.transitionSelectionnee === zone.id;
+    ctx.save();
+    ctx.fillStyle = choisie ? 'rgba(242, 182, 50, 0.85)' : 'rgba(232, 236, 244, 0.82)';
+    ctx.strokeStyle = choisie ? PALETTE.selection : 'rgba(8, 9, 11, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(zone.x1, zone.y1, l, h);
+    ctx.strokeRect(Math.round(zone.x1) + 0.5, Math.round(zone.y1) + 0.5, Math.round(l) - 1, h - 1);
+    // La diagonale dit le sens : ce qui s'efface, ce qui apparaît.
+    ctx.strokeStyle = 'rgba(8, 9, 11, 0.55)';
+    ctx.beginPath();
+    if (t?.de === null) {
+      ctx.moveTo(zone.x1, zone.y2);
+      ctx.lineTo(zone.x1 + l, zone.y1);
+    } else {
+      ctx.moveTo(zone.x1, zone.y1);
+      ctx.lineTo(zone.x1 + l, zone.y2);
+    }
+    ctx.stroke();
+    if (l > 70 && t !== undefined) {
+      ctx.font = '600 10px ui-sans-serif, system-ui, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#101114';
+      ctx.fillText(nomTransition(t.type), zone.x1 + l / 2, zone.y1 + h / 2 + 0.5);
+    }
+    ctx.restore();
+  }
+}
+
+const clipsParSequence = new WeakMap<OptionsRendu['sequence'], ReadonlyMap<string, ClipDoc>>();
+
+function clipDoc(sequence: OptionsRendu['sequence'], id: string): ClipDoc | undefined {
+  let index = clipsParSequence.get(sequence);
+  if (index === undefined) {
+    index = new Map(sequence.tracks.flatMap((t) => t.clips.map((c) => [c.id, c] as const)));
+    clipsParSequence.set(sequence, index);
+  }
+  return index.get(id);
+}
+
+/** Losanges des images clés, en haut du clip. */
+function dessinerCles(
+  ctx: CanvasRenderingContext2D,
+  o: OptionsRendu,
+  clip: RenderModel['clips'][number],
+  y: number,
+): void {
+  const doc = clipDoc(o.sequence, clip.clipId);
+  if (doc === undefined) return;
+  const temps = new Set(
+    [
+      doc.opacity,
+      doc.transform.position,
+      doc.transform.scale,
+      doc.transform.rotation,
+      doc.audio.gainDb,
+      doc.audio.pan,
+    ].flatMap((p) => p.keyframes.map((k) => k.time)),
+  );
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(8, 9, 11, 0.8)';
+  ctx.lineWidth = 1;
+  for (const t of temps) {
+    if (t < 0 || t >= doc.duration) continue;
+    const x = timeToX(o.viewport, doc.start + t);
+    const cy = y + 5;
+    ctx.beginPath();
+    ctx.moveTo(x, cy - 4);
+    ctx.lineTo(x + 4, cy);
+    ctx.lineTo(x, cy + 4);
+    ctx.lineTo(x - 4, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
 function dessinerApercu(ctx: CanvasRenderingContext2D, o: OptionsRendu): void {
   const geste = o.geste;
   if (geste === null || geste.clipIds.size === 0) return;
@@ -518,6 +639,8 @@ function dessinerClip(
     }
     ctx.restore();
   }
+
+  dessinerCles(ctx, o, clip, y);
 
   // Indicateurs discrets : liaison A/V et presence d effets.
   if (o.modele.policy.handles && clip.width > 16) {

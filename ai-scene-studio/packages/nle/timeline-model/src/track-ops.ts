@@ -10,7 +10,7 @@
  * ouvrir un trou, refermer un trou.
  */
 import { newClipId } from '@valideo/shared';
-import type { ClipDoc, TrackDoc } from '@valideo/project-model';
+import type { ClipDoc, ParameterDoc, TrackDoc, TransitionDoc } from '@valideo/project-model';
 import { clipEnd, clipsInRange } from './query';
 import type { TimelineContext } from './source';
 import { shiftedSourceIn } from './source';
@@ -19,11 +19,35 @@ function withClips(track: TrackDoc, clips: readonly ClipDoc[]): TrackDoc {
   return { ...track, clips: [...clips].sort((a, b) => a.start - b.start) };
 }
 
+/**
+ * Les images clés sont datées depuis le début du clip : quand ce début avance avec la source, elles
+ * reculent d'autant pour rester sur la même image du média. Une clé peut alors tomber avant le début :
+ * elle sert encore à calculer la valeur (couper un zoom en deux ne le casse pas).
+ */
+export function decalerCles(clip: ClipDoc, delta: number): ClipDoc {
+  if (delta === 0) return clip;
+  const decaler = <P extends ParameterDoc>(p: P): P =>
+    p.keyframes.length === 0
+      ? p
+      : { ...p, keyframes: p.keyframes.map((k) => ({ ...k, time: k.time - delta })) };
+  return {
+    ...clip,
+    opacity: decaler(clip.opacity),
+    transform: {
+      position: decaler(clip.transform.position),
+      scale: decaler(clip.transform.scale),
+      rotation: decaler(clip.transform.rotation),
+      anchorPoint: decaler(clip.transform.anchorPoint),
+    },
+    audio: { ...clip.audio, gainDb: decaler(clip.audio.gainDb), pan: decaler(clip.audio.pan) },
+  };
+}
+
 /** Raccourcit un clip par la GAUCHE, en avancant son point d entree source. */
 export function trimHead(clip: ClipDoc, newStart: number, ctx: TimelineContext): ClipDoc {
   const delta = newStart - clip.start;
   return {
-    ...clip,
+    ...decalerCles(clip, delta),
     start: newStart,
     duration: clip.duration - delta,
     sourceIn: shiftedSourceIn(clip, delta, ctx),
@@ -43,17 +67,29 @@ export function trimTail(clip: ClipDoc, newEnd: number): ClipDoc {
  */
 export function splitAt(track: TrackDoc, time: number, ctx: TimelineContext): TrackDoc {
   const out: ClipDoc[] = [];
+  let transitions = track.transitions;
   let changed = false;
   for (const clip of track.clips) {
     if (clip.start < time && clipEnd(clip) > time) {
+      const droite = { ...trimHead(clip, time, ctx), id: newClipId() };
       out.push(trimTail(clip, time));
-      out.push({ ...trimHead(clip, time, ctx), id: newClipId() });
+      out.push(droite);
+      transitions = suivreQueue(transitions, clip.id, droite.id);
       changed = true;
     } else {
       out.push(clip);
     }
   }
-  return changed ? withClips(track, out) : track;
+  return changed ? { ...withClips(track, out), transitions } : track;
+}
+
+/** La fin d'un clip coupé appartient désormais à sa moitié droite : sa transition de sortie la suit. */
+function suivreQueue(
+  transitions: readonly TransitionDoc[],
+  ancien: string,
+  nouveau: string,
+): TransitionDoc[] {
+  return transitions.map((t) => (t.fromClipId === ancien ? { ...t, fromClipId: nouveau } : t));
 }
 
 /**
@@ -72,6 +108,7 @@ export function clearRange(
 
   const affectedIds = new Set(affected.map((c) => c.id));
   const out: ClipDoc[] = track.clips.filter((c) => !affectedIds.has(c.id));
+  let transitions = track.transitions;
 
   for (const clip of affected) {
     const ce = clipEnd(clip);
@@ -82,8 +119,10 @@ export function clearRange(
 
     if (!coveredLeft && !coveredRight) {
       // A cheval des deux cotes : il reste une tete et une queue.
+      const queue = { ...trimHead(clip, end, ctx), id: newClipId() };
       out.push(trimTail(clip, start));
-      out.push({ ...trimHead(clip, end, ctx), id: newClipId() });
+      out.push(queue);
+      transitions = suivreQueue(transitions, clip.id, queue.id);
       continue;
     }
     if (!coveredLeft) {
@@ -93,7 +132,7 @@ export function clearRange(
     out.push(trimHead(clip, end, ctx)); // il ne reste que la queue
   }
 
-  return withClips(track, out);
+  return { ...withClips(track, out), transitions };
 }
 
 /**

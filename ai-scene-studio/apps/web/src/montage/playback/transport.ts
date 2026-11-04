@@ -15,8 +15,9 @@
  * mais quelques secondes d avance, reapprovisionnees regulierement.
  */
 import type { SequenceDoc } from '@valideo/project-model';
+import { peakDb } from '@valideo/audio-engine';
 import type { SegmentAudio, SegmentIgnore } from '@valideo/playback';
-import { planifierAudio } from '@valideo/playback';
+import { pistesAudibles, planifierAudio } from '@valideo/playback';
 import type { Rational } from '@valideo/time-core';
 
 /** Avance de programmation, en secondes. */
@@ -25,6 +26,8 @@ const FENETRE_SECONDES = 2;
 const PERIODE_MS = 250;
 /** Delai avant le premier son, le temps de programmer sans a-coup. */
 const LATENCE_DEPART = 0.06;
+/** Prolongation maximale de l'horloge audio entre deux paquets de son, en secondes. */
+const LISSAGE_MAX = 0.1;
 
 export interface OptionsTransport {
   /** Tampon decode d un media, ou `null` s il n est pas disponible. */
@@ -44,9 +47,21 @@ export interface EtatTransport {
   readonly audioDisponible: boolean;
 }
 
+/** Une tranche de mixage : le fader, puis la mesure du niveau. */
+interface Tranche {
+  readonly gain: GainNode;
+  readonly mesure: AnalyserNode;
+}
+
+function dbVersGain(db: number): number {
+  return db <= -60 ? 0 : 10 ** (db / 20);
+}
+
 export class TransportAudio {
   private ctx: AudioContext | null = null;
-  private sortie: GainNode | null = null;
+  private sortie: Tranche | null = null;
+  private tranches = new Map<string, Tranche>();
+  private echantillons = new Float32Array(1024);
   private sources: AudioBufferSourceNode[] = [];
   private minuterie: ReturnType<typeof setInterval> | null = null;
 
@@ -58,24 +73,97 @@ export class TransportAudio {
   private finSequence = 0;
   private ignores: SegmentIgnore[] = [];
   private lecture = false;
+  private dernierTempsAudio = -1;
+  private dernierTempsNavigateur = 0;
 
   constructor(private readonly options: OptionsTransport) {}
 
   private contexte(): AudioContext {
     if (this.ctx === null) {
       this.ctx = new AudioContext();
-      this.sortie = this.ctx.createGain();
-      this.sortie.connect(this.ctx.destination);
+      this.sortie = this.creerTranche(this.ctx, this.ctx.destination);
     }
     return this.ctx;
+  }
+
+  private creerTranche(ctx: AudioContext, vers: AudioNode): Tranche {
+    const gain = ctx.createGain();
+    const mesure = ctx.createAnalyser();
+    mesure.fftSize = 1024;
+    gain.connect(mesure);
+    mesure.connect(vers);
+    return { gain, mesure };
+  }
+
+  private tranche(ctx: AudioContext, trackId: string): GainNode {
+    let tranche = this.tranches.get(trackId);
+    if (tranche === undefined) {
+      tranche = this.creerTranche(ctx, this.sortie?.gain ?? ctx.destination);
+      this.tranches.set(trackId, tranche);
+      if (this.sequence !== null) this.appliquerMixage(this.sequence);
+    }
+    return tranche.gain;
+  }
+
+  /** Les faders, muets et solos s'entendent tout de suite, même sur ce qui est déjà programmé. */
+  private appliquerMixage(sequence: SequenceDoc): void {
+    const ctx = this.ctx;
+    if (ctx === null) return;
+    const audibles = new Set(pistesAudibles(sequence).map((t) => t.id));
+    for (const piste of sequence.tracks) {
+      const tranche = this.tranches.get(piste.id);
+      if (tranche === undefined) continue;
+      const cible = audibles.has(piste.id) ? dbVersGain(piste.gainDb) : 0;
+      tranche.gain.gain.setTargetAtTime(cible, ctx.currentTime, 0.01);
+    }
+    this.sortie?.gain.gain.setTargetAtTime(
+      dbVersGain(sequence.masterGainDb),
+      ctx.currentTime,
+      0.01,
+    );
+  }
+
+  /** Le montage a changé pendant la lecture : la suite du film suit, le mixage tout de suite. */
+  mettreAJour(sequence: SequenceDoc): void {
+    if (!this.lecture) return;
+    this.sequence = sequence;
+    this.appliquerMixage(sequence);
+  }
+
+  /** Niveaux de crête en dBFS, par piste, et `general` pour la sortie. */
+  niveaux(): ReadonlyMap<string, number> {
+    const valeurs = new Map<string, number>();
+    const lire = (cle: string, tranche: Tranche): void => {
+      tranche.mesure.getFloatTimeDomainData(this.echantillons);
+      valeurs.set(cle, peakDb(this.echantillons));
+    };
+    for (const [id, tranche] of this.tranches) lire(id, tranche);
+    if (this.sortie !== null) lire('general', this.sortie);
+    return valeurs;
   }
 
   /** Position courante, DERIVEE de l horloge audio. */
   position(): number {
     if (!this.lecture || this.ctx === null) return this.imageDepart;
-    const ecoulees = this.ctx.currentTime - this.ctxDepart;
+    const ecoulees = this.horloge() - this.ctxDepart;
     if (ecoulees <= 0) return this.imageDepart;
     return this.imageDepart + ecoulees * this.cadence;
+  }
+
+  /**
+   * Horloge audio, lissée. `currentTime` n'avance que par paquets de son : plusieurs dizaines de
+   * millisecondes sur certaines sorties (Bluetooth), ce qui ferait sauter des images. Entre deux
+   * paquets, on prolonge avec l'horloge du navigateur, sans jamais dépasser un paquet.
+   */
+  private horloge(): number {
+    const ctx = this.ctx;
+    if (ctx === null) return 0;
+    const maintenant = performance.now() / 1000;
+    if (ctx.currentTime !== this.dernierTempsAudio) {
+      this.dernierTempsAudio = ctx.currentTime;
+      this.dernierTempsNavigateur = maintenant;
+    }
+    return this.dernierTempsAudio + Math.min(LISSAGE_MAX, maintenant - this.dernierTempsNavigateur);
   }
 
   enLecture(): boolean {
@@ -104,6 +192,7 @@ export class TransportAudio {
     this.ctxDepart = ctx.currentTime + LATENCE_DEPART;
     this.ignores = [];
     this.lecture = true;
+    this.appliquerMixage(sequence);
 
     this.approvisionner();
     this.minuterie = setInterval(() => this.approvisionner(), PERIODE_MS);
@@ -183,9 +272,16 @@ export class TransportAudio {
     source.playbackRate.value = segment.vitesse;
 
     const gain = ctx.createGain();
-    gain.gain.value = segment.gain;
     source.connect(gain);
-    gain.connect(this.sortie ?? ctx.destination);
+    const sortie = this.tranche(ctx, segment.trackId);
+    if (segment.pan === 0) {
+      gain.connect(sortie);
+    } else {
+      const panoramique = ctx.createStereoPanner();
+      panoramique.pan.value = segment.pan;
+      gain.connect(panoramique);
+      panoramique.connect(sortie);
+    }
 
     // Durée exprimée dans le référentiel de la SOURCE : à vitesse double, deux
     // secondes de timeline consomment quatre secondes de fichier.
@@ -196,6 +292,19 @@ export class TransportAudio {
     const duree = Math.max(0, dureeSource - retard * segment.vitesse);
     if (duree <= 0) return;
     if (offset >= tampon.duration) return;
+
+    // Le gain suit l'enveloppe du segment : fondus et images clés de volume.
+    const versHorloge = (temps: number): number =>
+      this.ctxDepart + (temps - this.imageDepart / this.cadence);
+    let gainDebut = segment.gain;
+    for (const point of segment.enveloppe) {
+      if (versHorloge(point.temps) <= debutReel) gainDebut = point.gain;
+    }
+    gain.gain.setValueAtTime(gainDebut, debutReel);
+    for (const point of segment.enveloppe) {
+      const instant = versHorloge(point.temps);
+      if (instant > debutReel) gain.gain.linearRampToValueAtTime(point.gain, instant);
+    }
 
     source.start(debutReel, offset, Math.min(duree, tampon.duration - offset));
     source.onended = () => {
@@ -217,6 +326,7 @@ export class TransportAudio {
       await this.ctx.close();
       this.ctx = null;
       this.sortie = null;
+      this.tranches.clear();
     }
   }
 }

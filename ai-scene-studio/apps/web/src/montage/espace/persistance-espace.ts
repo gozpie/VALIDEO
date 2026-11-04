@@ -15,7 +15,7 @@
  */
 import { lireDisposition, type Noeud } from './modele';
 
-const CLE = 'chagomi.montage.espace.v1';
+const CLE = 'chagomi.montage.espace.v2';
 
 export function chargerDisposition(): Noeud | null {
   try {

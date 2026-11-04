@@ -51,9 +51,11 @@
   et bible établis par les noms (rapprochement tolérant, aucun lien en cas d'ambiguïté) ; un découpage par Claude
   Opus prend quelques minutes (suivi par interrogation) ; la bande en bas de l'écran Plans est un aperçu, le montage est dans l'écran Montage.
 
-- Montage (étape 7.2) : le moniteur montre un seul calque, celui de la piste la plus haute ; pas encore de superposition,
-  d'opacité, de fondus, de transitions ni de titres (7.3) ; pas d'export du film ni de XML Premiere (7.4) ; pas de
-  moniteur source. La lecture passe par WebCodecs, essayée dans Chrome seulement ; le H.264 n'est pas décodé par le
+- Montage (étapes 7.2 et 7.3) : pas d'export du film ni de XML Premiere (7.4) ; pas de moniteur source. Transitions :
+  un plan dont le média s'arrête se fige pendant le débord du fondu (images IA utilisées en entier) ; un montage qui
+  sépare deux clips retire leur transition. Modes de fusion, titres et images clés ne s'appliquent qu'au moniteur tant que
+  l'export n'existe pas. Pas d'effets ni d'étalonnage, images clés en interpolation linéaire seulement, pas de mesure de
+  loudness (niveaux de crête seulement). Le panoramique animé n'est lu qu'au début de chaque tranche de lecture. La lecture passe par WebCodecs, essayée dans Chrome seulement ; le H.264 n'est pas décodé par le
   Chromium de Playwright, et seuls les fichiers MP4/MOV sont lus image par image. Le son d'une vidéo est décodé
   entièrement en mémoire (au-delà de 256 Mo décodés : forme d'onde, pas de lecture). Les médias sont retéléchargés à
   chaque ouverture de l'onglet (cache du navigateur). Le rôle viewer peut manipuler le montage dans son onglet, rien

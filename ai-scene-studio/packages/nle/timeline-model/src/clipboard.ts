@@ -232,6 +232,7 @@ function makeSpacer(duration: number): ClipDoc {
       pan: { value: 0, keyframes: [] },
       channelMap: [],
     },
+    title: null,
     label: null,
     markers: [],
   };

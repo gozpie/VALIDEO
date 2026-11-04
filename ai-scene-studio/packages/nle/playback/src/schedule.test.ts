@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TIMEBASES, rational } from '@valideo/time-core';
+import { poserTransition } from '@valideo/timeline-model';
 import { makeSequence } from '@valideo/timeline-model/fixtures';
 import type { SequenceDoc } from '@valideo/project-model';
 import { planifierAudio, pistesAudibles } from './schedule';
@@ -205,7 +206,7 @@ describe('ce que le plan REFUSE de jouer (§1003)', () => {
     expect(ignores.length).toBeGreaterThan(0);
   });
 
-  it('signale un volume automatisé, tout en jouant le clip', () => {
+  it('suit un volume animé par images clés', () => {
     const seq = sequenceAudio();
     const anime = {
       ...seq,
@@ -230,6 +231,14 @@ describe('ce que le plan REFUSE de jouer (§1003)', () => {
                               inHandle: null,
                               outHandle: null,
                             },
+                            {
+                              id: 'k2',
+                              time: 50,
+                              value: -20,
+                              interpolation: 'linear' as const,
+                              inHandle: null,
+                              outHandle: null,
+                            },
                           ],
                         },
                       },
@@ -241,8 +250,81 @@ describe('ce que le plan REFUSE de jouer (§1003)', () => {
       ),
     };
     const { segments, ignores } = planifierAudio(anime, { de: 0, a: 50, cadenceSource: source25 });
-    expect(segments.some((s) => s.clipId === 'a')).toBe(true);
-    expect(ignores.some((i) => i.raison.includes('keyframes'))).toBe(true);
+    const segment = segments.find((s) => s.clipId === 'a');
+    expect(segment?.gain).toBeCloseTo(1);
+    expect(segment?.enveloppe.at(-1)?.gain).toBeCloseTo(0.1);
+    expect(ignores).toEqual([]);
+  });
+
+  it('un fondu croisé fait sonner les deux clips, à puissance constante', () => {
+    const seq = sequenceAudio();
+    const r = poserTransition(seq, {
+      trackId: 'a1',
+      fromClipId: 'a',
+      toClipId: 'b',
+      type: 'crossfade',
+      duration: 20,
+    });
+    if (!r.ok) throw new Error('pose');
+    const { segments } = planifierAudio(r.value, { de: 40, a: 60, cadenceSource: source25 });
+    const a = segments.find((s) => s.clipId === 'a');
+    const b = segments.find((s) => s.clipId === 'b');
+    // Chacun occupe toute la plage du fondu, débord compris.
+    expect(a?.debutTimeline).toBeCloseTo(40 / 25);
+    expect(a?.dureeTimeline).toBeCloseTo(20 / 25);
+    expect(b?.debutTimeline).toBeCloseTo(40 / 25);
+    expect(b?.dureeTimeline).toBeCloseTo(20 / 25);
+    // Le clip entrant part plus tôt dans son média.
+    expect(b?.offsetSource).toBeCloseTo((100 - 10) / 25);
+    // Au milieu, les deux sont à -3 dB : leurs puissances s'additionnent à 1.
+    const milieu = (s: typeof a) => s?.enveloppe.find((p) => p.temps === 50 / 25)?.gain ?? 0;
+    expect(milieu(a) ** 2 + milieu(b) ** 2).toBeCloseTo(1);
+    expect(a?.enveloppe.at(0)?.gain).toBeCloseTo(1);
+    expect(a?.enveloppe.at(-1)?.gain).toBeCloseTo(0);
+    expect(b?.enveloppe.at(0)?.gain).toBeCloseTo(0);
+    expect(b?.enveloppe.at(-1)?.gain).toBeCloseTo(1);
+  });
+
+  it('le débord avant le début du fichier ne sonne pas', () => {
+    const seq = sequenceAudio();
+    const a = seq.tracks[0]?.clips[0];
+    const b = seq.tracks[0]?.clips[1];
+    if (a === undefined || b === undefined) throw new Error('clips');
+    const collee = {
+      ...seq,
+      tracks: seq.tracks.map((t) =>
+        t.id === 'a1' ? { ...t, clips: [a, { ...b, sourceIn: 0 }] } : t,
+      ),
+    };
+    const r = poserTransition(collee, {
+      trackId: 'a1',
+      fromClipId: 'a',
+      toClipId: 'b',
+      type: 'crossfade',
+      duration: 20,
+    });
+    if (!r.ok) throw new Error('pose');
+    const { segments } = planifierAudio(r.value, { de: 40, a: 60, cadenceSource: source25 });
+    const entrant = segments.find((s) => s.clipId === 'b');
+    expect(entrant?.offsetSource).toBe(0);
+    expect(entrant?.debutTimeline).toBeCloseTo(50 / 25);
+  });
+
+  it('applique le panoramique du clip', () => {
+    const seq = sequenceAudio();
+    const pan = {
+      ...seq,
+      tracks: seq.tracks.map((t) => ({
+        ...t,
+        clips: t.clips.map((c) => ({
+          ...c,
+          audio: { ...c.audio, pan: { value: -0.5, keyframes: [] } },
+        })),
+      })),
+    };
+    const { segments } = planifierAudio(pan, { de: 0, a: 10, cadenceSource: source25 });
+    expect(segments[0]?.pan).toBe(-0.5);
+    expect(segments[0]?.enveloppe).toEqual([]);
   });
 
   it('n émet rien pour un clip désactivé', () => {

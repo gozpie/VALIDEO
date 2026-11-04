@@ -69,6 +69,10 @@ const COMMON = {
 /** Preset par defaut : conventions communes aux NLE professionnels. */
 export const DEFAULT_KEYMAP: KeyMap = keymap('default', 'Par défaut', {
   ...COMMON,
+  'edit.videoTransition': 'Mod+d',
+  'edit.audioTransition': 'Mod+Shift+d',
+  'edit.bothTransitions': 'Shift+d',
+  'edit.newTitle': 't',
   'edit.insert': 'Comma',
   'edit.overwrite': 'Period',
   'edit.lift': 'Semicolon',

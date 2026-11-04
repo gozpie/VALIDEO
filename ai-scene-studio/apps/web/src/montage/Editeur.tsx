@@ -1,9 +1,10 @@
 /**
  * Écran Montage : le film se construit ici. Déplacer, trimer, couper, ripple, roll, slip, slide,
  * étirer, annuler, refaire, zoomer, accrocher, au clavier comme à la souris — le tout à travers le
- * moteur testé. Les plans du studio y arrivent tout seuls (voir `film.ts` et `useFilm.ts`).
+ * moteur testé. Les plans du studio y arrivent tout seuls (voir `film.ts` et `useFilm.ts`). Calques,
+ * transitions, titres et mixage se règlent dans les panneaux Réglages, Transitions et Mixage.
  *
- * Pas encore là : composition multicouche, fondus, titres, export.
+ * Pas encore là : export.
  */
 import {
   Ban,
@@ -53,6 +54,7 @@ import {
   addEditCommand,
   addMarkerCommand,
   addTrackCommand,
+  TRANSITION_SON,
   changeSpeedCommand,
   copyClips,
   deleteClipsCommand,
@@ -74,6 +76,12 @@ import {
   rippleTrimToPlayheadCommand,
   unlinkCommand,
   liftCommand,
+  modifierClipsCommand,
+  ecrireParametre,
+  poserTitreCommand,
+  poserTransitionCommand,
+  raccordProche,
+  retirerTransitionCommand,
   nextEditPoint,
   previousEditPoint,
   sequenceDuration,
@@ -92,7 +100,7 @@ import {
 } from '@valideo/timeline-engine';
 import type { Viewport } from '@valideo/timeline-engine';
 import { Timeline } from './timeline/Timeline';
-import type { CibleMenu, DeposeMedia } from './timeline/Timeline';
+import type { CibleMenu, DeposeEffet, DeposeMedia } from './timeline/Timeline';
 import { MenuContextuel } from './panels/MenuContextuel';
 import type { ElementMenu } from './panels/MenuContextuel';
 import { timebaseDeSequence } from './timeline/draw';
@@ -111,6 +119,13 @@ import { transaction } from '@valideo/command-system';
 import { useFilm } from './useFilm';
 import { documentInitial } from './film';
 import { PanneauPlans } from './panels/PanneauPlans';
+import { PanneauEffets, PRESETS_TITRE } from './panels/PanneauEffets';
+import { PanneauMixage } from './panels/PanneauMixage';
+import { PanneauReglages } from './panels/PanneauReglages';
+import { estImageFixe } from './media/placement';
+import { newId } from '@valideo/project-model';
+import type { ClipDoc, TitleDoc } from '@valideo/project-model';
+import type { SourcesComposition } from '@valideo/playback';
 import { TransportAudio } from './playback/transport';
 
 /**
@@ -211,6 +226,18 @@ export function Editeur({
     const media = mediasRef.current.get(mediaId);
     return media === undefined ? 0 : media.duration.base.rate.n / media.duration.base.rate.d;
   }, []);
+
+  const sourcesComposition = useMemo<SourcesComposition>(
+    () => ({
+      cadenceSource: cadenceMedia,
+      dureeSource: (mediaId) => {
+        const media = mediasRef.current.get(mediaId);
+        if (media === undefined || estImageFixe(media)) return 0;
+        return media.duration.frames / (media.duration.base.rate.n / media.duration.base.rate.d);
+      },
+    }),
+    [cadenceMedia],
+  );
 
   const film = useFilm({ projectId, etat, actions, canEdit, actif, versionPlans });
 
@@ -397,6 +424,137 @@ export function Editeur({
     },
     [actions, etat.contexte, etat.document.media, etat.sequence],
   );
+
+  const cadenceEntiere = base.rate.n / base.rate.d;
+
+  /**
+   * Transition au raccord le plus proche de la tête, sur les pistes ciblées (sinon V1 et A1) : une
+   * seule annulation, même sur plusieurs pistes.
+   */
+  const poserTransitions = useCallback(
+    (natures: readonly ('video' | 'audio')[], type: string): void => {
+      const commandes = natures.flatMap((nature) => {
+        const pistes = etat.sequence.tracks.filter((t) => t.kind === nature && !t.locked);
+        const ciblees = pistes.filter((t) => t.targeted);
+        return (ciblees.length > 0 ? ciblees : pistes.filter((t) => t.index === 0)).flatMap(
+          (piste) => {
+            const raccord = raccordProche(piste, etat.tete);
+            if (raccord === null) return [];
+            return [
+              poserTransitionCommand({
+                trackId: piste.id,
+                fromClipId: raccord.de?.id ?? null,
+                toClipId: raccord.vers?.id ?? null,
+                type: nature === 'audio' ? TRANSITION_SON : type,
+                duration: Math.round(cadenceEntiere),
+              }),
+            ];
+          },
+        );
+      });
+      if (commandes.length === 0) {
+        actions.signalerErreur(
+          erreurMontage('Aucun raccord sur les pistes ciblées.', 'Posez d’abord un clip'),
+        );
+        return;
+      }
+      actions.executer(transaction('Poser une transition', commandes));
+    },
+    [actions, cadenceEntiere, etat.sequence.tracks, etat.tete],
+  );
+
+  /** Pose un titre et l'ouvre dans les réglages, où l'on écrit son texte. */
+  const poserUnTitre = useCallback(
+    (titre: TitleDoc, at: number, trackId?: string): void => {
+      const clipId = newId();
+      const pose = { titre, at, duration: Math.round(cadenceEntiere * 3), clipId };
+      const reussi =
+        (trackId !== undefined &&
+          etat.sequence.tracks
+            .find((t) => t.id === trackId)
+            ?.clips.every((c) => c.start + c.duration <= at || c.start >= at + pose.duration) &&
+          actions.executer(poserTitreCommand({ ...pose, trackId }))) ||
+        actions.executer(poserTitreCommand(pose));
+      if (!reussi) return;
+      actions.definirSelection([clipId]);
+      setDisposition((d) => activer(d, 'reglages'));
+    },
+    [actions, cadenceEntiere, etat.sequence.tracks],
+  );
+
+  const surDeposeEffet = useCallback(
+    (depose: DeposeEffet) => {
+      const piste = etat.sequence.tracks.find((t) => t.id === depose.trackId);
+      if (piste === undefined) return;
+      if (depose.nature === 'titre') {
+        const preset = PRESETS_TITRE.find((p) => p.id === depose.valeur);
+        if (preset === undefined) return;
+        if (piste.kind !== 'video') {
+          actions.signalerErreur(
+            erreurMontage('Un titre va sur une piste vidéo.', 'Déposez-le sur V1, V2…'),
+          );
+          return;
+        }
+        poserUnTitre(preset.titre, depose.image, piste.id);
+        return;
+      }
+      const raccord = raccordProche(piste, depose.image);
+      if (raccord === null) {
+        actions.signalerErreur(erreurMontage('Cette piste est vide.', 'Déposez-la sur un raccord'));
+        return;
+      }
+      actions.executer(
+        poserTransitionCommand({
+          trackId: piste.id,
+          fromClipId: raccord.de?.id ?? null,
+          toClipId: raccord.vers?.id ?? null,
+          type: piste.kind === 'audio' ? TRANSITION_SON : depose.valeur,
+          duration: Math.round(cadenceEntiere),
+        }),
+      );
+    },
+    [actions, cadenceEntiere, etat.sequence.tracks, poserUnTitre],
+  );
+
+  /** Échelle (%) qui fait couvrir tout le cadre à ce média. */
+  const cadrage = useCallback(
+    (clip: ClipDoc): number | null => {
+      if (clip.mediaId === null) return null;
+      const infos = etat.sourcesVideo.get(clip.mediaId)?.infos;
+      if (infos === undefined) return null;
+      const { width, height } = etat.sequence.settings;
+      const rx = width / infos.largeur;
+      const ry = height / infos.hauteur;
+      return Math.ceil((Math.max(rx, ry) / Math.min(rx, ry)) * 1000) / 10;
+    },
+    [etat.sequence.settings, etat.sourcesVideo],
+  );
+
+  const surDeplacerCalque = useCallback(
+    (clipId: string, debut: readonly [number, number], dx: number, dy: number) => {
+      actions.executer(
+        modifierClipsCommand(
+          [clipId],
+          (c) => ({
+            ...c,
+            transform: {
+              ...c.transform,
+              position: ecrireParametre(
+                c.transform.position,
+                Math.max(0, Math.min(c.duration - 1, etat.tete - c.start)),
+                [debut[0] + dx, debut[1] + dy],
+              ),
+            },
+          }),
+          'Déplacer le calque',
+          `position:${clipId}`,
+        ),
+      );
+    },
+    [actions, etat.tete],
+  );
+
+  const lireNiveaux = useCallback(() => transportRef.current?.niveaux() ?? new Map(), []);
 
   /** Menu contextuel ouvert, avec sa cible. `null` quand aucun n'est ouvert. */
   const [menu, setMenu] = useState<CibleMenu | null>(null);
@@ -748,8 +906,28 @@ export function Editeur({
         case 'edit.addEdit':
           actions.executer(addEditCommand(etat.tete, etat.contexte));
           return true;
+        case 'edit.videoTransition':
+          poserTransitions(['video'], 'dissolve');
+          return true;
+        case 'edit.audioTransition':
+          poserTransitions(['audio'], TRANSITION_SON);
+          return true;
+        case 'edit.bothTransitions':
+          poserTransitions(['video', 'audio'], 'dissolve');
+          return true;
+        case 'edit.newTitle': {
+          const preset = PRESETS_TITRE[0];
+          if (preset !== undefined) poserUnTitre(preset.titre, etat.tete);
+          return true;
+        }
         case 'edit.delete':
         case 'edit.rippleDelete': {
+          if (etat.transitionSelectionnee !== null) {
+            if (actions.executer(retirerTransitionCommand(etat.transitionSelectionnee))) {
+              actions.definirTransition(null);
+            }
+            return true;
+          }
           if (etat.selection.size === 0) return true;
           // Une seule commande pour toute la sélection : sinon supprimer cinq
           // clips demanderait cinq annulations, et un ripple appliqué clip par
@@ -845,6 +1023,8 @@ export function Editeur({
       pistesAffectees,
       pistesExtract,
       pistesNavigables,
+      poserTransitions,
+      poserUnTitre,
       shuttle,
       zoomer,
     ],
@@ -1006,6 +1186,12 @@ export function Editeur({
           libelle: 'Ajouter un raccord',
           raccourci: 'Ctrl+K',
           onChoisir: () => acte('edit.addEdit'),
+        },
+        {
+          id: 'clip-fondu',
+          libelle: 'Fondu enchaîné au raccord le plus proche de la tête',
+          raccourci: 'Ctrl+D',
+          onChoisir: () => acte('edit.videoTransition'),
         },
         {
           id: 'clip-lier',
@@ -1283,6 +1469,31 @@ export function Editeur({
             onChoisir: acte('edit.addEdit'),
           },
           {
+            id: 'bm-fondu-image',
+            libelle: 'Fondu enchaîné (image)',
+            raccourci: 'Ctrl+D',
+            onChoisir: acte('edit.videoTransition'),
+          },
+          {
+            id: 'bm-fondu-son',
+            libelle: 'Fondu sonore',
+            raccourci: 'Ctrl+Maj+D',
+            onChoisir: acte('edit.audioTransition'),
+          },
+          {
+            id: 'bm-fondu-tout',
+            libelle: 'Fondu image et son',
+            raccourci: 'Maj+D',
+            onChoisir: acte('edit.bothTransitions'),
+          },
+          {
+            id: 'bm-titre',
+            libelle: 'Nouveau titre',
+            raccourci: 'T',
+            onChoisir: acte('edit.newTitle'),
+          },
+          { separateur: true, id: 'bc1' },
+          {
             id: 'bm-lier',
             libelle: 'Lier / Délier',
             raccourci: 'Ctrl+Maj+L',
@@ -1468,6 +1679,9 @@ export function Editeur({
           [
             ['playback.togglePlay', 'Lecture / pause', 'Espace'],
             ['edit.addEdit', 'Couper sous la tête de lecture', '⌘K'],
+            ['edit.videoTransition', 'Fondu enchaîné au raccord le plus proche', '⌘D'],
+            ['edit.bothTransitions', 'Fondu image et son au raccord le plus proche', '⇧D'],
+            ['edit.newTitle', 'Nouveau titre', 'T'],
             ['edit.undo', 'Annuler', '⌘Z'],
             ['edit.redo', 'Rétablir', '⇧⌘Z'],
             ['file.import', 'Importer des médias (musique, son, image)', '⌘I'],
@@ -1499,6 +1713,11 @@ export function Editeur({
   useEffect(() => {
     actions.definirEnLecture(vitesse !== 0);
   }, [vitesse]);
+
+  // Un volume, un muet ou un fondu changés pendant la lecture s'entendent sans l'interrompre.
+  useEffect(() => {
+    transport.mettreAJour(etat.sequence);
+  }, [etat.sequence, transport]);
 
   useEffect(() => {
     if (vitesse === 0) {
@@ -1683,6 +1902,7 @@ export function Editeur({
                     canEdit={canEdit}
                     allerA={actions.definirTete}
                     remettre={film.remettrePlan}
+                    surGlisser={actions.definirMediaSelectionne}
                   />
                 </div>
               </section>
@@ -1694,9 +1914,11 @@ export function Editeur({
                 tempsCode={timecode(etat.tete)}
                 duree={timecode(duree)}
                 sources={etat.sourcesVideo}
-                mediaCadence={cadenceMedia}
+                sourcesComposition={sourcesComposition}
                 enLecture={vitesse !== 0}
                 chargement={film.progression !== null}
+                selection={etat.selection}
+                surDeplacer={surDeplacerCalque}
                 commandes={
                   <>
                     <button
@@ -1773,6 +1995,33 @@ export function Editeur({
                   />
                 </div>
               </section>
+            ),
+            effets: (
+              <PanneauEffets
+                canEdit={canEdit}
+                surTransition={(type) => poserTransitions(['video'], type)}
+                surTitre={(id) => {
+                  const preset = PRESETS_TITRE.find((p) => p.id === id);
+                  if (preset !== undefined) poserUnTitre(preset.titre, etat.tete);
+                }}
+              />
+            ),
+            reglages: (
+              <PanneauReglages
+                etat={etat}
+                actions={actions}
+                canEdit={canEdit}
+                cadence={cadenceEntiere}
+                cadrage={cadrage}
+              />
+            ),
+            mixage: (
+              <PanneauMixage
+                etat={etat}
+                actions={actions}
+                canEdit={canEdit}
+                niveaux={lireNiveaux}
+              />
             ),
             info: <PanneauInfo etat={etat} actions={actions} timecode={timecode} duree={duree} />,
             timeline: (
@@ -1900,6 +2149,7 @@ export function Editeur({
                   etat={etat}
                   actions={actions}
                   surDeposeMedia={surDeposeMedia}
+                  surDeposeEffet={surDeposeEffet}
                   surMenuContextuel={setMenu}
                   vue={vue}
                   definirVue={definirVue}

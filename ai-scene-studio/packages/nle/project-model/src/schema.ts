@@ -194,6 +194,24 @@ export const ClipAudioSchema = z.object({
   channelMap: z.array(nonNegInt).default([]),
 });
 
+/** Texte d'un clip de titre. Tailles et positions rapportées au cadre : elles suivent la définition. */
+export const TitleSchema = z.object({
+  text: z.string().default(''),
+  font: z.enum(['sans', 'serif', 'mono', 'display']).default('sans'),
+  /** Hauteur des lettres, en pourcentage de la hauteur du cadre. */
+  size: z.number().default(8),
+  color: z.string().default('#ffffff'),
+  bold: z.boolean().default(true),
+  italic: z.boolean().default(false),
+  align: z.enum(['left', 'center', 'right']).default('center'),
+  /** Centre du bloc de texte, de 0 à 1 dans le cadre. */
+  x: z.number().default(0.5),
+  y: z.number().default(0.5),
+  /** Couleur du bandeau derrière le texte, ou `null` sans bandeau. */
+  background: z.string().nullable().default(null),
+  shadow: z.boolean().default(true),
+});
+
 export const ClipSchema = z.object({
   id: uuidString,
   kind: ClipKindSchema,
@@ -229,6 +247,8 @@ export const ClipSchema = z.object({
   opacity: ParameterSchema.default({ value: 100, keyframes: [] }),
   blendMode: BlendModeSchema.default('normal'),
   audio: ClipAudioSchema.default({}),
+  /** Pour kind === 'title'. */
+  title: TitleSchema.nullable().default(null),
   label: z.string().nullable().default(null),
   markers: z.array(z.string().uuid()).default([]),
 });
@@ -282,6 +302,8 @@ export const TrackSchema = z.object({
   height: positiveInt.default(60),
   /** Nombre de canaux pour une piste audio. */
   channels: positiveInt.default(2),
+  /** Volume de la piste audio, en décibels (le fader du mixage). */
+  gainDb: z.number().default(0),
   clips: z.array(ClipSchema).default([]),
   transitions: z.array(TransitionSchema).default([]),
 });
@@ -312,6 +334,8 @@ export const SequenceSchema = z.object({
   /** Points d entree et de sortie de la zone de travail. */
   workAreaIn: int.nullable().default(null),
   workAreaOut: int.nullable().default(null),
+  /** Volume général du film, en décibels. */
+  masterGainDb: z.number().default(0),
 });
 
 // ---------------------------------------------------------------- Projet (§45)
@@ -348,6 +372,8 @@ export type ParameterDoc = z.infer<typeof ParameterSchema>;
 export type EffectDoc = z.infer<typeof EffectSchema>;
 export type ClipDoc = z.infer<typeof ClipSchema>;
 export type ClipKind = z.infer<typeof ClipKindSchema>;
+export type TitleDoc = z.infer<typeof TitleSchema>;
+export type BlendMode = z.infer<typeof BlendModeSchema>;
 export type TransitionDoc = z.infer<typeof TransitionSchema>;
 export type MarkerDoc = z.infer<typeof MarkerSchema>;
 export type TrackDoc = z.infer<typeof TrackSchema>;

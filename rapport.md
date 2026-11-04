@@ -390,3 +390,11 @@ Décision de Pierre : option C — le pont gozCut d'abord, pour monter tout de s
 - **Non vérifié** : écoute à l'oreille (lancé en navigateur sans écran), gros film (> 15 plans), Safari.
 - **Reste** : 7.3 composition (calques, opacité, fondus, transitions, titres), 7.4 export du film et XML Premiere.
 
+### Étape 7.3 — Composition
+- **Ajouté** : `packages/nle` : `playback/composition.ts` (image du film à un instant, pure), `timeline-model/parametres.ts` (images clés), `transitions.ts` (position déduite des clips, réconciliation à chaque opération), `composition-ops.ts` (réglages, transitions, titres, volumes) ; champs `title`, `gainDb`, `masterGainDb` au schéma. `apps/web/src/montage` : `composition/compositeur.ts` (canvas 2D), `PanneauReglages`, `PanneauEffets`, `PanneauMixage`, `media/ordre-affichage.ts`.
+- **Modifié** : `MoniteurProgramme` (toutes les couches, déplacement à la souris, lecture sans attendre le décodeur), `transport.ts` (tranche par piste, enveloppes, panoramique, horloge lissée, mixage en direct), `schedule.ts` (fondus, images clés de volume, débords), `Timeline`/`draw.ts` (bandes de transition, losanges des clés, dépose d'effets), raccourcis ⌘D, ⌘⇧D, ⇧D, T ; disposition par défaut (`espace.v2`).
+- **Corrigé** : `video-source.ts` : ordre d'affichage (les images B n'étaient jamais montrées), décodage en flux continu ; glisser un plan depuis la galerie.
+- **Tests** : tests de composition, transitions, images clés, enveloppes audio, ordre d'affichage ; E2E vérifié au pixel (bleu → mélange → rouge, titre, rechargement, retrait). Chrome réel, 2 vidéos H.264+AAC, image fixe, WAV : glisser transition, titre, musique, plan ; 23,6 i/s en plan seul, Jules Verne 23,6 i/s ; vumètres réels, muets à 0.
+- **Non vérifié** : écoute à l'oreille des fondus et du mixage (mesures de niveau seulement), rendu sur écran réel (navigateur sans écran), gros film, Safari.
+- **Reste** : 7.4 export du film et XML Premiere.
+

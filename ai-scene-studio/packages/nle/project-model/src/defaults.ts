@@ -22,6 +22,7 @@ import type {
   SequenceDoc,
   SequenceSettingsDoc,
   TimeBaseDoc,
+  TitleDoc,
   TrackDoc,
   TrackKind,
 } from './schema';
@@ -52,6 +53,7 @@ export function createTrack(
     targeted: index === 0,
     height: kind === 'video' ? 60 : 50,
     channels: 2,
+    gainDb: 0,
     clips: [],
     transitions: [],
     ...overrides,
@@ -96,6 +98,7 @@ export function createSequence(name: string, options: CreateSequenceOptions = {}
     markers: [],
     workAreaIn: null,
     workAreaOut: null,
+    masterGainDb: 0,
   };
 }
 
@@ -143,8 +146,27 @@ export function createClip(
       pan: { value: 0, ...DEFAULT_PARAM },
       channelMap: [],
     },
+    title: null,
     label: null,
     markers: [],
+  };
+}
+
+/** Titre neuf, complété par ce que le préréglage impose. */
+export function createTitle(overrides: Partial<TitleDoc> = {}): TitleDoc {
+  return {
+    text: '',
+    font: 'sans',
+    size: 8,
+    color: '#ffffff',
+    bold: true,
+    italic: false,
+    align: 'center',
+    x: 0.5,
+    y: 0.5,
+    background: null,
+    shadow: true,
+    ...overrides,
   };
 }
 

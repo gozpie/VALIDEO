@@ -5,3 +5,6 @@ export * from './edit-ops';
 export * from './clipboard';
 export * from './markers';
 export * from './commands';
+export * from './parametres';
+export * from './transitions';
+export * from './composition-ops';

@@ -38,8 +38,12 @@ export class ImageFixe implements SourceVisuelle {
     );
   }
 
+  imagePrete(): VideoFrame {
+    return new VideoFrame(this.bitmap, { timestamp: 0 });
+  }
+
   imageA(): Promise<VideoFrame | null> {
-    return Promise.resolve(new VideoFrame(this.bitmap, { timestamp: 0 }));
+    return Promise.resolve(this.imagePrete());
   }
 
   precharger(): Promise<void> {

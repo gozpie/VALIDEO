@@ -33,6 +33,7 @@ import {
   clipEnd,
   findClip,
   linkedClips,
+  modifierTransitionCommand,
   moveClipsCommand,
   razorCommand,
   rateStretchCommand,
@@ -54,7 +55,8 @@ import {
 import type { ActionsEditeur, EtatEditeur } from '../store';
 import { readWaveform } from '@valideo/audio-engine';
 import { CacheVignettes } from '../media/thumbnails';
-import { HAUTEUR_REGLE, dessinerTimeline, timebaseDeSequence } from './draw';
+import { TYPE_GLISSE_TITRE, TYPE_GLISSE_TRANSITION } from '../panels/PanneauEffets';
+import { HAUTEUR_REGLE, dessinerTimeline, timebaseDeSequence, zonesTransitions } from './draw';
 import type { ApercuDepose, ApercuGeste, FournisseurFormeOnde, FournisseurVignette } from './draw';
 import { dureeSurTimeline } from '../media/placement';
 
@@ -78,7 +80,17 @@ type Geste =
   | { type: 'slide'; clipId: string; xDepart: number; delta: number }
   | { type: 'etirement'; clipId: string; xDepart: number; dureeDepart: number; duree: number }
   | { type: 'rectangle'; x1: number; y1: number; x2: number; y2: number }
-  | { type: 'main'; xDepart: number };
+  | { type: 'main'; xDepart: number }
+  | {
+      type: 'dureeTransition';
+      id: string;
+      /** Tirer le bord droit allonge, le gauche aussi ; une transition centrée s'étire des deux côtés. */
+      sens: 1 | -1;
+      facteur: 1 | 2;
+      dureeDepart: number;
+      xDepart: number;
+      duree: number;
+    };
 
 export interface ProprietesTimeline {
   readonly etat: EtatEditeur;
@@ -89,6 +101,8 @@ export interface ProprietesTimeline {
   readonly definirDefilementVertical: React.Dispatch<React.SetStateAction<number>>;
   /** Dépose d'un média venu du panneau Médias. */
   readonly surDeposeMedia: (depose: DeposeMedia) => void;
+  /** Dépose d'une transition ou d'un titre venu du panneau des effets. */
+  readonly surDeposeEffet: (depose: DeposeEffet) => void;
   /** Clic droit sur la timeline : la composition du menu vit dans l'App. */
   readonly surMenuContextuel: (cible: CibleMenu) => void;
 }
@@ -109,6 +123,14 @@ export interface CibleMenu {
   readonly image: number;
 }
 
+export interface DeposeEffet {
+  readonly nature: 'transition' | 'titre';
+  /** Type de transition, ou préréglage de titre. */
+  readonly valeur: string;
+  readonly image: number;
+  readonly trackId: string;
+}
+
 export interface DeposeMedia {
   readonly mediaId: string;
   readonly image: number;
@@ -126,6 +148,7 @@ export function Timeline({
   defilementVertical,
   definirDefilementVertical,
   surDeposeMedia,
+  surDeposeEffet,
   surMenuContextuel,
 }: ProprietesTimeline): React.JSX.Element {
   const toileRef = useRef<HTMLCanvasElement | null>(null);
@@ -346,8 +369,10 @@ export function Timeline({
       dpr: window.devicePixelRatio || 1,
       formeOnde,
       vignette,
+      transitionSelectionnee: etat.transitionSelectionnee,
     });
   }, [
+    etat.transitionSelectionnee,
     etat.sequence,
     etat.tete,
     modele,
@@ -436,6 +461,33 @@ export function Timeline({
           );
         }
         return;
+      }
+
+      // La bande d'une transition : la sélectionner, ou tirer ses bords pour changer sa durée.
+      if (etat.outil === 'selection') {
+        const zone = zonesTransitions(etat.sequence, modele, vueMesuree).find(
+          (z) => x >= z.x1 - 2 && x <= z.x2 + 2 && yPiste >= z.y1 && yPiste <= z.y2,
+        );
+        if (zone !== undefined) {
+          actions.definirTransition(zone.id);
+          const large = zone.x2 - zone.x1 >= 14;
+          const bord = !large ? null : x <= zone.x1 + 5 ? -1 : x >= zone.x2 - 5 ? 1 : null;
+          const doc = etat.sequence.tracks
+            .flatMap((t) => t.transitions)
+            .find((t) => t.id === zone.id);
+          if (bord !== null && doc !== undefined) {
+            gesteRef.current = {
+              type: 'dureeTransition',
+              id: zone.id,
+              sens: bord,
+              facteur: doc.fromClipId !== null && doc.toClipId !== null ? 2 : 1,
+              dureeDepart: doc.duration,
+              xDepart: x,
+              duree: doc.duration,
+            };
+          }
+          return;
+        }
       }
 
       if (impact.clipId === null) {
@@ -586,6 +638,15 @@ export function Timeline({
           gesteRef.current = { ...geste, duree: Math.max(1, geste.dureeDepart + delta) };
           return;
         }
+        case 'dureeTransition': {
+          const delta = Math.round((x - geste.xDepart) / vueMesuree.pixelsPerFrame);
+          gesteRef.current = {
+            ...geste,
+            duree: Math.max(1, geste.dureeDepart + delta * geste.sens * geste.facteur),
+          };
+          setCurseur('col-resize');
+          return;
+        }
         default:
           return;
       }
@@ -665,6 +726,11 @@ export function Timeline({
         case 'etirement':
           if (geste.duree !== geste.dureeDepart) {
             actions.executer(rateStretchCommand(geste.clipId, geste.duree, etat.contexte));
+          }
+          break;
+        case 'dureeTransition':
+          if (geste.duree !== geste.dureeDepart) {
+            actions.executer(modifierTransitionCommand(geste.id, { duration: geste.duree }));
           }
           break;
         case 'rectangle': {
@@ -788,6 +854,21 @@ export function Timeline({
         data-largeur={Math.round(vueMesuree.width)}
         data-depose={depose === null ? undefined : depose.mode}
         onDragOver={(e) => {
+          const types = e.dataTransfer.types;
+          if (types.includes(TYPE_GLISSE_TRANSITION) || types.includes(TYPE_GLISSE_TITRE)) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const impact = hitTest(
+              modele,
+              vueMesuree,
+              e.clientX - rect.left,
+              e.clientY - rect.top - HAUTEUR_REGLE,
+            );
+            if (impact.trackId !== null) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+            }
+            return;
+          }
           const cible = cibleDepose(e);
           if (cible === null || cible.trackId === null) {
             setDepose(null);
@@ -802,6 +883,22 @@ export function Timeline({
         onDragLeave={() => setDepose(null)}
         onDrop={(e) => {
           e.preventDefault();
+          const transition = e.dataTransfer.getData(TYPE_GLISSE_TRANSITION);
+          const titre = e.dataTransfer.getData(TYPE_GLISSE_TITRE);
+          if (transition !== '' || titre !== '') {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const impact = hitTest(modele, vueMesuree, x, e.clientY - rect.top - HAUTEUR_REGLE);
+            if (impact.trackId !== null) {
+              surDeposeEffet({
+                nature: transition !== '' ? 'transition' : 'titre',
+                valeur: transition !== '' ? transition : titre,
+                image: Math.max(0, xToTime(vueMesuree, x)),
+                trackId: impact.trackId,
+              });
+            }
+            return;
+          }
           const cible = cibleDepose(e);
           setDepose(null);
           if (cible === null || cible.trackId === null) return;
