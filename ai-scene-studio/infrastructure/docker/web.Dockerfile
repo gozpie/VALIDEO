@@ -19,6 +19,7 @@ COPY packages/scene-engine/package.json packages/scene-engine/package.json
 COPY packages/scene-schema/package.json packages/scene-schema/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY packages/generation-sdk/package.json packages/generation-sdk/package.json
+COPY packages/nle packages/nle
 RUN --mount=type=secret,id=extra_ca,required=false \
     if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi; \
     pnpm install --frozen-lockfile --filter @ass/web...

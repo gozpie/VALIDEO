@@ -322,6 +322,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Edit */
+        get: operations["get_edit_projects__project_id__edit_get"];
+        /** Put Edit */
+        put: operations["put_edit_projects__project_id__edit_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/edit-list": {
         parameters: {
             query?: never;
@@ -336,6 +354,26 @@ export interface paths {
         get: operations["edit_list_projects__project_id__edit_list_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/edit/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Edit Media
+         * @description Conserve un média importé dans le montage (musique, son, image) : il suit le projet.
+         */
+        post: operations["upload_edit_media_projects__project_id__edit_media_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -924,7 +962,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "model" | "texture" | "hdri" | "image" | "video" | "reference" | "render" | "render_pass";
+            type: "model" | "texture" | "hdri" | "image" | "video" | "audio" | "reference" | "render" | "render_pass";
             /**
              * Workspaceid
              * Format: uuid
@@ -1022,6 +1060,16 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /** Body_upload_edit_media_projects__project_id__edit_media_post */
+        Body_upload_edit_media_projects__project_id__edit_media_post: {
+            /**
+             * File
+             * @description Image, vidéo ou son à monter
+             */
+            file: string;
+            /** Name */
+            name?: string | null;
+        };
         /** CheckOut */
         CheckOut: {
             /** Detail */
@@ -1060,6 +1108,19 @@ export interface components {
             role: "admin" | "editor" | "viewer";
             /** Token */
             token: string;
+        };
+        /** EditIn */
+        EditIn: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Links */
+            links?: {
+                [key: string]: unknown;
+            };
         };
         /** EditItemOut */
         EditItemOut: {
@@ -1111,6 +1172,31 @@ export interface components {
             retained: boolean;
             /** Versionnumber */
             versionNumber: number;
+        };
+        /** EditOut */
+        EditOut: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            } | null;
+            /** Links */
+            links: {
+                [key: string]: unknown;
+            };
+            /** Revision */
+            revision: number;
+            /** Updatedat */
+            updatedAt: string | null;
+        };
+        /** EditSavedOut */
+        EditSavedOut: {
+            /** Revision */
+            revision: number;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
         };
         /** EstimateOut */
         EstimateOut: {
@@ -3091,6 +3177,90 @@ export interface operations {
             };
         };
     };
+    get_edit_projects__project_id__edit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditOut"];
+                };
+            };
+        };
+    };
+    put_edit_projects__project_id__edit_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditIn"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditSavedOut"];
+                };
+            };
+        };
+    };
     edit_list_projects__project_id__edit_list_get: {
         parameters: {
             query?: never;
@@ -3127,6 +3297,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EditListOut"];
+                };
+            };
+        };
+    };
+    upload_edit_media_projects__project_id__edit_media_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_edit_media_projects__project_id__edit_media_post"];
+            };
+        };
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedAssetOut"];
                 };
             };
         };

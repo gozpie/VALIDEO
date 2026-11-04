@@ -229,6 +229,23 @@ d'image ou de vidéo d'un plan n'exige une scène enregistrée que si la caméra
 `bibleReferences: true` ajoute en tête les images clés des éléments liés (ordre @image1, @image2…) ;
 `parentVersionId` rattache les versions produites. Mode `shot_prompts` (Claude) : prompts image / vidéo du plan.
 
+## Montage (phase 7)
+
+| Méthode et route                 | Rôle   | Effet                                                                                                    |
+| -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| `GET /projects/{id}/edit-list`   | viewer | Le film dans l'ordre : pour chaque plan, le média à monter (ou `null`)                                   |
+| `GET /projects/{id}/edit`        | viewer | Montage enregistré : `document`, `links`, `revision` (`null`, `{}`, `0` s'il n'existe pas)               |
+| `PUT /projects/{id}/edit`        | editor | Enregistre `document` et `links` si `expectedRevision` est la dernière ; sinon 409 ; 413 au-delà de 8 Mo |
+| `POST /projects/{id}/edit/media` | editor | Conserve un média importé dans le montage (multipart `file`, `name`)                                     |
+
+`edit-list` : version retenue, sinon dernière version. `document` appartient au moteur de montage
+(`@valideo/project-model`) : le serveur le garde tel quel. `links` relie le montage au studio :
+`media` (média du document → `assetId`, `shotId`, `mimeType`), `shots` (plan → dernier `assetId` monté),
+`attentes` (clip d'attente → plan). `edit/media` n'accepte que PNG, JPEG, WebP, MP4, MOV, WebM, MP3, WAV, FLAC, AAC,
+M4A et Ogg, signature du fichier vérifiée (415 pour un autre type, 422 si le contenu ne correspond pas) ; même contenu
+dans un workspace = même asset (200 au lieu de 201). Envoi vers gozCut : `POST /projects/{id}/generations`,
+`mode: gozcut_project`, sur le worker Mac (`scripts/mac-worker.sh`).
+
 ## Endpoints disponibles (phase 0)
 
 ### `GET /health/live`
@@ -260,4 +277,4 @@ chacun limité à `ASS_HEALTH_CHECK_TIMEOUT_SECONDS`. `200` si tout est OK, sino
 
 ## Endpoints prévus
 
-Les phases suivantes ajouteront le montage (timeline, export du film, XML Premiere) et les passerelles 3D. Chaque endpoint sera documenté ici au moment de son implémentation.
+Les phases suivantes ajouteront l'export du film, le XML Premiere et les passerelles 3D. Chaque endpoint sera documenté ici au moment de son implémentation.

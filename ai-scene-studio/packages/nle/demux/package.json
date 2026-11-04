@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/demux",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Demultiplexeur ISO BMFF (MP4/MOV) : index d'echantillons pour WebCodecs.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@valideo/shared": "workspace:*"
+  }
+}

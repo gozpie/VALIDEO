@@ -1,10 +1,22 @@
 'use client';
 
 import type { AiProvider, GenerationJob, StoryboardSequence } from '@ass/api-client';
-import { CheckCircle2, FolderOpen, Scissors, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, FolderOpen, Scissors, Send, TriangleAlert, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { EmptyState } from '@/components/EmptyState';
-import { assetUrl, DONE } from './data';
+import { DONE } from './data';
 import { GenerateControl, JobProgress } from './Generate';
+
+// Le moteur de montage ne vit que dans le navigateur (WebCodecs, Web Audio, canvas).
+const Editeur = dynamic(() => import('@/montage/Editeur').then((m) => m.Editeur), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-1 items-center justify-center bg-surface text-sm text-muted">
+      Ouverture du montage…
+    </div>
+  ),
+});
 
 export const formatTime = (seconds: number) => {
   const total = Math.round(seconds);
@@ -21,30 +33,39 @@ interface GozCutResult {
 }
 
 /**
- * Étape « Montage » : où en est le film (plans prêts, plans manquants, durée), et l'envoi des plans
- * à gozCut, le monteur Mac. Chaque envoi crée un nouveau projet gozCut.
+ * Étape « Montage » : le film. Les plans du studio y arrivent tout seuls, et chaque version retenue
+ * remplace la précédente dans le montage. gozCut, le monteur Mac, reste accessible en parallèle.
  */
 export function MontageStep({
   projectId,
-  canEdit,
-  board,
+  projectName,
   fps,
+  width,
+  height,
+  canEdit,
+  active,
+  board,
   providers,
   jobs,
   onJob,
 }: {
   projectId: string;
+  projectName: string;
+  fps: { numerator: number; denominator: number };
+  width: number;
+  height: number;
   canEdit: boolean;
+  /** Écran affiché : il reste monté en coulisse pour garder l'historique du montage. */
+  active: boolean;
   board: StoryboardSequence[];
-  fps: number;
   providers: AiProvider[];
   jobs: GenerationJob[];
   onJob: (job: GenerationJob) => void;
 }) {
+  const [gozCutOpen, setGozCutOpen] = useState(false);
   const shots = board.flatMap((s) => s.shots);
-  const ready = shots.filter((s) => s.selectedVersionId).length;
-  const seconds = shots.reduce((n, s) => n + s.durationFrames / fps, 0);
   const sends = jobs.filter((job) => job.mode === 'gozcut_project');
+  const plansVersion = shots.map((s) => `${s.id}:${s.selectedVersionId ?? ''}`).join('|');
 
   if (shots.length === 0)
     return (
@@ -56,34 +77,46 @@ export function MontageStep({
     );
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto p-6">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <section aria-label="État du film" className="grid grid-cols-3 gap-3">
-          {(
-            [
-              ['Durée du film', formatTime(seconds)],
-              ['Plans avec version retenue', `${ready} / ${shots.length}`],
-              ['Plans sans version retenue', String(shots.length - ready)],
-            ] as const
-          ).map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-border bg-panel p-4 shadow-card">
-              <p className="text-xs text-muted">{label}</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
-            </div>
-          ))}
-        </section>
-
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <Editeur
+        projectId={projectId}
+        nom={projectName}
+        fps={fps}
+        largeur={width}
+        hauteur={height}
+        canEdit={canEdit}
+        actif={active}
+        versionPlans={plansVersion}
+        barreDroite={
+          <button type="button" onClick={() => setGozCutOpen((open) => !open)}>
+            Envoyer vers gozCut
+          </button>
+        }
+      />
+      {gozCutOpen && (
         <section
           aria-label="Monter dans gozCut"
-          className="flex flex-col gap-3 rounded-2xl border border-border bg-panel p-5 shadow-card"
+          className="absolute right-3 top-11 z-40 flex max-h-[70%] w-[26rem] flex-col gap-3 overflow-auto rounded-2xl border border-border bg-elevated p-5 shadow-pop"
         >
-          <div>
-            <h2 className="text-[15px] font-semibold">Monter dans gozCut</h2>
-            <p className="mt-1 text-[13px] text-muted">
-              Crée un nouveau projet gozCut avec les plans dans l’ordre du film : version retenue,
-              sinon dernière version ; un plan sans version devient un clip noir qui garde sa place.
-              Vos projets gozCut existants ne sont pas touchés.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+                <Send size={15} /> Monter dans gozCut
+              </h2>
+              <p className="mt-1 text-[13px] text-muted">
+                Crée un nouveau projet gozCut avec les plans dans l’ordre du film : version retenue,
+                sinon dernière version ; un plan sans version devient un clip noir qui garde sa
+                place. Vos projets gozCut existants ne sont pas touchés.
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Fermer"
+              onClick={() => setGozCutOpen(false)}
+              className="rounded-lg p-1 text-muted hover:bg-hover hover:text-text"
+            >
+              <X size={16} />
+            </button>
           </div>
           {canEdit && (
             <GenerateControl
@@ -103,39 +136,7 @@ export function MontageStep({
             </ul>
           )}
         </section>
-
-        <section aria-label="Le film plan par plan" className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">Le film plan par plan</h2>
-          <ol className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2">
-            {shots.map((shot) => (
-              <li
-                key={shot.id}
-                className="overflow-hidden rounded-lg border border-border bg-panel"
-                title={shot.name}
-              >
-                <div className="aspect-video bg-surface">
-                  {shot.selectedVersion?.kind === 'image' && (
-                    <img
-                      src={assetUrl(shot.selectedVersion.assetId)}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                  {shot.selectedVersion?.kind === 'video' && (
-                    <video
-                      src={assetUrl(shot.selectedVersion.assetId)}
-                      preload="metadata"
-                      muted
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                </div>
-                <p className="truncate px-2 py-1 text-[11px] text-muted">{shot.name}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
+      )}
     </div>
   );
 }

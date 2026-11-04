@@ -1,0 +1,1223 @@
+/*
+ * Écran Montage de Chagomi. Tout est limité à `.nle` : le reste de la plateforme n'est jamais touché.
+ * Toujours sombre, quel que soit le thème : on juge une image sur un fond neutre et foncé.
+ */
+.nle {
+  --fond-app: #0f1013;
+  --fond-panneau: #17181c;
+  --fond-panneau-haut: #1e2025;
+  --fond-champ: #111316;
+  --fond-survol: #292b32;
+  --fond-actif: #32353d;
+
+  --bord: #2a2c33;
+  --bord-fort: #3b3e47;
+
+  --texte: #d9dce4;
+  --texte-doux: #8f98a8;
+  --texte-fort: #ffffff;
+
+  --accent: #3478f6;
+  --accent-doux: rgb(52 120 246 / 0.28);
+  --avert: #d29922;
+  --erreur: #f85149;
+  --succes: #3fb950;
+
+  --piste-video: #27406e;
+  --piste-video-bord: #4f7fd8;
+  --piste-audio: #1f4d3a;
+  --piste-audio-bord: #3fa877;
+  --selection: #f2b632;
+
+  --r: 6px;
+  --esp-1: 2px;
+  --esp-2: 4px;
+  --esp-3: 8px;
+  --esp-4: 12px;
+  --esp-5: 16px;
+
+  --police: var(--font-sans);
+  --police-mono: var(--font-mono);
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-lg: 14px;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--fond-app);
+  color: var(--texte);
+  font-family: var(--police);
+  font-size: var(--t-md);
+  -webkit-font-smoothing: antialiased;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /*
+ * Système de design (§73).
+ *
+ * Densité avant tout : c'est un outil professionnel, pas un tableau de bord.
+ * Les contrôles sont compacts, les marges petites, l'information dense —
+ * un monteur veut voir sa timeline, pas des espaces vides.
+ */
+  button {
+    font: inherit;
+    color: var(--texte);
+    background: var(--fond-panneau-haut);
+    border: 1px solid var(--bord);
+    border-radius: var(--r);
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) {
+    background: var(--fond-survol);
+    border-color: var(--bord-fort);
+  }
+  button:active:not(:disabled) {
+    background: var(--fond-actif);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  button.actif {
+    background: var(--accent-doux);
+    border-color: var(--accent);
+    color: var(--texte-fort);
+  }
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .mono {
+    font-family: var(--police-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Disposition générale de l'espace de travail Montage (§6). */
+
+  /* Colonne flexible plutôt que grille à rangées fixes : le nombre de bandeaux
+   affichés varie (reprise, stockage non persistant), une grille figée casserait
+   la mise en page dès qu'il change. */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .barre-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-4);
+    padding: 0 var(--esp-3);
+    height: 30px;
+    background: var(--fond-panneau-haut);
+    border-bottom: 1px solid var(--bord);
+    flex: 0 0 auto;
+  }
+  .barre-menu .marque {
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--texte-fort);
+    font-size: var(--t-sm);
+  }
+  .barre-menu .menu {
+    color: var(--texte-doux);
+    font-size: var(--t-sm);
+    cursor: default;
+  }
+  .barre-menu .espace {
+    flex: 1;
+  }
+
+  /* La disposition de l'espace de travail est désormais un arbre de découpes
+   déplaçables : voir `espace/espace.css` et `espace/modele.ts`. La grille fixe
+   qui se trouvait ici ne pouvait exprimer qu'une seule disposition. */
+
+  .panneau {
+    display: flex;
+    flex-direction: column;
+    background: var(--fond-panneau);
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .panneau-entete {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    height: 24px;
+    padding: 0 var(--esp-3);
+    background: var(--fond-panneau-haut);
+    border-bottom: 1px solid var(--bord);
+    font-size: var(--t-sm);
+    color: var(--texte-doux);
+    flex: 0 0 auto;
+  }
+  .panneau-entete .titre {
+    color: var(--texte);
+    font-weight: 500;
+  }
+  .panneau-entete .espace {
+    flex: 1;
+  }
+  .panneau-corps {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .etiquette-etat {
+    font-size: var(--t-xs);
+    padding: 1px 5px;
+    border-radius: var(--r);
+    border: 1px solid;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .etiquette-etat.indisponible {
+    color: var(--avert);
+    border-color: color-mix(in srgb, var(--avert) 45%, transparent);
+  }
+  .etiquette-etat.partiel {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  /* Moniteurs — volontairement vides tant que la lecture n'existe pas (§1003). */
+  .moniteur {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .moniteur-image {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    background: #0b0b0c;
+    margin: var(--esp-3);
+    border: 1px solid var(--bord);
+    min-height: 0;
+  }
+  .moniteur-vide {
+    text-align: center;
+    color: var(--texte-doux);
+    max-width: 340px;
+    padding: var(--esp-4);
+  }
+  .moniteur-vide h3 {
+    margin: 0 0 var(--esp-3);
+    font-size: var(--t-md);
+    color: var(--texte);
+    font-weight: 600;
+  }
+  .moniteur-vide p {
+    margin: 0;
+    font-size: var(--t-sm);
+    line-height: 1.5;
+  }
+  .moniteur-barre {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: 0 var(--esp-3) var(--esp-3);
+    font-size: var(--t-sm);
+  }
+  .moniteur-barre .tc {
+    font-size: var(--t-md);
+    color: var(--texte-fort);
+  }
+
+  /* Panneau Projet (§7) */
+  .table-projet {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--t-sm);
+  }
+  .table-projet th {
+    position: sticky;
+    top: 0;
+    text-align: left;
+    font-weight: 500;
+    color: var(--texte-doux);
+    background: var(--fond-panneau-haut);
+    border-bottom: 1px solid var(--bord);
+    padding: 3px var(--esp-3);
+    white-space: nowrap;
+  }
+  .table-projet td {
+    padding: 2px var(--esp-3);
+    border-bottom: 1px solid color-mix(in srgb, var(--bord) 50%, transparent);
+    white-space: nowrap;
+  }
+  .table-projet tr:hover td {
+    background: var(--fond-survol);
+  }
+  .pastille {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* Timeline */
+  .zone-timeline {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .timeline-outils {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: var(--esp-2) var(--esp-3);
+    background: var(--fond-panneau-haut);
+    border-bottom: 1px solid var(--bord);
+    flex: 0 0 auto;
+  }
+  .timeline-outils .sep {
+    width: 1px;
+    height: 16px;
+    background: var(--bord);
+    margin: 0 var(--esp-2);
+  }
+  .outil {
+    width: 26px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .timeline-corps {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  .entetes-pistes {
+    width: 148px;
+    flex: 0 0 148px;
+    background: var(--fond-panneau);
+    border-right: 1px solid var(--bord);
+    overflow: hidden;
+    position: relative;
+  }
+  .timeline-toile {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .timeline-toile canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .entete-regle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: var(--fond-panneau-haut);
+    border-bottom: 1px solid var(--bord);
+    /* Les en-tetes de piste sont poses apres dans le DOM et defilent
+     verticalement : sans cet empilement, celui du haut passerait PAR-DESSUS la
+     regle des que l on remonte la vue. La regle est fixe, les pistes glissent
+     dessous. */
+    z-index: 1;
+  }
+
+  .entete-piste {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--esp-1);
+    padding: 0 var(--esp-2);
+    border-bottom: 1px solid var(--bord);
+    background: var(--fond-panneau);
+    font-size: var(--t-sm);
+  }
+  .entete-piste .nom {
+    width: 26px;
+    color: var(--texte-fort);
+    font-weight: 600;
+  }
+  .bouton-piste {
+    width: 20px;
+    height: 18px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    background: var(--fond-champ);
+    color: var(--texte-doux);
+  }
+  .bouton-piste:hover {
+    color: var(--texte);
+  }
+  .bouton-piste.on {
+    background: var(--accent-doux);
+    border-color: var(--accent);
+    color: var(--texte-fort);
+  }
+  .bouton-piste.cible {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #08101f;
+  }
+
+  .barre-etat {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-4);
+    height: 24px;
+    padding: 0 var(--esp-3);
+    background: var(--fond-panneau-haut);
+    border-top: 1px solid var(--bord);
+    font-size: var(--t-sm);
+    color: var(--texte-doux);
+    flex: 0 0 auto;
+  }
+  .barre-etat .espace {
+    flex: 1;
+  }
+  .barre-etat .alerte {
+    color: var(--avert);
+  }
+
+  /* Historique (§43) */
+  .liste-historique {
+    font-size: var(--t-sm);
+  }
+  .liste-historique li {
+    padding: 2px var(--esp-3);
+    cursor: pointer;
+    list-style: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--bord) 40%, transparent);
+  }
+  .liste-historique li:hover {
+    background: var(--fond-survol);
+  }
+  .liste-historique li.courant {
+    background: var(--accent-doux);
+    color: var(--texte-fort);
+  }
+  .liste-historique li.annulee {
+    color: var(--texte-doux);
+    opacity: 0.55;
+  }
+  .liste-historique ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  .info-cle {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px var(--esp-3);
+    font-size: var(--t-sm);
+  }
+  .info-cle span:first-child {
+    color: var(--texte-doux);
+  }
+  .info-cle span:last-child {
+    color: var(--texte);
+  }
+
+  .message {
+    margin: var(--esp-3);
+    padding: var(--esp-3);
+    border: 1px solid;
+    border-radius: var(--r);
+    font-size: var(--t-sm);
+    line-height: 1.5;
+  }
+  .message.avert {
+    border-color: color-mix(in srgb, var(--avert) 40%, transparent);
+    color: var(--avert);
+    background: color-mix(in srgb, var(--avert) 8%, transparent);
+  }
+
+  /* Bandeau de reprise après incident (§44). */
+  .bandeau-reprise {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-2) var(--esp-3);
+    background: color-mix(in srgb, var(--accent) 14%, var(--fond-panneau-haut));
+    border-bottom: 1px solid var(--accent-doux);
+    font-size: var(--t-sm);
+    flex: 0 0 auto;
+  }
+  .bandeau-reprise strong {
+    color: var(--texte-fort);
+  }
+  .bandeau-reprise button {
+    margin-left: auto;
+  }
+  .bandeau-reprise button + button {
+    margin-left: var(--esp-2);
+  }
+  .bandeau-reprise.alerte {
+    background: color-mix(in srgb, var(--avert) 12%, var(--fond-panneau-haut));
+    border-bottom-color: color-mix(in srgb, var(--avert) 45%, transparent);
+    color: var(--avert);
+  }
+
+  .ouverture {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    color: var(--texte-doux);
+    font-size: var(--t-lg);
+  }
+
+  /* Le moniteur programme dessine dans un canvas dimensionné par l'image décodée ;
+   on l'ajuste au panneau sans jamais l'étirer hors de son rapport. */
+  .moniteur-image {
+    position: relative;
+  }
+  .toile-programme {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: auto;
+    background: #000;
+  }
+  .moniteur-image .moniteur-vide {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+  }
+
+  /* ------------------------------------------------------- Boîtes de dialogue */
+
+  .voile-modale {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 55%);
+    display: grid;
+    place-items: center;
+    z-index: 100;
+  }
+
+  .modale {
+    min-width: 380px;
+    max-width: min(560px, 92vw);
+    max-height: 88vh;
+    overflow: auto;
+    background: var(--fond-panneau);
+    border: 1px solid var(--bord-fort);
+    border-radius: 6px;
+    box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titre-modale {
+    margin: 0;
+    padding: var(--esp-2) var(--esp-3);
+    font-size: var(--t-md);
+    color: var(--texte-fort);
+    border-bottom: 1px solid var(--bord);
+    background: var(--fond-panneau-haut);
+  }
+
+  .corps-modale {
+    padding: var(--esp-3);
+    display: grid;
+    gap: var(--esp-2);
+  }
+
+  .pied-modale {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--esp-2);
+    padding: var(--esp-2) var(--esp-3);
+    border-top: 1px solid var(--bord);
+  }
+  .pied-modale button {
+    padding: 4px 14px;
+  }
+  .pied-modale .principal {
+    background: var(--accent);
+    color: #08101f;
+    font-weight: 600;
+  }
+
+  .grille-formulaire {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--esp-2) var(--esp-3);
+    align-items: center;
+  }
+  .grille-formulaire label {
+    color: var(--texte-doux);
+  }
+  .grille-formulaire input[type='checkbox'] {
+    justify-self: start;
+  }
+
+  .champ-avec-unite {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .champ-avec-unite input {
+    width: 8em;
+  }
+  .champ-avec-unite .unite {
+    color: var(--texte-doux);
+    font-size: var(--t-sm);
+  }
+
+  .grille-formulaire input[aria-invalid='true'] {
+    border-color: var(--avert);
+  }
+
+  .note-modale {
+    margin: 0;
+    font-size: var(--t-sm);
+    color: var(--texte-doux);
+    line-height: 1.45;
+  }
+  .note-modale strong {
+    color: var(--texte);
+  }
+  .note-modale.alerte {
+    color: var(--avert);
+  }
+  .table-projet tbody tr.selectionnee {
+    background: var(--accent-doux);
+  }
+  .table-projet tbody tr[draggable='true'] {
+    cursor: grab;
+  }
+  .table-projet tbody tr.selectionnee td {
+    color: var(--texte-fort);
+  }
+  .actions-media {
+    display: flex;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .actions-media .principal {
+    background: var(--accent);
+    color: #08101f;
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------- Menus contextuels */
+
+  .menu-contextuel {
+    position: fixed;
+    z-index: 200;
+    min-width: 236px;
+    padding: 4px 0;
+    background: var(--fond-panneau-haut);
+    border: 1px solid var(--bord-fort);
+    border-radius: 5px;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
+    outline: none;
+  }
+
+  .enveloppe-entree {
+    position: relative;
+  }
+
+  .entree-menu {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    align-items: center;
+    gap: var(--esp-2);
+    width: 100%;
+    padding: 4px 10px 4px 4px;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    text-align: left;
+    color: var(--texte);
+    font-size: var(--t-sm);
+  }
+  .entree-menu:hover:not(:disabled),
+  .entree-menu.survolee:not(:disabled) {
+    background: var(--accent-doux);
+    color: var(--texte-fort);
+  }
+  .entree-menu:disabled {
+    color: var(--texte-doux);
+    opacity: 0.5;
+  }
+  .entree-menu .coche {
+    text-align: center;
+    color: var(--accent);
+  }
+  .entree-menu .raccourci {
+    color: var(--texte-doux);
+    font-size: var(--t-xs, 11px);
+  }
+
+  .separateur-menu {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--bord);
+  }
+
+  .sous-menu {
+    position: absolute;
+    left: 100%;
+    top: -4px;
+    min-width: 176px;
+    padding: 4px 0;
+    background: var(--fond-panneau-haut);
+    border: 1px solid var(--bord-fort);
+    border-radius: 5px;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
+  }
+
+  .table-raccourcis {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--t-sm);
+  }
+  .table-raccourcis td {
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--bord);
+  }
+  .table-raccourcis .categorie {
+    color: var(--texte-doux);
+    width: 7em;
+  }
+  .table-raccourcis .touches {
+    text-align: right;
+    color: var(--texte-fort);
+    white-space: nowrap;
+  }
+
+  .barre-menu .menu {
+    padding: 2px 8px;
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    color: var(--texte);
+    font-size: var(--t-sm);
+  }
+  .barre-menu .menu:hover,
+  .barre-menu .menu.ouvert {
+    background: var(--accent-doux);
+    color: var(--texte-fort);
+  }
+  /*
+ * Espace de travail à panneaux ancrables (§6, §73).
+ *
+ * Densité d'abord : les onglets font 22 px, les poignées 4 px. Un monteur
+ * regarde son image et sa timeline, pas l'habillage des panneaux.
+ */
+
+  .espace-travail {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    background: var(--bord);
+  }
+
+  /* --- Divisions et poignées ------------------------------------------------ */
+
+  .division {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+  .division.colonnes {
+    flex-direction: row;
+  }
+  .division.rangees {
+    flex-direction: column;
+  }
+
+  /* La première branche porte sa taille en pourcentage, la seconde prend le
+   reste. Deux pourcentages qui doivent tomber juste à 100 % laissent un liseré
+   d'un pixel selon l'arrondi du navigateur. */
+  .division > .branche {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+  .division > .branche.reste {
+    flex: 1 1 0;
+  }
+
+  .poignee {
+    flex: 0 0 4px;
+    background: var(--bord);
+    position: relative;
+    z-index: 2;
+  }
+  .poignee.colonnes {
+    cursor: col-resize;
+  }
+  .poignee.rangees {
+    cursor: row-resize;
+  }
+  /* Zone de saisie plus large que le trait : viser 4 px à la souris est pénible,
+   mais un trait de 10 px serait laid. La cible déborde, le trait non. */
+  .poignee::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+  }
+  .poignee:hover,
+  .poignee:focus-visible {
+    background: var(--bord-fort);
+  }
+  .poignee.aimantee {
+    background: var(--accent);
+  }
+
+  /* --- Zones et onglets ----------------------------------------------------- */
+
+  .zone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: var(--fond-panneau);
+  }
+
+  .zone-onglets {
+    display: flex;
+    align-items: stretch;
+    height: 22px;
+    background: var(--fond-app);
+    border-bottom: 1px solid var(--bord);
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+  .onglets-reste {
+    flex: 1;
+  }
+
+  .onglet {
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--bord);
+    background: var(--fond-panneau-haut);
+    max-width: 220px;
+  }
+  .onglet.actif {
+    background: var(--fond-panneau);
+    /* Le liseré du haut marque l'onglet actif sans déplacer d'un pixel le texte,
+     contrairement à une bordure ajoutée au survol. */
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  .onglet.en-vol {
+    opacity: 0.4;
+  }
+
+  .onglet-titre {
+    border: 0;
+    background: none;
+    border-radius: 0;
+    padding: 0 var(--esp-3);
+    height: 100%;
+    font-size: var(--t-sm);
+    color: var(--texte-doux);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: grab;
+    touch-action: none;
+  }
+  .onglet.actif .onglet-titre {
+    color: var(--texte-fort);
+  }
+  .onglet-titre:hover:not(:disabled) {
+    background: none;
+    border-color: transparent;
+  }
+
+  .onglet-fermer {
+    border: 0;
+    background: none;
+    border-radius: 0;
+    padding: 0 5px 0 2px;
+    height: 100%;
+    line-height: 1;
+    font-size: var(--t-md);
+    color: var(--texte-doux);
+    opacity: 0;
+  }
+  .onglet:hover .onglet-fermer,
+  .onglet.actif .onglet-fermer {
+    opacity: 1;
+  }
+  .onglet-fermer:hover:not(:disabled) {
+    background: var(--fond-survol);
+    color: var(--texte-fort);
+  }
+  .onglet-fermer:disabled {
+    opacity: 0;
+  }
+
+  .zone-corps {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    position: relative;
+  }
+  .zone-contenu {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+  }
+  /* `display: none` explicite, et non l'attribut `hidden` : un élément en
+   `display: flex` ignore `[hidden]`, et l'onglet inactif resterait visible. */
+  .zone-contenu.masque {
+    display: none;
+  }
+  .zone-contenu > * {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* --- Dépôt ---------------------------------------------------------------- */
+
+  /* Rectangle qui montre où le panneau va atterrir. Il occupe exactement la
+   place que le panneau prendra : la moitié de la zone pour un bord, la zone
+   entière pour un dépôt en onglet. Une simple bordure clignotante ne dirait
+   pas la même chose. */
+  .depot {
+    position: absolute;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    border: 1px solid var(--accent);
+    z-index: 5;
+  }
+  .depot.centre {
+    inset: 0;
+  }
+  .depot.gauche {
+    inset: 0 50% 0 0;
+  }
+  .depot.droite {
+    inset: 0 0 0 50%;
+  }
+  .depot.haut {
+    inset: 0 0 50% 0;
+  }
+  .depot.bas {
+    inset: 50% 0 0 0;
+  }
+
+  .glisser-fantome {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    padding: 2px 8px;
+    font-size: var(--t-sm);
+    color: var(--texte-fort);
+    background: var(--fond-actif);
+    border: 1px solid var(--accent);
+    border-radius: var(--r);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 45%);
+  }
+
+  /* Pendant un glisser ou un redimensionnement, le curseur doit rester le même
+   partout : sans ça il change au survol de chaque bouton traversé, et le geste
+   paraît interrompu. La sélection de texte est coupée pour la même raison. */
+
+  .panneau-inconnu {
+    padding: var(--esp-5);
+    color: var(--texte-doux);
+    font-size: var(--t-sm);
+  }
+
+  /* Un panneau posé dans une zone remplit toute la zone : c'est le dock qui
+   décide de la taille, plus la grille. */
+  .zone-contenu > .panneau {
+    height: 100%;
+  }
+
+  /* --- Chagomi --- */
+  .app {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+  }
+  .barre-menu {
+    height: 38px;
+    gap: 2px;
+    background: var(--fond-panneau);
+  }
+  .barre-menu .menu {
+    border: 0;
+    background: transparent;
+    padding: 4px 9px;
+    border-radius: var(--r);
+    cursor: pointer;
+  }
+  .barre-menu .menu:hover,
+  .barre-menu .menu.ouvert {
+    background: var(--fond-survol);
+    color: var(--texte-fort);
+  }
+  .film-etat {
+    color: var(--texte-doux);
+    font-size: var(--t-sm);
+    margin: 0 var(--esp-4);
+  }
+  .film-progression {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    font-size: var(--t-sm);
+    color: var(--texte-doux);
+  }
+  .film-barre {
+    display: block;
+    width: 110px;
+    height: 4px;
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--fond-actif);
+  }
+  .film-barre span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width 200ms;
+  }
+  .ouverture {
+    display: grid;
+    flex: 1;
+    place-items: center;
+    color: var(--texte-doux);
+  }
+
+  /* Moniteur */
+  .moniteur-image {
+    position: relative;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: #08090b;
+    overflow: hidden;
+  }
+  .moniteur-vide {
+    position: absolute;
+    max-width: none;
+  }
+  .moniteur-vide h3 {
+    margin: 0;
+    color: var(--texte-doux);
+    font-weight: 500;
+  }
+  .moniteur-barre {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    padding: var(--esp-2) var(--esp-4);
+    background: var(--fond-panneau);
+    border-top: 1px solid var(--bord);
+  }
+  .moniteur-commandes {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+  .moniteur-commandes button {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texte);
+  }
+  .moniteur-commandes button.lecture-principale {
+    width: 38px;
+    height: 38px;
+    background: var(--accent);
+    color: #fff;
+  }
+  .moniteur-commandes button.lecture-principale:hover:not(:disabled) {
+    background: #2b6ae0;
+  }
+  .moniteur-duree {
+    justify-self: end;
+    color: var(--texte-doux);
+  }
+
+  /* Plans du film */
+  .plans-vide {
+    padding: var(--esp-5);
+    color: var(--texte-doux);
+  }
+  .plans-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: var(--esp-3);
+    list-style: none;
+    margin: 0;
+    padding: var(--esp-3);
+  }
+  .plan-carte {
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--bord);
+    border-radius: 8px;
+    background: var(--fond-panneau-haut);
+    text-align: left;
+  }
+  .plan.courant .plan-carte {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .plan-image {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    background: #08090b;
+  }
+  .plan-image img,
+  .plan-image video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .plan-attente {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    font-size: var(--t-xs);
+    color: var(--texte-doux);
+  }
+  .plan-numero {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: rgb(0 0 0 / 0.65);
+    color: #fff;
+    font-size: var(--t-xs);
+    font-weight: 600;
+  }
+  .plan-retenu {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+  }
+  .plan-legende {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: 4px 7px;
+    font-size: var(--t-xs);
+  }
+  .plan-nom {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .plan-duree {
+    color: var(--texte-doux);
+  }
+  .plan-remettre {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    width: 100%;
+    margin-top: 3px;
+    font-size: var(--t-xs);
+  }
+
+  /* Barre d'outils de la timeline */
+  .timeline-outils {
+    height: 38px;
+    background: var(--fond-panneau);
+  }
+  .outil {
+    width: 28px;
+    height: 28px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--texte-doux);
+  }
+  .outil:hover:not(:disabled) {
+    color: var(--texte-fort);
+  }
+  .outil.actif {
+    border-color: transparent;
+    background: var(--accent);
+    color: #fff;
+  }
+  .timeline-outils .timecode {
+    border: 0;
+    background: var(--fond-champ);
+    padding: 4px 10px;
+    color: var(--texte-fort);
+    font-size: var(--t-md);
+  }
+  .timeline-outils .alerte {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    color: var(--avert);
+    font-size: var(--t-sm);
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Glisser un panneau : le curseur vaut pour toute la page, le temps du geste. */
+body.espace-en-glisser,
+body.espace-en-redim {
+  user-select: none;
+}
+body.espace-en-glisser * {
+  cursor: grabbing !important;
+}
+body.espace-en-redim * {
+  cursor: inherit;
+}

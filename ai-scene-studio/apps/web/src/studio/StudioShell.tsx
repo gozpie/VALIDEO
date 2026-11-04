@@ -36,6 +36,11 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
     window.history.replaceState(null, '', `#${next}`);
     setStep(next);
   }, []);
+  // Une fois ouvert, le montage reste monté : l'historique et les décodeurs survivent aux allers-retours.
+  const [montageVisited, setMontageVisited] = useState(false);
+  useEffect(() => {
+    if (step === 'montage') setMontageVisited(true);
+  }, [step]);
   const [scripts, refreshScripts] = useScripts(projectId);
   const [bible, refreshBible] = useBible(projectId);
   const [board, refreshBoard] = useStoryboard(projectId);
@@ -146,16 +151,22 @@ export function StudioShell({ project, workspace }: { project: Project; workspac
           }}
         />
       )}
-      {step === 'montage' && (
-        <MontageStep
-          projectId={projectId}
-          canEdit={canEdit}
-          board={board}
-          fps={fps}
-          providers={providers}
-          jobs={jobs}
-          onJob={track}
-        />
+      {montageVisited && (
+        <div className={step === 'montage' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+          <MontageStep
+            projectId={projectId}
+            projectName={project.name}
+            fps={{ numerator: project.fps.numerator, denominator: project.fps.denominator ?? 1 }}
+            width={project.resolution.width}
+            height={project.resolution.height}
+            canEdit={canEdit}
+            active={step === 'montage'}
+            board={board}
+            providers={providers}
+            jobs={jobs}
+            onJob={track}
+          />
+        </div>
       )}
       {step === 'bible' && (
         <BibleStep

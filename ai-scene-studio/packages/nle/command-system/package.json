@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/command-system",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Command pattern, transactions atomiques et historique undo/redo.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@valideo/shared": "workspace:*"
+  }
+}

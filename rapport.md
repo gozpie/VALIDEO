@@ -382,3 +382,11 @@ Décision de Pierre : option C — le pont gozCut d'abord, pour monter tout de s
 - **Non modifié** : le code de gozCut.
 - **Tests** : `test_edit_list_follows_the_film_and_builds_a_gozcut_project` (FFmpeg réel) ; essai réel sur « Jules Verne — Teaser » : 15 plans, 1:21, relu par gozCut (`--open … --frames`).
 
+### Étape 7.2 — Le montage intégré à Chagomi
+- **Repris** : moteur du NLE web de la branche `claude/video-editing-software-analysis-om0bn7` dans `packages/nle` (sans `storage` ni `media-engine`, inutilisés ; exports en TypeScript source, imports sans `.js`) ; interface dans `apps/web/src/montage`, CSS limité à `.nle`, toujours sombre.
+- **Ajouté** : `film.ts` (synchronisation pure film ↔ plans), `useFilm.ts` (ouverture, récupération des médias, enregistrement automatique avec révision), `media/image-fixe.ts`, `panels/PanneauPlans.tsx`, son des vidéos lié sur A1, bande d'images à tous les zooms ; `routes/montage.py`, table `project_edits`, migration 0009, type d'asset `audio`.
+- **Modifié** : `MontageStep.tsx` (l'éditeur remplit l'écran, gozCut devient un panneau ouvert depuis la barre), `StudioShell.tsx` (le montage reste monté en coulisse : l'historique survit aux allers-retours), ⌘K réservé à la coupe dans cet écran.
+- **Tests** : 11 tests du module film, 9 tests d'intégration API, E2E complet réussi. Essais en Chrome réel : « Jules Verne — Teaser » assemblé (15 plans, 1:20:14), lecture vidéo ; vidéo H.264 + AAC générée par FFmpeg : son lié sur A1, lecture sans clip muet ; WAV importé, retrouvé en ligne après rechargement.
+- **Non vérifié** : écoute à l'oreille (lancé en navigateur sans écran), gros film (> 15 plans), Safari.
+- **Reste** : 7.3 composition (calques, opacité, fondus, transitions, titres), 7.4 export du film et XML Premiere.
+

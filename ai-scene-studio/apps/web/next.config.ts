@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
     '@ass/scene-engine',
     '@ass/scene-schema',
     '@ass/shared-types',
+    '@valideo/audio-engine',
+    '@valideo/command-system',
+    '@valideo/demux',
+    '@valideo/keyboard',
+    '@valideo/playback',
+    '@valideo/project-model',
+    '@valideo/shared',
+    '@valideo/time-core',
+    '@valideo/timeline-engine',
+    '@valideo/timeline-model',
   ],
   async headers() {
     return [

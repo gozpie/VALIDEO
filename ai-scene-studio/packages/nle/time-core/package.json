@@ -1,0 +1,14 @@
+{
+  "name": "@valideo/time-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Temps rationnel frame-accurate : Rational, TimeBase, Timecode drop-frame et non drop-frame.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

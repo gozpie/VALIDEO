@@ -49,7 +49,18 @@
   découpage s'applique à la suite des séquences existantes (pas de fusion ni de remplacement) ; une proposition ne
   s'applique qu'une fois ; pas de réordonnancement des plans par glisser-déposer dans le storyboard ; liens entre plans
   et bible établis par les noms (rapprochement tolérant, aucun lien en cas d'ambiguïté) ; un découpage par Claude
-  Opus prend quelques minutes (suivi par interrogation) ; la bande en bas de l'écran Plans est un aperçu, pas un monteur : pas encore de montage ni d'export du film (phase 7).
+  Opus prend quelques minutes (suivi par interrogation) ; la bande en bas de l'écran Plans est un aperçu, le montage est dans l'écran Montage.
+
+- Montage (étape 7.2) : le moniteur montre un seul calque, celui de la piste la plus haute ; pas encore de superposition,
+  d'opacité, de fondus, de transitions ni de titres (7.3) ; pas d'export du film ni de XML Premiere (7.4) ; pas de
+  moniteur source. La lecture passe par WebCodecs, essayée dans Chrome seulement ; le H.264 n'est pas décodé par le
+  Chromium de Playwright, et seuls les fichiers MP4/MOV sont lus image par image. Le son d'une vidéo est décodé
+  entièrement en mémoire (au-delà de 256 Mo décodés : forme d'onde, pas de lecture). Les médias sont retéléchargés à
+  chaque ouverture de l'onglet (cache du navigateur). Le rôle viewer peut manipuler le montage dans son onglet, rien
+  n'est enregistré. Deux onglets : le second reçoit un refus (409) et doit recharger la page. Un plan nouveau s'insère
+  après le plan qui le précède et décale les pistes synchronisées ; un plan supprimé du storyboard reste dans le montage.
+  L'historique d'annulation ne survit pas à un rechargement. ⌘K coupe sous la tête dans cet écran : la palette s'ouvre
+  au clic sur « Rechercher » ou avec F3.
 
 ## Techniques
 

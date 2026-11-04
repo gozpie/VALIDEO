@@ -39,6 +39,7 @@ def test_phase_1_tables() -> None:
         "bible_entries",
         "shot_bible_links",
         "shot_versions",
+        "project_edits",
     }
 
 

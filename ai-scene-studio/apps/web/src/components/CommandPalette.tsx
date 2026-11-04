@@ -20,7 +20,9 @@ export function CommandPalette() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
-      if ((mod && event.key.toLowerCase() === 'k') || (event.key === 'F3' && !mod)) {
+      const key = event.key.toLowerCase();
+      if (mod && key === 'k' && commandStore.getState().paletteKeyReserved) return;
+      if ((mod && key === 'k') || (event.key === 'F3' && !mod)) {
         event.preventDefault();
         commandStore.getState().setOpen(!commandStore.getState().open);
       }

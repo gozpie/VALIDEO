@@ -64,6 +64,7 @@ ASSET_TYPES: Final = (
     "reference",
     "render",
     "render_pass",
+    "audio",
 )
 
 
@@ -310,6 +311,25 @@ class ProjectScript(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = _created_at()
+
+
+class ProjectEdit(Base):
+    """Montage du film (document du moteur de montage) ; une seule version vivante par projet."""
+
+    __tablename__ = "project_edits"
+    __table_args__ = (CheckConstraint("revision >= 1", name="revision_positive"),)
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True
+    )
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # Lien entre le montage et le studio : médias → assets, plans → dernier asset monté.
+    links: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    updated_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = _updated_at()
 
 
 class BibleEntry(Base):

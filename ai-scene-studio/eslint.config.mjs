@@ -34,6 +34,14 @@ export default tseslint.config(
     },
   },
   {
+    // Moteur de montage : classes d'espaces de noms et assertions conservées telles qu'écrites.
+    files: ['packages/nle/**', 'apps/web/src/montage/**'],
+    rules: {
+      '@typescript-eslint/no-extraneous-class': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+  {
     // Dans les tests, les accès indexés sur des fixtures connues sont volontairement assertés.
     files: ['**/test/**/*.ts', '**/*.test.ts', '**/*.test.tsx'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },

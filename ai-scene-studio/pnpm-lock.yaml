@@ -59,6 +59,36 @@ importers:
       '@react-three/fiber':
         specifier: 9.8.2
         version: 9.8.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(three@0.187.0)
+      '@valideo/audio-engine':
+        specifier: workspace:*
+        version: link:../../packages/nle/audio-engine
+      '@valideo/command-system':
+        specifier: workspace:*
+        version: link:../../packages/nle/command-system
+      '@valideo/demux':
+        specifier: workspace:*
+        version: link:../../packages/nle/demux
+      '@valideo/keyboard':
+        specifier: workspace:*
+        version: link:../../packages/nle/keyboard
+      '@valideo/playback':
+        specifier: workspace:*
+        version: link:../../packages/nle/playback
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../../packages/nle/project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../../packages/nle/shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../../packages/nle/time-core
+      '@valideo/timeline-engine':
+        specifier: workspace:*
+        version: link:../../packages/nle/timeline-engine
+      '@valideo/timeline-model':
+        specifier: workspace:*
+        version: link:../../packages/nle/timeline-model
       lucide-react:
         specifier: 1.67.0
         version: 1.67.0(@types/react@19.3.0)(react@19.3.1)
@@ -148,6 +178,94 @@ importers:
       '@ass/shared-types':
         specifier: workspace:*
         version: link:../shared-types
+
+  packages/nle/audio-engine:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+
+  packages/nle/command-system:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/nle/demux:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/nle/keyboard:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/nle/playback:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      '@valideo/timeline-model':
+        specifier: workspace:*
+        version: link:../timeline-model
+
+  packages/nle/project-model:
+    dependencies:
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+
+  packages/nle/shared: {}
+
+  packages/nle/time-core: {}
+
+  packages/nle/timeline-engine:
+    dependencies:
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
+      '@valideo/timeline-model':
+        specifier: workspace:*
+        version: link:../timeline-model
+
+  packages/nle/timeline-model:
+    dependencies:
+      '@valideo/command-system':
+        specifier: workspace:*
+        version: link:../command-system
+      '@valideo/project-model':
+        specifier: workspace:*
+        version: link:../project-model
+      '@valideo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@valideo/time-core':
+        specifier: workspace:*
+        version: link:../time-core
 
   packages/scene-engine:
     dependencies:
@@ -2196,6 +2314,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -3968,6 +4089,8 @@ snapshots:
   yargs-parser@21.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@3.25.76: {}
 
   zod@4.6.7: {}
 

@@ -19,13 +19,17 @@ export interface Command {
 interface CommandState {
   sources: Record<string, Command[]>;
   open: boolean;
+  /** ⌘K appartient à l'écran courant (le montage y coupe sous la tête) : la palette reste au clic. */
+  paletteKeyReserved: boolean;
   setSource: (key: string, commands: Command[] | null) => void;
   setOpen: (open: boolean) => void;
+  setPaletteKeyReserved: (reserved: boolean) => void;
 }
 
 export const commandStore = createStore<CommandState>()((set) => ({
   sources: {},
   open: false,
+  paletteKeyReserved: false,
   setSource: (key, commands) =>
     set((state) => ({
       sources: commands
@@ -33,6 +37,7 @@ export const commandStore = createStore<CommandState>()((set) => ({
         : Object.fromEntries(Object.entries(state.sources).filter(([name]) => name !== key)),
     })),
   setOpen: (open) => set({ open }),
+  setPaletteKeyReserved: (paletteKeyReserved) => set({ paletteKeyReserved }),
 }));
 
 export const usePaletteOpen = () => useStore(commandStore, (state) => state.open);

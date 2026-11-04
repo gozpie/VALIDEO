@@ -4162,6 +4162,184 @@
           }
         }
       }
+    },
+    "/projects/{project_id}/edit": {
+      "get": {
+        "tags": [
+          "montage"
+        ],
+        "summary": "Get Edit",
+        "operationId": "get_edit_projects__project_id__edit_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "montage"
+        ],
+        "summary": "Put Edit",
+        "operationId": "put_edit_projects__project_id__edit_put",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditSavedOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/edit/media": {
+      "post": {
+        "tags": [
+          "montage"
+        ],
+        "summary": "Upload Edit Media",
+        "description": "Conserve un média importé dans le montage (musique, son, image) : il suit le projet.",
+        "operationId": "upload_edit_media_projects__project_id__edit_media_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_edit_media_projects__project_id__edit_media_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedAssetOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4236,6 +4414,7 @@
               "hdri",
               "image",
               "video",
+              "audio",
               "reference",
               "render",
               "render_pass"
@@ -4523,6 +4702,33 @@
         ],
         "title": "Body_upload_asset_workspaces__workspace_id__assets_post"
       },
+      "Body_upload_edit_media_projects__project_id__edit_media_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "Image, vidéo ou son à monter"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_edit_media_projects__project_id__edit_media_post"
+      },
       "CheckOut": {
         "properties": {
           "status": {
@@ -4601,6 +4807,31 @@
           "acceptUrl"
         ],
         "title": "CreatedInvitationOut"
+      },
+      "EditIn": {
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Document"
+          },
+          "links": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Links"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expectedrevision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document",
+          "expectedRevision"
+        ],
+        "title": "EditIn"
       },
       "EditItemOut": {
         "properties": {
@@ -4725,6 +4956,70 @@
           "retained"
         ],
         "title": "EditMediaOut"
+      },
+      "EditOut": {
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document"
+          },
+          "links": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Links"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document",
+          "links",
+          "revision",
+          "updatedAt"
+        ],
+        "title": "EditOut"
+      },
+      "EditSavedOut": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "updatedAt"
+        ],
+        "title": "EditSavedOut"
       },
       "EstimateOut": {
         "properties": {

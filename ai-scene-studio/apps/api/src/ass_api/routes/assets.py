@@ -54,7 +54,7 @@ CHUNK = 1024 * 1024
 
 
 AssetType = Literal[
-    "model", "texture", "hdri", "image", "video", "reference", "render", "render_pass"
+    "model", "texture", "hdri", "image", "video", "audio", "reference", "render", "render_pass"
 ]
 
 
@@ -62,9 +62,7 @@ class AssetOut(ApiModel):
     id: uuid.UUID
     workspace_id: uuid.UUID
     name: str
-    type: Literal[
-        "model", "texture", "hdri", "image", "video", "reference", "render", "render_pass"
-    ]
+    type: AssetType
     mime_type: str
     sha256: str
     size_bytes: int

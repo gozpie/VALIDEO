@@ -8,6 +8,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 - Étape 7.1 : étape Montage, liste de montage (`GET /projects/{id}/edit-list`), pont gozCut (`mode: gozcut_project`,
   `scripts/mac-worker.sh`).
+- Étape 7.2 : vrai logiciel de montage dans l'écran Montage, à partir du moteur du NLE web (`packages/nle`, sous les noms
+  `@valideo/*`). Le film s'assemble tout seul depuis les plans, les plans sans image gardent leur place (clip d'attente),
+  une version retenue remplace le plan dans le montage sans toucher à sa place ni à sa durée, action annulable.
+  Outils de montage (lame, ripple, rolling, slip, slide, étirement), annulation, accrochage, raccourcis façon Premiere,
+  lecture vidéo et son, images fixes, bande d'images et forme d'onde sur la timeline, galerie « Plans du film », panneaux
+  déplaçables, import de musique et de sons conservés avec le projet. Enregistrement automatique sur le serveur
+  (`GET/PUT /projects/{id}/edit`, `POST /projects/{id}/edit/media`, migration 0009, assets de type `audio`).
 
 ### Corrigé
 

@@ -1,0 +1,17 @@
+{
+  "name": "@valideo/keyboard",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Moteur de raccourcis configurable, presets et navigation JKL.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@valideo/shared": "workspace:*"
+  }
+}

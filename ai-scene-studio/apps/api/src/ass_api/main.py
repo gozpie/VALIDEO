@@ -24,6 +24,7 @@ from ass_api.routes import (
     health,
     invitations,
     members,
+    montage,
     projects,
     renders,
     scenes,
@@ -97,6 +98,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         renders.router,
         generations.router,
         studio.router,
+        montage.router,
     ):
         app.include_router(router)
     return app

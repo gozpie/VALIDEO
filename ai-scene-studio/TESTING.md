@@ -68,6 +68,15 @@ E2E_BASE_URL=http://localhost:3000 E2E_EMAIL=… E2E_PASSWORD=… pnpm test:e2e
 
 Sans `E2E_EMAIL` / `E2E_PASSWORD`, ces tests sont explicitement ignorés (seul le test d'accueil s'exécute).
 
+## Montage (phase 7)
+
+Le moteur (`packages/nle/*`) garde ses tests d'origine, sauf `demux`, ignoré sans ses fixtures FFmpeg. Le lien film ↔
+studio est couvert par `apps/web/test/montage-film.test.ts` (assemblage, attentes, nouvelle version, son lié, plan
+retiré), l'API par `apps/api/tests/test_integration_montage.py` (révisions, droits, formats refusés), et le parcours
+complet par `apps/web/e2e/montage.spec.ts` (assemblage, ⌘K, annulation, rechargement, version reçue). L'E2E utilise des
+images, car le Chromium de Playwright ne décode pas le H.264 : la lecture vidéo et le son se vérifient avec
+`channel: 'chrome'`.
+
 ## Intégration continue
 
 `.github/workflows/ai-scene-studio.yml` : TypeScript (format, lint, types, tests, build, JSON Schema à jour),

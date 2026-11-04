@@ -1,6 +1,7 @@
 packages:
   - 'apps/web'
   - 'packages/*'
+  - 'packages/nle/*'
 
 # Seules ces dépendances sont autorisées à exécuter des scripts d'installation.
 onlyBuiltDependencies:

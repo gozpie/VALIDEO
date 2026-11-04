@@ -1,0 +1,14 @@
+{
+  "name": "@valideo/shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Types transverses : identifiants types, resultats, erreurs.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  }
+}
