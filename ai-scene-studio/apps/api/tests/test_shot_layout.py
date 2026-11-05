@@ -118,6 +118,47 @@ def test_a_corner_above_the_horizon_is_refused_not_invented() -> None:
     assert any("Sans boîte" in message for message in ignored)
 
 
+def test_a_wall_seen_at_an_angle_keeps_its_edges_on_their_pixels() -> None:
+    plateau = {
+        "camera": CAMERA,
+        "elements": [
+            {
+                "nom": "Mur",
+                "forme": "boite",
+                "x0": 620,
+                "y0": 20,
+                "x1": 1000,
+                "y1": 300,
+                "distanceM": 4.2,
+                "distanceDroiteM": 3.2,
+                "profondeurM": 0.2,
+                "couleur": [0.5, 0.5, 0.5],
+            }
+        ],
+    }
+    operations, ignored = plateau_vers_operations(plateau, *IMAGE)
+    assert ignored == []
+    mur = next(op for op in operations if op.get("name") == "Mur")
+    camera = _plan()
+    x, y, z = mur["position"]
+    largeur, hauteur, profondeur = mur["scale"]
+    lacet = math.radians(mur["rotationDegrees"][1])
+    assert mur["rotationDegrees"][0] == 0
+    # Bords de la face avant : retour du centre vers la caméra, puis le long du mur.
+    avant = (x + math.sin(lacet) * profondeur / 2, z + math.cos(lacet) * profondeur / 2)
+    gauche = [avant[0] - math.cos(lacet) * largeur / 2, y, avant[1] + math.sin(lacet) * largeur / 2]
+    droite = [avant[0] + math.cos(lacet) * largeur / 2, y, avant[1] - math.sin(lacet) * largeur / 2]
+    # À quelques pixels : le volume reste vertical alors que la caméra est légèrement inclinée.
+    assert camera.pixel(gauche)[0] == pytest.approx(620, abs=6)
+    assert camera.pixel(droite)[0] == pytest.approx(1000, abs=6)
+    # Le bord droit, plus proche, paraît plus haut que le gauche : la perspective est bien là.
+    haut_gauche = camera.pixel([gauche[0], y + hauteur / 2, gauche[2]])[1]
+    bas_gauche = camera.pixel([gauche[0], y - hauteur / 2, gauche[2]])[1]
+    haut_droit = camera.pixel([droite[0], y + hauteur / 2, droite[2]])[1]
+    bas_droit = camera.pixel([droite[0], y - hauteur / 2, droite[2]])[1]
+    assert bas_droit - haut_droit > bas_gauche - haut_gauche
+
+
 def test_scene_has_camera_and_floor_and_no_light() -> None:
     operations, _ = plateau_vers_operations({"camera": CAMERA, "elements": []}, *IMAGE)
     assert [op["op"] for op in operations] == ["add_camera", "set_active_camera", "add_primitive"]

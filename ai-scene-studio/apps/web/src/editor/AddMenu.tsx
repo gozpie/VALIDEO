@@ -2,7 +2,10 @@
 
 import type { PrimitiveKind } from '@ass/scene-schema';
 import {
+  CAMERAS_PLATEAU,
   PRIMITIVE_LABELS,
+  addCameraPlateau,
+  addMannequin,
   createCamera,
   createEmptyNode,
   createGroupNode,
@@ -10,15 +13,56 @@ import {
   createModelNode,
   createPrimitiveNode,
 } from '@ass/scene-engine';
-import { useRef, useState } from 'react';
-import { uploadAsset } from '@/lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { api, call, uploadAsset } from '@/lib/api';
 import { addAndSelect } from './commands';
 import { useEditorContext } from './context';
 
 const PRIMITIVES = Object.keys(PRIMITIVE_LABELS) as PrimitiveKind[];
 
+/** Noms des personnages de la bible du projet : chacun a sa doublure en un clic. */
+function usePersonnages(shotId: string | undefined): string[] {
+  const [noms, setNoms] = useState<string[]>([]);
+  useEffect(() => {
+    if (!shotId) return undefined;
+    let vivant = true;
+    void (async () => {
+      const plan = await call(
+        api.GET('/shots/{shot_id}', { params: { path: { shot_id: shotId } } }),
+      );
+      const bible = await call(
+        api.GET('/projects/{project_id}/bible', {
+          params: { path: { project_id: plan.projectId } },
+        }),
+      );
+      if (vivant) setNoms(bible.filter((e) => e.kind === 'character').map((e) => e.name));
+    })().catch(() => undefined);
+    return () => {
+      vivant = false;
+    };
+  }, [shotId]);
+  return noms;
+}
+
 export function AddMenu({ workspaceId }: { workspaceId: string }) {
-  const { store } = useEditorContext();
+  const { store, shotId } = useEditorContext();
+  const personnages = usePersonnages(shotId);
+  const [assis, setAssis] = useState(false);
+  const mannequin = (nom: string) => {
+    let id: string | null = null;
+    const pose = store.getState().apply((scene) => {
+      const resultat = addMannequin(scene, nom, assis ? 'assis' : 'debout');
+      id = resultat.id;
+      return resultat.scene;
+    });
+    if (pose && id) store.getState().select([id]);
+  };
+  const cameraPlateau = (preset: (typeof CAMERAS_PLATEAU)[number]['id']) => {
+    const etat = store.getState();
+    const selection = etat.selection.find((id) => etat.scene.nodes.some((n) => n.id === id));
+    etat.apply((scene) => addCameraPlateau(scene, preset, selection ?? null).scene);
+    store.getState().setCameraView('camera');
+  };
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ kind: 'idle' | 'busy' | 'error'; message?: string }>({
     kind: 'idle',
@@ -28,6 +72,37 @@ export function AddMenu({ workspaceId }: { workspaceId: string }) {
 
   return (
     <section aria-label="Ajouter" className="flex flex-col gap-2">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+        Plateau gris
+      </h2>
+      <div className="flex flex-wrap items-center gap-1">
+        {(personnages.length > 0 ? personnages : ['Personnage']).map((nom) => (
+          <button key={nom} type="button" className={button} onClick={() => mannequin(nom)}>
+            Mannequin {nom}
+          </button>
+        ))}
+        <label className="flex items-center gap-1 text-xs text-muted">
+          <input
+            type="checkbox"
+            checked={assis}
+            onChange={(event) => setAssis(event.target.checked)}
+          />
+          Assis
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {CAMERAS_PLATEAU.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className={button}
+            title={`Caméra ${preset.focale} mm cadrée sur le mannequin sélectionné`}
+            onClick={() => cameraPlateau(preset.id)}
+          >
+            {preset.nom}
+          </button>
+        ))}
+      </div>
       <h2 className="text-[11px] font-semibold uppercase tracking-wider text-faint">Ajouter</h2>
       <div className="flex flex-wrap gap-1">
         {PRIMITIVES.map((kind) => (

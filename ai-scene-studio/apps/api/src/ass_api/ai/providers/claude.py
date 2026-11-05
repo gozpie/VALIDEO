@@ -128,6 +128,11 @@ PLATEAU_SCHEMA: Final = {
                     "x1": PIXEL,
                     "y1": PIXEL,
                     "distanceM": {"type": "number", "description": "Distance à la caméra"},
+                    "distanceDroiteM": {
+                        "type": "number",
+                        "description": "Boîte vue de biais : distance de son bord droit ; "
+                        "distanceM est alors celle de son bord gauche",
+                    },
                     "profondeurM": {"type": "number", "description": "Épaisseur vers l'arrière"},
                     "couleur": {
                         "type": "array",
@@ -225,6 +230,19 @@ Méthode :
    occupe
    H * f * {largeur} / (36 * d) pixels de haut : déduis-en les distances, en commençant par le
    sujet.
+   L'orientation de la pièce. Une pièce est rarement vue bien de face : sur la grille, suis les
+   lignes
+   horizontales de chaque mur (traverses de fenêtre, allège, étagères, cadres). Au-dessus de
+   l'horizon,
+   une ligne qui monte vers la droite indique un mur plus proche à droite ; qui descend, plus loin à
+   droite (l'inverse sous l'horizon). À partir de deux hauteurs relevées à gauche et à droite du
+   mur, par
+   rapport à l'horizon, le rapport des distances est l'inverse du rapport de ces hauteurs. Donne
+   alors à
+   chaque boîte de ce mur distanceM (bord gauche) et distanceDroiteM (bord droit) : montants,
+   bibliothèque, cadres et mur partagent ainsi la même perspective. Ne les laisse de face que si
+   leurs
+   lignes sont vraiment parallèles sur la grille.
 2. Le fond, du plus loin au plus près : ciel, mer, murs, fenêtre avec chaque montant, bibliothèque,
    cadres. Pour une vue extérieure, distanceM d'au moins 40.
 3. Les meubles. Une table ou un bureau vus en perspective : forme « plateau », avec ses 4 coins dans

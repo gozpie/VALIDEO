@@ -85,9 +85,42 @@ def _volume(element: dict[str, Any], camera: CameraPlan) -> dict[str, Any]:
     }
 
 
+def _volume_de_biais(element: dict[str, Any], camera: CameraPlan) -> dict[str, Any]:
+    """Boîte vue de biais : ses bords gauche et droit restent sur leurs pixels."""
+    x0, y0, x1, y1 = (float(element[k]) for k in ("x0", "y0", "x1", "y1"))
+    d_gauche = max(0.2, float(element["distanceM"]))
+    d_droite = max(0.2, float(element["distanceDroiteM"]))
+    y_milieu = (y0 + y1) / 2
+    a = camera.monde(*camera.dans_camera(x0, y_milieu, d_gauche), d_gauche)
+    b = camera.monde(*camera.dans_camera(x1, y_milieu, d_droite), d_droite)
+    largeur = max(math.dist(a, b), 0.005)
+    # Hauteur à mi-distance : la perspective fait converger le haut et le bas d'elle-même.
+    d = (d_gauche + d_droite) / 2
+    _, haut = camera.dans_camera(x0, y0, d)
+    _, bas = camera.dans_camera(x0, y1, d)
+    hauteur = max((haut - bas) * math.cos(camera.bascule), 0.005)
+    profondeur = max(0.01, float(element.get("profondeurM") or 0.1))
+    lacet = math.atan2(-(b[2] - a[2]), b[0] - a[0])
+    # La face avant passe par A et B ; le volume s'étend derrière elle, loin de la caméra.
+    normale = (-math.sin(lacet), -math.cos(lacet))
+    return {
+        "op": "add_primitive",
+        "primitive": "cube",
+        "name": str(element["nom"])[:200],
+        "position": [
+            (a[0] + b[0]) / 2 + normale[0] * profondeur / 2,
+            (a[1] + b[1]) / 2,
+            (a[2] + b[2]) / 2 + normale[1] * profondeur / 2,
+        ],
+        "rotationDegrees": [0, math.degrees(lacet), 0],
+        "scale": [largeur, hauteur, profondeur],
+        "color": _couleur(element.get("couleur")),
+    }
+
+
 def _sur_le_plan(camera: CameraPlan, px: float, py: float, y_plan: float) -> list[float] | None:
     """Point du sol ou d'un plateau horizontal vu à ce pixel : la ligne de vue coupe le plan."""
-    # La distance sur l'axe où la ligne de vue atteint la hauteur voulue se résout directement.
+    # La distance où la ligne de vue atteint la hauteur voulue se résout directement.
     x1, y1 = camera.dans_camera(px, py, 1.0)
     c, s = math.cos(camera.bascule), math.sin(camera.bascule)
     pente = y1 * c - s
@@ -98,7 +131,7 @@ def _sur_le_plan(camera: CameraPlan, px: float, py: float, y_plan: float) -> lis
 
 
 def _plateau(element: dict[str, Any], camera: CameraPlan) -> list[dict[str, Any]]:
-    """Table ou bureau : quatre coins dans l'image et une hauteur réelle, d'où un volume orienté."""
+    """Table ou bureau : quatre coins dans l'image et une hauteur réelle, d'où un volume."""
     hauteur = float(element["hauteurM"])
     coins = [_sur_le_plan(camera, float(p[0]), float(p[1]), hauteur) for p in element["coins"][:4]]
     if len(coins) != 4 or any(c is None for c in coins):
@@ -172,11 +205,12 @@ def plateau_vers_operations(
     ignores: list[str] = []
     for element in plateau.get("elements", []):
         try:
-            operations += (
-                _plateau(element, camera)
-                if element.get("forme") == "plateau"
-                else [_volume(element, camera)]
-            )
+            if element.get("forme") == "plateau":
+                operations += _plateau(element, camera)
+            elif element.get("forme") == "boite" and element.get("distanceDroiteM"):
+                operations.append(_volume_de_biais(element, camera))
+            else:
+                operations.append(_volume(element, camera))
         except (KeyError, TypeError, ValueError) as exc:
             ignores.append(f"{element.get('nom', '?')} : {exc}")
     return operations[:MAX_OPERATIONS], ignores

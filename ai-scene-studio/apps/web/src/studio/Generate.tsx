@@ -83,6 +83,7 @@ export function GenerateControl({
   onCreated,
   defaultModel,
   compact = false,
+  avant,
 }: {
   target: GenerationTarget;
   providers: AiProvider[];
@@ -93,6 +94,8 @@ export function GenerateControl({
   onCreated: (job: GenerationJob) => void;
   defaultModel?: string;
   compact?: boolean;
+  /** À faire juste avant d'envoyer (enregistrer la scène) ; `false` annule l'envoi. */
+  avant?: () => Promise<boolean>;
 }) {
   const models = useMemo(() => modelsFor(providers, mode), [providers, mode]);
   const [choice, setChoice] = useState<string | null>(null);
@@ -153,6 +156,7 @@ export function GenerateControl({
     if (!full) return;
     setBusy(true);
     try {
+      if (avant && !(await avant())) return;
       const job = await create(target, {
         ...full,
         ...(confirmed !== undefined ? { confirmedCost: confirmed } : {}),

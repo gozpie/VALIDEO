@@ -405,3 +405,5 @@ Décision de Pierre : option C — le pont gozCut d'abord, pour monter tout de s
 - **Corrigé** : réglage de durée de Claude (30 min au lieu de 10).
 - **Tests** : `test_shot_layout.py`, E2E simulé ; essai réel sur « L'océanographe » : Opus se superpose bien à l'image (69 opérations), Sonnet moins bien.
 - **Non vérifié** : d'autres plans, plan en mouvement, respect du plateau par un générateur.
+- **Ajouté (chaîne du reel)** : `scene-engine/plateau.ts` (mannequins, caméras préréglées), section « Plateau gris » de l'éditeur, bande de caméras dans la vue caméra, `editor/GenerationCamera.tsx` (image depuis la caméra active avec les fiches, puis vidéo), option `avant` de `GenerateControl` (enregistrer la scène avant l'envoi). Murs vus de biais (`distanceDroiteM`) pour le plateau tiré d'une photo.
+- **Tests** : `plateau.test.ts`, E2E `plateau-gris.spec.ts` (moteur simulé). **Non vérifié** : la vraie chaîne payante, et si le générateur respecte le décor gris.

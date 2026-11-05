@@ -23,6 +23,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Plateau gris d'un plan : « Créer la scène 3D » depuis une version. Claude décrit la pièce et une doublure par personnage
   en pixels de l'image graduée ; le serveur en déduit les volumes et la caméra, qui se superposent à l'image. Proposition
   appliquée depuis l'onglet IA de l'éditeur. La vue caméra superpose la version du plan à la 3D (opacité réglable).
+- Plateau gris dans l'éditeur : mannequin en un clic (un par personnage de la bible), caméras préréglées (large, plan moyen,
+  par-dessus l'épaule, gros plan) et bande pour passer de l'une à l'autre. Bouton « Générer l'image depuis cette caméra »
+  (vue de la caméra + fiches du plan), puis « Animer cette image » : coût confirmé avant chaque génération payante.
 
 ### Corrigé
 

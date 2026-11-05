@@ -1,7 +1,7 @@
 'use client';
 
 import { evaluatedScene } from '@ass/editor-ui';
-import { verticalFovDegrees, worldMatrix } from '@ass/scene-engine';
+import { setActiveCamera, verticalFovDegrees, worldMatrix } from '@ass/scene-engine';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { GenerationJob, ShotVersion } from '@ass/api-client';
 import { Image as ImageIcon } from 'lucide-react';
@@ -154,6 +154,33 @@ function PhotoDuPlan() {
   );
 }
 
+/** Les caméras du plateau, d'un clic : on passe de l'une à l'autre comme sur un tournage. */
+function BandeCameras() {
+  const { store } = useEditorContext();
+  const cameras = useEditor((state) => state.scene.cameras);
+  const activeId = useEditor((state) => state.scene.activeCameraId);
+  if (cameras.length < 2) return null;
+  return (
+    <div
+      role="group"
+      aria-label="Caméras du plateau"
+      className="absolute right-2 top-2 flex max-w-[70%] flex-wrap justify-end gap-1"
+    >
+      {cameras.map((camera) => (
+        <button
+          key={camera.id}
+          type="button"
+          aria-pressed={camera.id === activeId}
+          onClick={() => store.getState().apply((scene) => setActiveCamera(scene, camera.id))}
+          className={`rounded px-2 py-0.5 text-xs ${camera.id === activeId ? 'bg-accent text-white' : 'bg-black/60 text-text hover:bg-black/80'}`}
+        >
+          {camera.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CameraViewport() {
   const width = useEditor((state) => state.scene.renderSettings.width);
   const height = useEditor((state) => state.scene.renderSettings.height);
@@ -179,6 +206,7 @@ export function CameraViewport() {
             </ViewOptions.Provider>
           </Canvas>
           <PhotoDuPlan />
+          <BandeCameras />
           <span className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-text">
             {active.name} · {active.focalLengthMm.toFixed(1).replace('.', ',')} mm · {width}×
             {height}

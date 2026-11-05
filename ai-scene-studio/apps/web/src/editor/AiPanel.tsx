@@ -30,6 +30,7 @@ import { API_URL } from '@/lib/config';
 import { toast } from '@/lib/toast';
 import { applyAiOperations, describeOperation, type AiOperation } from './aiOperations';
 import { useEditor, useEditorContext } from './context';
+import { GenerationCamera } from './GenerationCamera';
 
 const MODES: Record<GenerationMode, { label: string; hint: string }> = {
   text_to_image: { label: 'Image', hint: 'Une image à partir du prompt' },
@@ -327,6 +328,15 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
 
   return (
     <section aria-label="Génération IA" className="flex flex-col gap-4 text-sm">
+      <GenerationCamera
+        providers={providers}
+        jobs={jobs}
+        onSave={onSave}
+        onCreated={(job) => {
+          announced.current.add(job.id);
+          setJobs((list) => [job, ...list.filter((j) => j.id !== job.id)]);
+        }}
+      />
       <div className="flex items-start gap-2">
         <Sparkles size={16} className="mt-0.5 text-ai" />
         <div>
