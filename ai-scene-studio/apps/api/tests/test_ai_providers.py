@@ -101,6 +101,7 @@ def test_claude_errors_are_normalized(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.integration
 def test_first_frame_of_a_real_video(tmp_path: Path) -> None:
     video = tmp_path / "plan.mp4"
     subprocess.run(  # noqa: S603
