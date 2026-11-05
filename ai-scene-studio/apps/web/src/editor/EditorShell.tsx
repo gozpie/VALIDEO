@@ -83,13 +83,14 @@ export function EditorShell({
   const viewport = useRef<ViewportApi | null>(null);
   const context = useMemo(
     () => ({
+      shotId,
       store,
       canEdit,
       objects,
       viewport,
       assetUrl: (id: string) => `${API_URL}/assets/${id}/content`,
     }),
-    [store, canEdit, objects],
+    [shotId, store, canEdit, objects],
   );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
   const [view, setView] = useState<ViewSettings>({
@@ -99,6 +100,10 @@ export function EditorShell({
   });
   const [boxSelect, setBoxSelect] = useState(false);
   const [panel, setPanel] = useState<EditorPanel>('inspector');
+  // Venu d'une proposition de Claude (#ia) : l'onglet IA s'ouvre directement.
+  useEffect(() => {
+    if (window.location.hash === '#ia') setPanel('ai');
+  }, []);
   const [leftWidth, setLeftWidth] = useResizable('editor.left', 256, 180, 480);
   const [rightWidth, setRightWidth] = useResizable('editor.right', 304, 240, 560);
   const [timelineHeight, setTimelineHeight] = useResizable('editor.timeline', 224, 120, 520);

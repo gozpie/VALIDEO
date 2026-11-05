@@ -1,9 +1,10 @@
 """Claude par l'abonnement (outil officiel `claude` en mode non interactif) : assistants texte.
 
 Claude lit des images et produit du texte : il ne génère ni image ni vidéo. Modes : prompt de plan
-à partir de la scène et de ses rendus, assistant de scène (consigne → opérations proposées) et
-critique d'un rendu. Authentification : `CLAUDE_CODE_OAUTH_TOKEN` (jeton d'abonnement), jamais
-exposé au navigateur. Seul l'outil de lecture de fichiers est autorisé, dans le dossier de travail.
+à partir de la scène et de ses rendus, assistant de scène (consigne → opérations proposées), plateau
+d'un plan (image graduée → éléments en pixels) et critique d'un rendu.
+Authentification : `CLAUDE_CODE_OAUTH_TOKEN` (jeton d'abonnement), jamais exposé au navigateur.
+Seul l'outil de lecture de fichiers est autorisé, dans le dossier de travail.
 """
 
 import json
@@ -98,6 +99,64 @@ SCENE_SCHEMA: Final = {
     },
     "required": ["summary", "operations"],
 }
+PIXEL: Final = {"type": "number", "description": "Pixels de l'image du plan"}
+PLATEAU_SCHEMA: Final = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string", "description": "Le plateau construit, en français"},
+        "notes": {"type": "string", "description": "Ce qui reste approximatif, en français"},
+        "camera": {
+            "type": "object",
+            "properties": {
+                "focaleMm": {"type": "number"},
+                "hauteurM": {"type": "number", "description": "Hauteur de la caméra au sol"},
+                "horizonY": {"type": "number", "description": "Ordonnée de l'horizon, en pixels"},
+            },
+            "required": ["focaleMm", "hauteurM", "horizonY"],
+        },
+        "couleurSol": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+        "elements": {
+            "type": "array",
+            "maxItems": 70,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "nom": {"type": "string"},
+                    "forme": {"type": "string", "enum": ["boite", "boule", "cylindre", "plateau"]},
+                    "x0": PIXEL,
+                    "y0": PIXEL,
+                    "x1": PIXEL,
+                    "y1": PIXEL,
+                    "distanceM": {"type": "number", "description": "Distance à la caméra"},
+                    "profondeurM": {"type": "number", "description": "Épaisseur vers l'arrière"},
+                    "couleur": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "minItems": 3,
+                        "maxItems": 3,
+                    },
+                    "coins": {
+                        "type": "array",
+                        "description": "Plateau : ses 4 coins dans l'image, dans l'ordre du tour",
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "minItems": 2,
+                            "maxItems": 2,
+                        },
+                        "minItems": 4,
+                        "maxItems": 4,
+                    },
+                    "hauteurM": {"type": "number", "description": "Plateau : hauteur au sol"},
+                    "epaisseurM": {"type": "number"},
+                    "jusquAuSol": {"type": "boolean"},
+                },
+                "required": ["nom", "forme", "couleur"],
+            },
+        },
+    },
+    "required": ["summary", "notes", "camera", "elements"],
+}
 ANALYSIS_SCHEMA: Final = {
     "type": "object",
     "properties": {
@@ -135,6 +194,55 @@ entités par leur nom exact ; positions en mètres, rotations en degrés (Euler 
 clé de la transformation courante de la cible à la frame indiquée, après application des valeurs
 données dans la même opération.
 Consigne : {intent}"""
+
+SHOT_SCENE_TASK: Final = """\
+Tu es chef décorateur. Tu construis le plateau gris d'un plan, comme sur un vrai tournage : une
+pièce
+en volumes simples et une doublure par personnage. Il servira de repère pour générer des images et
+des vidéos, toujours avec le même placement. Vu de sa caméra, il doit se superposer à l'image.
+
+Tu ne donnes aucune position en mètres dans la pièce : pour chaque élément, tu donnes sa place en
+PIXELS dans l'image et sa distance à la caméra. Le calcul fait le reste : l'élément retombera
+exactement
+sur ces pixels. Sois donc précis sur les pixels ; une distance approximative n'a pas d'effet vu de
+cette
+caméra, mais elle en aura si la caméra bouge : garde les proportions réelles.
+
+{images}
+{documents}
+L'image mesure {largeur} x {hauteur} pixels. Regarde les deux images avec l'outil Read : l'image du
+plan, et la même avec une grille (un trait tous les 50 pixels, appuyé et gradué tous les 100).
+Relève
+chaque coordonnée sur la grille : ne l'estime pas de mémoire.
+
+Méthode :
+1. La caméra. horizonY : l'ordonnée de l'horizon (ligne de mer, point de fuite des lignes
+   horizontales).
+   Focale probable. hauteurM : déduite de ce qui est à hauteur d'œil dans l'image (ce qui croise
+   l'horizon est à la hauteur de la caméra). Un visage adulte fait environ 0,24 m de haut ; un
+   plateau de
+   bureau est à 0,75 m ; une porte fait 2 m. À la focale f, un objet de H mètres à la distance d
+   occupe
+   H * f * {largeur} / (36 * d) pixels de haut : déduis-en les distances, en commençant par le
+   sujet.
+2. Le fond, du plus loin au plus près : ciel, mer, murs, fenêtre avec chaque montant, bibliothèque,
+   cadres. Pour une vue extérieure, distanceM d'au moins 40.
+3. Les meubles. Une table ou un bureau vus en perspective : forme « plateau », avec ses 4 coins dans
+   l'image (coins, dans l'ordre du tour), sa hauteur réelle (hauteurM) et jusquAuSol si le meuble
+   est
+   plein. Les x0, y0, x1, y1 sont alors inutiles.
+4. Chaque personnage : une doublure faite de volumes arrondis, nommés (« Femme - tête » en boule,
+   « Femme - buste » en boule, « Femme - bras gauche », « Femme - jambes »), qui épousent sa
+   silhouette. Jamais de boîte pour un corps. Les volumes de l'objet nommé par `forme` couvrent
+   leur boîte
+   de pixels : boule et cylindre s'y inscrivent.
+5. Les objets qui comptent pour le cadre : lampe, bocal, casque… en boule, cylindre ou boîte.
+6. L'avant-plan flou, en grandes masses.
+
+Couleurs : la teinte moyenne de chaque élément, de 0 à 1, en restant simples. Noms en français,
+uniques, de 30 à
+60
+éléments. Ne décris que ce qu'on voit. Précision de l'utilisateur : {intent}"""
 
 ANALYSIS_TASK: Final = """\
 Tu es superviseur d'images.
@@ -175,6 +283,7 @@ class ClaudeProvider(ProviderAdapter):
                     "prompt_from_scene",
                     "scene_from_text",
                     "image_analysis",
+                    "scene_from_shot",
                     "script_breakdown",
                     "bible_from_script",
                     "shot_prompts",
@@ -213,6 +322,18 @@ class ClaudeProvider(ProviderAdapter):
             return PROMPT_TASK.format(**values), PROMPT_SCHEMA
         if request.mode == "scene_from_text":
             return SCENE_TASK.format(**values), SCENE_SCHEMA
+        if request.mode == "scene_from_shot":
+            mesure = json.loads(context.documents["image.json"])
+            values["images"] = f"Images du plan, dans le dossier courant : {', '.join(files)}."
+            autres = sorted(set(context.documents) - {"image.json"})
+            values["documents"] = (
+                f"Fiches du plan et de la bible, à lire aussi : {', '.join(autres)}."
+                if autres
+                else ""
+            )
+            values["largeur"] = mesure["largeur"]
+            values["hauteur"] = mesure["hauteur"]
+            return SHOT_SCENE_TASK.format(**values), PLATEAU_SCHEMA
         return ANALYSIS_TASK.format(**values), ANALYSIS_SCHEMA
 
     def submit_generation(self, model: str, request: GenerationRequest, context: RunContext) -> str:
@@ -255,6 +376,7 @@ class ClaudeProvider(ProviderAdapter):
             "script_breakdown": "découpe le film",
             "bible_from_script": "établit la bible",
             "shot_prompts": "écrit les prompts du plan",
+            "scene_from_shot": "bâtit le plateau du plan",
         }.get(request.mode, "analyse la scène")
         context.progress(0.2, f"{MODELS.get(model, model)} {task}")
         try:

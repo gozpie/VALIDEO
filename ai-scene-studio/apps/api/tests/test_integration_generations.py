@@ -2,6 +2,7 @@
 
 import json
 import os
+import subprocess
 import time
 import uuid
 from datetime import UTC, datetime
@@ -259,6 +260,72 @@ def test_simulated_generation_end_to_end(
         manifest = json.loads(storage.get_bytes(stored.input_manifest_key))
     assert manifest["provider"] == "simulation"
     assert "Cube" in manifest["sceneSummary"]
+
+
+def test_video_shot_becomes_a_scene_proposal(
+    alice: ApiClient,
+    shot: dict[str, str],
+    broker: Any,
+    ai_settings: Settings,
+    db_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    _beat(broker, ai_settings, "simulation")
+    body = {"provider": "simulation", "model": "scene", "mode": "scene_from_shot"}
+    url = f"/shots/{shot['id']}/generations"
+    refused = alice.post(url, json=body)
+    assert refused.status_code == 422
+    assert "version" in refused.json()["detail"]
+
+    # Une vraie vidéo, déposée comme version du plan.
+    video = tmp_path / "plan.mp4"
+    subprocess.run(  # noqa: S603
+        [  # noqa: S607
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x180:rate=24:duration=5",
+            "-pix_fmt",
+            "yuv420p",
+            str(video),
+        ],
+        check=True,
+    )
+    project = alice.get(f"/shots/{shot['id']}").json()["projectId"]
+    with video.open("rb") as handle:
+        asset = alice.post(
+            f"/projects/{project}/edit/media",
+            files={"file": ("plan.mp4", handle, "video/mp4")},
+        ).json()["asset"]
+    version = alice.post(f"/shots/{shot['id']}/versions", json={"assetId": asset["id"]}).json()
+    before = len(alice.get(f"/shots/{shot['id']}/versions").json())
+
+    job = alice.post(url, json={**body, "parentVersionId": version["id"]}).json()
+    storage = ObjectStorage.from_settings(ai_settings)
+    render_queue = RenderQueue.from_settings(ai_settings)
+    try:
+        run_generation(
+            uuid.UUID(job["id"]),
+            {"simulation": SimulationProvider("ffmpeg")},
+            ai_settings,
+            db_factory,
+            storage,
+            render_queue,
+            "test",
+        )
+    finally:
+        render_queue.close()
+    done = alice.get(f"/generation-jobs/{job['id']}").json()
+    assert done["status"] == "completed", done
+    result = done["outputs"]["result"]
+    assert any(op["name"] == "Volume simulé" for op in result["operations"] if "name" in op)
+    # Une proposition, pas une nouvelle version du plan.
+    assert done["outputs"]["assets"] == []
+    assert len(alice.get(f"/shots/{shot['id']}/versions").json()) == before
 
 
 def test_references_must_be_workspace_images(

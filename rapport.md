@@ -398,3 +398,10 @@ Décision de Pierre : option C — le pont gozCut d'abord, pour monter tout de s
 - **Non vérifié** : écoute à l'oreille des fondus et du mixage (mesures de niveau seulement), rendu sur écran réel (navigateur sans écran), gros film, Safari.
 - **Reste** : 7.4 export du film et XML Premiere.
 
+### Plateau gris d'un plan (hors feuille de route, demandé par Pierre)
+- **But** : des repères en volumes simples, bien placés, pour rejouer un cadrage et guider la génération, sans quitter la plateforme.
+- **Ajouté** : mode `scene_from_shot`, `ai/shot_frames.py` (première image, image graduée), `ai/shot_layout.py` (pixels et distance → opérations), bouton « Créer la scène 3D » du plan, proposition dans l'onglet IA.
+- **Essais écartés** : Claude plaçant en mètres, même avec 2 tours de correction ; profondeur et segmentation sur serveur (image de 2,4 Go, chronométrage non fiable car le Mac dormait).
+- **Corrigé** : réglage de durée de Claude (30 min au lieu de 10).
+- **Tests** : `test_shot_layout.py`, E2E simulé ; essai réel sur « L'océanographe » : Opus se superpose bien à l'image (69 opérations), Sonnet moins bien.
+- **Non vérifié** : d'autres plans, plan en mouvement, respect du plateau par un générateur.

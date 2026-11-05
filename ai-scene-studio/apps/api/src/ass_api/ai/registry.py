@@ -18,7 +18,7 @@ def build_providers(settings: Settings) -> dict[str, ProviderAdapter]:
     )
     providers: list[ProviderAdapter] = [
         SimulationProvider(settings.ffmpeg_path),
-        ClaudeProvider(settings.claude_path, token),
+        ClaudeProvider(settings.claude_path, token, settings.ai_timeout_seconds),
         HiggsfieldBridgeProvider(settings.higgsfield_scripts_dir),
         GozCutBridgeProvider(
             settings.ffmpeg_path, settings.gozcut_projects_dir, settings.gozcut_app_path

@@ -61,10 +61,43 @@ class SimulationProvider(ProviderAdapter):
                 aspect_ratios=ASPECTS,
                 notes=notes,
             ),
+            ModelCapabilities(
+                provider=self.id,
+                model="scene",
+                label="Simulation scène",
+                modes=("scene_from_shot",),
+                controls=(),
+                max_reference_images=8,
+                notes="Aucune IA : scène fixe, sans lien avec les images, pour tester la chaîne.",
+            ),
         ]
 
     def estimate_cost(self, model: str, request: GenerationRequest) -> CostEstimate:
         return CostEstimate(0, "gratuit", "Simulation locale, aucun appel externe", paid=False)
+
+    @staticmethod
+    def _scene() -> dict[str, object]:
+        return {
+            "summary": "Scène simulée",
+            "notes": "Simulation : aucune IA n'a regardé les images.",
+            "operations": [
+                {
+                    "op": "add_primitive",
+                    "primitive": "plane",
+                    "name": "Sol simulé",
+                    "scale": [20, 1, 20],
+                },
+                {
+                    "op": "add_primitive",
+                    "primitive": "cube",
+                    "name": "Volume simulé",
+                    "position": [0, 0.5, 0],
+                },
+                {"op": "add_light", "lightKind": "directional", "name": "Soleil simulé"},
+                {"op": "add_camera", "name": "Caméra simulée", "position": [0, 1.6, 6]},
+                {"op": "set_active_camera", "target": "Caméra simulée"},
+            ],
+        }
 
     def _ffmpeg_run(self, args: list[str]) -> None:
         result = subprocess.run(  # noqa: S603 (arguments construits ici)
@@ -80,6 +113,9 @@ class SimulationProvider(ProviderAdapter):
 
     def submit_generation(self, model: str, request: GenerationRequest, context: RunContext) -> str:
         external_id = f"sim-{uuid.uuid4().hex[:12]}"
+        if request.mode == "scene_from_shot":
+            self._results[external_id] = [ProviderOutput("json", data=self._scene())]
+            return external_id
         width = request.width or 1280
         height = request.height or 720
         source = context.references[0] if context.references else None

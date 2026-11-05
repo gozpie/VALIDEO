@@ -140,8 +140,10 @@ export function applyAiOperations(
           break;
         }
         default: {
-          const target = byName(next, op.target);
-          if (!target) return skip(`« ${op.target ?? '?'} » introuvable`);
+          // Claude désigne parfois la cible par `name` plutôt que `target` : sans ambiguïté ici.
+          const designe = op.op === 'rename' ? op.target : (op.target ?? op.name);
+          const target = byName(next, designe);
+          if (!target) return skip(`« ${designe ?? '?'} » introuvable`);
           const id = target.value.id;
           if (op.op === 'set_transform') {
             const transform = transformFor(next, id, op, frame);

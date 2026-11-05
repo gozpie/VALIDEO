@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, call } from '@/lib/api';
 import { toast } from '@/lib/toast';
@@ -107,6 +108,7 @@ export function ShotDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const router = useRouter();
   const [versions, setVersions] = useState<ShotVersion[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [compareId, setCompareId] = useState<string | null>(null);
@@ -126,7 +128,13 @@ export function ShotDrawer({
   );
   const onDone = useCallback(
     (job: GenerationJob) => {
-      if (job.status === 'completed') {
+      if (job.status === 'completed' && job.mode === 'scene_from_shot') {
+        toast('Plateau 3D prêt', {
+          kind: 'ai',
+          duration: 0,
+          action: { label: 'Ouvrir', run: () => router.push(`/shots/${shot.id}/editor#ia`) },
+        });
+      } else if (job.status === 'completed') {
         toast(job.mode === 'shot_prompts' ? 'Prompts de Claude prêts' : 'Nouvelle version', {
           kind: 'ai',
         });
@@ -136,9 +144,12 @@ export function ShotDrawer({
         toast(`Génération en échec : ${job.errorDetails ?? job.message}`, { kind: 'error' });
       }
     },
-    [loadVersions, onChanged],
+    [loadVersions, onChanged, router, shot.id],
   );
   const [jobs, , track] = useJobs(loadJobs, onDone);
+  const propositionScene = jobs.find(
+    (job) => job.mode === 'scene_from_shot' && job.status === 'completed',
+  );
 
   const patch = (body: Patch) =>
     call(api.PATCH('/shots/{shot_id}', { params: { path: { shot_id: shot.id } }, body }))
@@ -404,6 +415,31 @@ export function ShotDrawer({
                   onCreated={track}
                 />
               </>
+            )}
+            <p className="flex items-center gap-1.5 text-[11px] text-muted">
+              <Box size={12} /> Scène 3D
+              {preview
+                ? ` — plateau gris d’après v${preview.number} : les volumes et une doublure par personnage, placés sur l’image`
+                : ' — choisissez d’abord une version'}
+            </p>
+            <GenerateControl
+              target={{ kind: 'shot', id: shot.id }}
+              providers={providers}
+              mode="scene_from_shot"
+              defaultModel="claude:opus"
+              body={preview ? { parentVersionId: preview.id } : {}}
+              label="Créer la scène 3D"
+              disabled={!preview}
+              onCreated={track}
+            />
+            {propositionScene && (
+              <Link
+                href={`/shots/${shot.id}/editor#ia`}
+                className="flex items-center gap-1 self-start text-xs text-ai hover:underline"
+                data-testid="ouvrir-proposition-scene"
+              >
+                Voir la proposition dans l’éditeur 3D <ExternalLink size={11} />
+              </Link>
             )}
           </section>
         )}

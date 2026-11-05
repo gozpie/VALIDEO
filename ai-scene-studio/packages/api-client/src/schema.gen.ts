@@ -1247,7 +1247,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis" | "script_breakdown" | "bible_from_script" | "shot_prompts" | "gozcut_project";
+            mode: "text_to_image" | "image_to_image" | "text_to_video" | "image_to_video" | "prompt_from_scene" | "scene_from_text" | "image_analysis" | "scene_from_shot" | "script_breakdown" | "bible_from_script" | "shot_prompts" | "gozcut_project";
             /** Model */
             model: string;
             /**

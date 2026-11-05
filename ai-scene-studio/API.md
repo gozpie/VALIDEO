@@ -228,6 +228,8 @@ disponible → `503`. Sorties : `outputs.assets[]` (`assetId`, `kind` image ou v
 d'image ou de vidéo d'un plan n'exige une scène enregistrée que si la caméra la conditionne (`sceneFrames`) ;
 `bibleReferences: true` ajoute en tête les images clés des éléments liés (ordre @image1, @image2…) ;
 `parentVersionId` rattache les versions produites. Mode `shot_prompts` (Claude) : prompts image / vidéo du plan.
+Mode `scene_from_shot` (Claude, `parentVersionId` obligatoire) : plateau gris du plan. Claude décrit chaque élément en
+pixels de la première image, le serveur calcule sa place (`outputs.result` : `summary`, `notes`, `operations`, `plateau`). Rien n'est appliqué sans action depuis l'onglet IA de l'éditeur.
 
 ## Montage (phase 7)
 

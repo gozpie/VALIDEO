@@ -16,6 +16,8 @@ from ass_api.ai.capabilities import MEDIA_MODES, GenerationRequest
 from ass_api.ai.edit_list import build_edit_list
 from ass_api.ai.providers.base import ProviderAdapter, ProviderError, RunContext
 from ass_api.ai.scene_summary import describe_scene
+from ass_api.ai.shot_frames import first_frame, graduated_image, image_size
+from ass_api.ai.shot_layout import plateau_vers_operations
 from ass_api.ai.studio_context import (
     bible_document,
     breakdown_names,
@@ -154,13 +156,25 @@ def _fetch_asset(
             handle.write(chunk)
 
 
+def _shot_image(
+    db: Session, storage: ObjectStorage, job: GenerationJob, folder: Path, ffmpeg: str
+) -> tuple[Path, str]:
+    """Première image de la version à transformer en scène, et son asset."""
+    version = db.get(ShotVersion, uuid.UUID(job.request["parentVersionId"]))
+    asset = db.get(Asset, version.asset_id) if version is not None else None
+    if asset is None:
+        raise ProviderError("invalid_request", "Cette version du plan n'existe plus")
+    source = _download(db, storage, str(asset.id), folder, "plan_source")
+    return first_frame(ffmpeg, source, folder / "plan.png"), str(asset.id)
+
+
 def studio_documents(
     db: Session, job: GenerationJob, project: Project, shot: Shot | None
 ) -> dict[str, str]:
     """Script, bible, fiche du plan ou liste de montage selon le mode (rien pour les autres)."""
     if job.mode == "gozcut_project":
         return {"edit.json": json.dumps(build_edit_list(db, project), ensure_ascii=False)}
-    if job.mode not in ("script_breakdown", "bible_from_script", "shot_prompts"):
+    if job.mode not in ("script_breakdown", "bible_from_script", "shot_prompts", "scene_from_shot"):
         return {}
     documents: dict[str, str] = {}
     script_id = job.request.get("scriptId")
@@ -174,7 +188,7 @@ def studio_documents(
         names = breakdown_names(db, project.id)
         if names:
             documents["decoupage.md"] = names
-    if job.mode == "shot_prompts" and shot is not None:
+    if job.mode in ("shot_prompts", "scene_from_shot") and shot is not None:
         documents["plan.md"] = shot_document(db, shot)
     return documents
 
@@ -297,6 +311,20 @@ def _execute(
             for index, asset_id in enumerate(job.request.get("referenceAssetIds", [])):
                 references.append(_download(db, storage, asset_id, work, f"reference_{index + 1}"))
                 used.append({"role": "reference", "assetId": asset_id})
+            taille: tuple[int, int] | None = None
+            if job.mode == "scene_from_shot":
+                image, asset_id = _shot_image(db, storage, job, work, settings.ffmpeg_path)
+                references.append(image)
+                used.append({"role": "shot_frame", "assetId": asset_id})
+                # Le fournisseur simulé ne regarde rien : la grille ne sert qu'à un vrai modèle.
+                if job.provider != "simulation":
+                    taille = image_size(settings.ffmpeg_path, image)
+                    references.append(
+                        graduated_image(settings.ffmpeg_path, image, work / "grille.png", taille)
+                    )
+                    documents["image.json"] = json.dumps(
+                        {"largeur": taille[0], "hauteur": taille[1]}
+                    )
             references = references[: max(caps.max_reference_images, 0) or len(references)]
             request = request_from(job)
             manifest = {
@@ -349,7 +377,11 @@ def _execute(
             actual = None
             for index, output in enumerate(outputs):
                 if output.kind == "json":
-                    result["result"] = output.data
+                    result["result"] = (
+                        _scene_from_plateau(output.data, taille)
+                        if taille is not None
+                        else output.data
+                    )
                 elif output.path is not None:
                     asset = store_file(
                         db,
@@ -382,6 +414,20 @@ def _execute(
             job.progress = 1.0
             transition(job, "completed", "Génération terminée")
             db.commit()
+
+
+def _scene_from_plateau(plateau: dict[str, Any], taille: tuple[int, int]) -> dict[str, Any]:
+    """Le plateau décrit en pixels devient une proposition d'opérations, placées par le calcul."""
+    operations, ignored = plateau_vers_operations(plateau, *taille)
+    notes = str(plateau.get("notes", ""))
+    if ignored:
+        notes = f"{notes} Éléments ignorés : {' ; '.join(ignored)}".strip()
+    return {
+        "summary": str(plateau.get("summary", "")),
+        "notes": notes,
+        "operations": operations,
+        "plateau": plateau,
+    }
 
 
 def _finish(

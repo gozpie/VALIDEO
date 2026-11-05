@@ -40,12 +40,14 @@ const MODES: Record<GenerationMode, { label: string; hint: string }> = {
   scene_from_text: { label: 'Assistant de scène', hint: 'Claude propose des modifications' },
   image_analysis: { label: 'Critique du rendu', hint: 'Claude analyse l’image de la caméra' },
   // Modes du studio : lancés depuis le studio de production, pas depuis l'éditeur.
+  scene_from_shot: { label: 'Plan → scène 3D', hint: 'Studio de production' },
   script_breakdown: { label: 'Découpage', hint: 'Studio de production' },
   bible_from_script: { label: 'Bible', hint: 'Studio de production' },
   shot_prompts: { label: 'Prompts du plan', hint: 'Studio de production' },
   gozcut_project: { label: 'Projet gozCut', hint: 'Montage' },
 };
 const STUDIO_ONLY = new Set<GenerationMode>([
+  'scene_from_shot',
   'script_breakdown',
   'bible_from_script',
   'shot_prompts',
@@ -101,7 +103,6 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
   const frame = useEditor((state) => state.frame);
   const duration = useEditor((state) => state.scene.durationFrames);
   const hasCamera = useEditor((state) => state.scene.activeCameraId !== null);
-  const dirty = useEditor(isDirty);
 
   const [providers, setProviders] = useState<AiProvider[] | null>(null);
   const [selection, setSelection] = useState<{ provider: string; model: string } | null>(null);
@@ -235,11 +236,14 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
     }
   }, [jobs]);
 
-  const submit = async (payload: GenerationInput, confirmed?: number) => {
+  const submit = async (
+    payload: GenerationInput,
+    confirmed?: number,
+  ): Promise<GenerationJob | null> => {
     setBusy(true);
     try {
       // La génération porte sur une révision enregistrée.
-      if (dirty && !(await onSave())) return;
+      if (isDirty(store.getState()) && !(await onSave())) return null;
       const job = await call(
         api.POST('/shots/{shot_id}/generations', {
           params: { path: { shot_id: shotId } },
@@ -249,8 +253,10 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
       );
       announced.current.add(job.id);
       setJobs((list) => [job, ...list.filter((j) => j.id !== job.id)]);
+      return job;
     } catch (error) {
       toast((error as Error).message, { kind: 'error' });
+      return null;
     } finally {
       setBusy(false);
     }
@@ -279,12 +285,16 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
   const applyOperations = (job: GenerationJob, result: SceneResult) => {
     let outcome: ReturnType<typeof applyAiOperations> | null = null;
     const ok = store.getState().apply((scene) => {
-      outcome = applyAiOperations(scene, result.operations, store.getState().frame);
+      // Une scène tirée d'un plan et ses corrections portent sur le début du plan.
+      const at = job.mode === 'scene_from_shot' ? 0 : store.getState().frame;
+      outcome = applyAiOperations(scene, result.operations, at);
       return outcome.scene;
     });
     const done = outcome as ReturnType<typeof applyAiOperations> | null;
     if (!ok || !done) return;
     setApplied((set) => new Set(set).add(job.id));
+    // Un plateau se juge vu de sa caméra, posé sur la photo du plan.
+    if (job.mode === 'scene_from_shot') store.getState().setCameraView('camera');
     const after = store.getState().scene;
     toast(
       done.skipped.length === 0
@@ -785,27 +795,32 @@ function JobCard({
           )}
         </div>
       )}
-      {result && job.mode === 'scene_from_text' && Array.isArray(result['operations']) && (
-        <div className="mt-2 flex flex-col gap-1">
-          <p className="text-text/90">{String(result['summary'] ?? '')}</p>
-          <ol className="list-decimal pl-4 text-muted">
-            {(result['operations'] as AiOperation[]).map((op, index) => (
-              <li key={index}>{describeOperation(op)}</li>
-            ))}
-          </ol>
-          {canEdit && (
-            <button
-              type="button"
-              disabled={applied}
-              className="flex items-center gap-1 self-start rounded-md border border-ai/50 px-2 py-0.5 text-ai hover:bg-ai/10 disabled:opacity-50"
-              onClick={() => onApply(result as unknown as SceneResult)}
-            >
-              {applied ? <Check size={12} /> : <Wand2 size={12} />}
-              {applied ? 'Appliqué' : 'Appliquer à la scène'}
-            </button>
-          )}
-        </div>
-      )}
+      {result &&
+        (job.mode === 'scene_from_text' || job.mode === 'scene_from_shot') &&
+        Array.isArray(result['operations']) && (
+          <div className="mt-2 flex flex-col gap-1">
+            <p className="text-text/90">{String(result['summary'] ?? '')}</p>
+            {typeof result['notes'] === 'string' && result['notes'] !== '' && (
+              <p className="text-warn">{result['notes']}</p>
+            )}
+            <ol className="max-h-56 list-decimal overflow-auto pl-4 text-muted">
+              {(result['operations'] as AiOperation[]).map((op, index) => (
+                <li key={index}>{describeOperation(op)}</li>
+              ))}
+            </ol>
+            {canEdit && (
+              <button
+                type="button"
+                disabled={applied}
+                className="flex items-center gap-1 self-start rounded-md border border-ai/50 px-2 py-0.5 text-ai hover:bg-ai/10 disabled:opacity-50"
+                onClick={() => onApply(result as unknown as SceneResult)}
+              >
+                {applied ? <Check size={12} /> : <Wand2 size={12} />}
+                {applied ? 'Appliqué' : 'Appliquer à la scène'}
+              </button>
+            )}
+          </div>
+        )}
       {result && job.mode === 'image_analysis' && typeof result['summary'] === 'string' && (
         <Analysis result={result as unknown as AnalysisResult} />
       )}

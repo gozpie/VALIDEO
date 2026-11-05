@@ -21,7 +21,7 @@ RUN npm install --global --omit=dev "@anthropic-ai/claude-code@${CLAUDE_CODE_VER
     && npm cache clean --force
 
 FROM python:3.13.18-slim-trixie AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 # Le paquet npm installe un binaire natif autonome : Node n'est pas nécessaire à l'exécution.
 COPY --from=claude /usr/local/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe /usr/local/bin/claude

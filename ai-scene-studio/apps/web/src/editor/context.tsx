@@ -13,6 +13,8 @@ export interface ViewportApi {
 }
 
 export interface EditorContextValue {
+  /** Plan ouvert : ses versions servent de photo de référence dans la vue caméra. */
+  shotId?: string;
   store: StoreApi<EditorState>;
   canEdit: boolean;
   assetUrl: (assetId: string) => string;

@@ -60,6 +60,7 @@ Mode = Literal[
     "prompt_from_scene",
     "scene_from_text",
     "image_analysis",
+    "scene_from_shot",
     "script_breakdown",
     "bible_from_script",
     "shot_prompts",
@@ -318,6 +319,8 @@ def _shot_target(
         parent = db.get(ShotVersion, body.parent_version_id)
         if parent is None or parent.shot_id != shot.id:
             raise _unprocessable("Version parente inconnue pour ce plan")
+    if body.mode == "scene_from_shot" and body.parent_version_id is None:
+        raise _unprocessable("Choisissez la version du plan à transformer en scène 3D")
     _check_references(db, access, body)
     return Target(access, project, shot.id, revision if valid else None)
 

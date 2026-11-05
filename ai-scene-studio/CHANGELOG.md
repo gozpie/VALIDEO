@@ -20,9 +20,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
   fondus d'entrée et de sortie ; fondu sonore à puissance constante. Titres (texte, police, taille, couleur, bandeau,
   place). Images clés sur l'image et le volume, zoom lent en un clic. Panneaux Réglages, Transitions et titres, Mixage
   (faders de piste, volume général, muet, solo, vumètres réels).
+- Plateau gris d'un plan : « Créer la scène 3D » depuis une version. Claude décrit la pièce et une doublure par personnage
+  en pixels de l'image graduée ; le serveur en déduit les volumes et la caméra, qui se superposent à l'image. Proposition
+  appliquée depuis l'onglet IA de l'éditeur. La vue caméra superpose la version du plan à la 3D (opacité réglable).
 
 ### Corrigé
 
+- Claude pouvait être coupé à 10 minutes malgré le réglage de 30 minutes.
 - Vidéos avec images B (la plupart des H.264) : le moniteur n'affichait qu'une image sur deux environ, désormais toutes
   (décodage en continu en lecture, sans attente : 24 i/s mesurées en 1080p).
 - Glisser un plan de la galerie vers la timeline : la dépose était refusée, ou posait le mauvais média.

@@ -5112,6 +5112,7 @@
               "prompt_from_scene",
               "scene_from_text",
               "image_analysis",
+              "scene_from_shot",
               "script_breakdown",
               "bible_from_script",
               "shot_prompts",

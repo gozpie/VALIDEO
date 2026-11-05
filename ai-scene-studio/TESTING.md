@@ -68,6 +68,12 @@ E2E_BASE_URL=http://localhost:3000 E2E_EMAIL=… E2E_PASSWORD=… pnpm test:e2e
 
 Sans `E2E_EMAIL` / `E2E_PASSWORD`, ces tests sont explicitement ignorés (seul le test d'accueil s'exécute).
 
+## Plateau d'un plan
+
+`apps/api/tests/test_shot_layout.py` vérifie que chaque élément retombe sur ses pixels, quelle que soit sa distance.
+`apps/web/e2e/scene-from-shot.spec.ts` déroule la chaîne avec le moteur simulé. La qualité de ce que propose Claude se juge
+à l'œil, avec le vrai moteur, en superposant le rendu à l'image.
+
 ## Montage (phase 7)
 
 Le moteur (`packages/nle/*`) garde ses tests d'origine, sauf `demux`, ignoré sans ses fixtures FFmpeg. Le lien film ↔

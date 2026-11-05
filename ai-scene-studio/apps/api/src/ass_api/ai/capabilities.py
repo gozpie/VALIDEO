@@ -16,6 +16,8 @@ Mode = Literal[
     "prompt_from_scene",
     "scene_from_text",
     "image_analysis",
+    # Plan image ou vidéo → scène 3D approchée, proposée par Claude.
+    "scene_from_shot",
     # Studio de production (phase 6) : découpage, bible, prompts d'un plan.
     "script_breakdown",
     "bible_from_script",

@@ -2,6 +2,7 @@
 
 import json
 import stat
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from ass_api.ai.capabilities import GenerationRequest, match_capabilities
 from ass_api.ai.providers.base import ProviderError, RunContext
 from ass_api.ai.providers.claude import ClaudeProvider
 from ass_api.ai.providers.higgsfield import HiggsfieldBridgeProvider
+from ass_api.ai.shot_frames import first_frame, graduated_image, image_size
 
 
 def _context(tmp_path: Path, references: list[Path] | None = None) -> RunContext:
@@ -97,3 +99,58 @@ def test_claude_errors_are_normalized(tmp_path: Path) -> None:
         False,
         "Jeton d'abonnement Claude absent (CLAUDE_CODE_OAUTH_TOKEN)",
     )
+
+
+def test_first_frame_of_a_real_video(tmp_path: Path) -> None:
+    video = tmp_path / "plan.mp4"
+    subprocess.run(  # noqa: S603
+        [  # noqa: S607
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=1920x1080:rate=24:duration=1",
+            "-pix_fmt",
+            "yuv420p",
+            str(video),
+        ],
+        check=True,
+    )
+    image = first_frame("ffmpeg", video, tmp_path / "plan.png")
+    assert image.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert image_size("ffmpeg", image) == (1280, 720)
+    grille = graduated_image("ffmpeg", image, tmp_path / "grille.png", (1280, 720))
+    assert grille.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    (tmp_path / "abime.mp4").write_bytes(b"pas une video")
+    with pytest.raises(ProviderError):
+        first_frame("ffmpeg", tmp_path / "abime.mp4", tmp_path / "abime.png")
+
+
+def test_claude_plateau_gets_image_size(tmp_path: Path) -> None:
+    result = {"summary": "ok", "notes": "", "camera": {}, "elements": [], "lumieres": []}
+    answer = tmp_path / "answer.json"
+    answer.write_text(json.dumps({"is_error": False, "structured_output": result}))
+    script = tmp_path / "fake-claude"
+    script.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "open('prompt.txt', 'w').write(sys.argv[2])\n"
+        f"print(open({str(answer)!r}).read())\n"
+    )
+    script.chmod(0o755)
+    work = tmp_path / "work"
+    work.mkdir()
+    image = tmp_path / "a.png"
+    image.write_bytes(b"\x89PNG")
+    context = _context(work, [image])
+    context.documents = {"image.json": json.dumps({"largeur": 1024, "hauteur": 576})}
+    _external, outputs = ClaudeProvider(str(script), "secret").run(
+        "sonnet", GenerationRequest("scene_from_shot", ""), context
+    )
+    assert outputs[0].data == result
+    prompt = (work / "prompt.txt").read_text()
+    assert "1024 x 576" in prompt
+    assert "grille" in prompt

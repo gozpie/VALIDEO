@@ -51,6 +51,11 @@
   et bible établis par les noms (rapprochement tolérant, aucun lien en cas d'ambiguïté) ; un découpage par Claude
   Opus prend quelques minutes (suivi par interrogation) ; la bande en bas de l'écran Plans est un aperçu, le montage est dans l'écran Montage.
 
+- Plateau d'un plan (« Créer la scène 3D ») : d'après la première image seulement, caméra fixe : le mouvement d'une
+  vidéo n'est pas extrait. Fidèle vu de la caméra du plan ; ailleurs, les distances sont des estimations de Claude. Essai
+  réel sur un seul plan (intérieur fixe, Opus) ; Sonnet place moins bien. Compter plusieurs minutes. Rien ne prouve encore
+  qu'un générateur vidéo respecte ce plateau.
+
 - Montage (étapes 7.2 et 7.3) : pas d'export du film ni de XML Premiere (7.4) ; pas de moniteur source. Transitions :
   un plan dont le média s'arrête se fige pendant le débord du fondu (images IA utilisées en entier) ; un montage qui
   sépare deux clips retire leur transition. Modes de fusion, titres et images clés ne s'appliquent qu'au moniteur tant que
