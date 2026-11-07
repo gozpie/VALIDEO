@@ -29,6 +29,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Image depuis la caméra en GPT Image 2.5 1K, qualité basse (au plus 3 crédits annoncés, 0,25 constaté). Le mannequin a un
   nez qui montre où regarde le personnage. La vue caméra relit les versions du plan toutes les 8 s : la dernière image
   générée se superpose seule à la 3D.
+- Bouton « Vidéo grise » de la vue caméra : le plan est rejoué dans le navigateur (WebGL, temps réel) et téléchargé en
+  MP4 (WebM à défaut), sans serveur de rendu. 5 s de plan s'enregistrent en 5 s, contre environ 20 min en Cycles sur
+  le serveur. Sert de vidéo de référence de mouvement pour le générateur.
 
 ### Corrigé
 
