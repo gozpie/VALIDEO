@@ -40,48 +40,38 @@ test.describe('plateau gris', () => {
     await mouvement.getByRole('button', { name: 'Appliquer à la caméra active' }).click();
     await expect(page.getByText(/Aucune animation/)).toHaveCount(0);
 
-    // 3. L'image depuis cette caméra, avec le moteur simulé. La scène s'enregistre d'elle-même.
+    // 3. Étape 1, l'image depuis cette caméra (moteur simulé). La scène s'enregistre d'elle-même.
     await page.getByRole('tab', { name: 'IA' }).click();
-    const section = page.getByRole('region', { name: 'Depuis la caméra' });
-    await section.getByLabel('Décrire l’image').fill('Elle attend, seule dans la pièce.');
-    await section.getByLabel('Modèle — Générer l’image depuis cette caméra').selectOption({
-      label: 'Simulation image',
-    });
-    await section.getByRole('button', { name: 'Générer l’image depuis cette caméra' }).click();
+    const image = page.getByRole('region', { name: 'Étape 1 — Image' });
+    await image.getByLabel('Décrire la scène').fill('Elle attend, seule dans la pièce.');
+    await image.getByText(/^Moteur :/).click();
+    await image.getByLabel('Modèle — Créer l’image').selectOption({ label: 'Simulation image' });
+    await image.getByRole('button', { name: 'Créer l’image' }).click();
+    await expect(image.getByRole('button', { name: 'Garder l’image 1' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+      { timeout: 180_000 },
+    );
 
-    // 4. L'image obtenue s'anime ; rien n'est lancé sans y toucher.
-    const animer = section.getByRole('button', { name: 'Animer cette image' });
-    await expect(animer).toBeVisible({ timeout: 180_000 });
-    await section.getByLabel('Décrire le mouvement').fill('Elle tourne lentement la tête.');
-    await section.getByLabel('Modèle — Animer cette image').selectOption({
-      label: 'Simulation vidéo',
-    });
+    // 4. Étape 2, la vidéo qui suit le plateau : la vidéo grise s'enregistre toute seule.
+    const video = page.getByRole('region', { name: 'Étape 2 — Vidéo' });
+    await expect(video.getByLabel('Suivre le plateau')).toBeChecked();
+    await expect(video.getByText('Caméra en mouvement · 2 s')).toBeVisible();
+    await video.getByLabel('Ce qui se passe').fill('Elle tourne lentement la tête.');
+    await video.getByRole('radio', { name: /Essai/ }).click();
+    await video.getByText(/^Moteur :/).click();
+    await video.getByLabel('Modèle — Créer la vidéo').selectOption({ label: 'Simulation vidéo' });
     // Le coût affiché doit être celui du moteur choisi avant d'envoyer.
-    await expect(section.getByTestId('studio-cost').last()).toContainText('Simulation locale');
-    await expect(animer).toBeEnabled({ timeout: 20_000 });
-    await animer.click();
-    await expect(page.getByText(/Génération terminée : Image → vidéo/)).toBeVisible({
-      timeout: 60_000,
-    });
-
-    // 5. La vidéo grise : le plateau rejoué dans la vue caméra, puis repris par le modèle.
-    await section.getByRole('button', { name: 'Enregistrer la vidéo grise' }).click();
-    const grise = section.getByRole('button', { name: 'Animer avec la vidéo grise' });
-    await expect(grise).toBeVisible({ timeout: 60_000 });
+    await expect(video.getByTestId('studio-cost')).toContainText('Simulation locale');
+    const creer = video.getByRole('button', { name: /Créer la vidéo/ });
+    await expect(creer).toBeEnabled({ timeout: 20_000 });
+    await creer.click();
+    const resultats = page.getByRole('list', { name: 'Générations' });
     await expect(
-      section.getByRole('button', { name: /Réenregistrer la vidéo grise/ }),
-    ).toBeVisible();
-    await section.getByLabel('Modèle — Animer avec la vidéo grise').selectOption({
-      label: 'Simulation vidéo',
-    });
-    await expect(grise).toBeEnabled({ timeout: 20_000 });
-    await grise.click();
-    const historique = page.getByRole('list', { name: 'Générations' });
-    await expect(
-      historique
+      resultats
         .getByRole('listitem', { name: 'Image → vidéo — Terminé' })
         .filter({ hasText: 'Recreate @video1' }),
-    ).toBeVisible({ timeout: 60_000 });
+    ).toBeVisible({ timeout: 90_000 });
 
     expect(errors).toEqual([]);
   });

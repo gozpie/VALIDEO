@@ -194,6 +194,7 @@ arrière ; relancer crée un nouveau job). Un job actif sans signe de vie depuis
 | `GET /shots/{id}/generations`           | `viewer`     | 50 générations les plus récentes du plan                                                 |
 | `GET /generation-jobs/{id}`             | `viewer`     | état, progression, message, sorties, coûts estimé et réel                                |
 | `POST /generation-jobs/{id}/cancel`     | `editor`     | `queued` → `cancelled` ; actif → annulation demandée ; terminé → `409`                   |
+| `DELETE /generation-jobs/{id}`          | `editor`     | Efface une génération en échec ou annulée (`204`) ; une autre → `409`                    |
 
 Corps : `{ provider, model, mode, prompt?, negativePrompt?, revisionId?, sceneFrames? (≤ 2 frames de la caméra
 active, rendues par Blender avec profondeur et normales), referenceAssetIds? (≤ 8 images du workspace),

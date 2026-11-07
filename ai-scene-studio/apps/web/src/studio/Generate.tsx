@@ -38,7 +38,7 @@ export function modelsFor(providers: AiProvider[], mode: GenerationMode, control
   );
 }
 
-async function estimate(target: GenerationTarget, body: GenerationInput) {
+export async function estimate(target: GenerationTarget, body: GenerationInput) {
   return target.kind === 'project'
     ? call(
         api.POST('/projects/{project_id}/generations/estimate', {
@@ -89,6 +89,8 @@ export function GenerateControl({
   compact = false,
   avant,
   controle,
+  simple = false,
+  occupe,
 }: {
   target: GenerationTarget;
   providers: AiProvider[];
@@ -99,10 +101,17 @@ export function GenerateControl({
   onCreated: (job: GenerationJob) => void;
   defaultModel?: string;
   compact?: boolean;
-  /** À faire juste avant d'envoyer (enregistrer la scène) ; `false` annule l'envoi. */
-  avant?: () => Promise<boolean>;
+  /**
+   * À faire juste avant d'envoyer (enregistrer la scène, préparer un média) ; `false` annule
+   * l'envoi, un objet complète la demande (ex. la vidéo grise tout juste enregistrée).
+   */
+  avant?: () => Promise<boolean | Partial<GenerationInput>>;
   /** Seuls les modèles qui tiennent cette contrainte sont proposés (ex. `camera_motion`). */
   controle?: string;
+  /** Présentation simple : un grand bouton, le choix du moteur rangé dans « Moteur ». */
+  simple?: boolean;
+  /** Ce qui se passe pendant `avant` (ex. « Enregistrement de la vidéo grise… »). */
+  occupe?: string | null;
 }) {
   const models = useMemo(() => modelsFor(providers, mode, controle), [providers, mode, controle]);
   const [choice, setChoice] = useState<string | null>(null);
@@ -166,9 +175,11 @@ export function GenerateControl({
     if (!full) return;
     setBusy(true);
     try {
-      if (avant && !(await avant())) return;
+      const prepare = avant ? await avant() : true;
+      if (prepare === false) return;
       const job = await create(target, {
         ...full,
+        ...(typeof prepare === 'object' ? prepare : {}),
         ...(confirmed !== undefined ? { confirmedCost: confirmed } : {}),
       });
       onCreated(job);
@@ -186,30 +197,71 @@ export function GenerateControl({
     <div
       className={`flex flex-col gap-1.5 ${compact ? '' : 'rounded-lg border border-border bg-surface/60 p-2'}`}
     >
-      <div className="flex items-center gap-1.5">
-        <select
-          aria-label={`Modèle — ${label}`}
-          value={selected?.key ?? ''}
-          onChange={(event) => setChoice(event.target.value)}
-          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-surface px-1.5 text-xs"
-        >
-          {models.map((m) => (
-            <option key={m.key} value={m.key}>
-              {m.label}
-              {m.available ? '' : ' (indisponible)'}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          disabled={!ready}
-          onClick={() => (quote?.paid ? setConfirming(true) : void submit())}
-          className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-gradient-to-r from-accent to-ai px-3 text-xs font-medium text-white shadow-card hover:opacity-90 disabled:opacity-35"
-        >
-          {busy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-          {label}
-        </button>
-      </div>
+      {simple ? (
+        <>
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => (quote?.paid ? setConfirming(true) : void submit())}
+            className="flex w-full items-center justify-between gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white shadow-card hover:opacity-90 disabled:opacity-40"
+          >
+            <span className="flex items-center gap-1.5">
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {busy && occupe ? occupe : label}
+            </span>
+            {quote?.available && (
+              <small className="text-xs font-medium opacity-85">
+                {quote.paid ? `${quote.amount.toLocaleString('fr-FR')} crédits` : 'gratuit'}
+              </small>
+            )}
+          </button>
+          <details className="text-[11px] text-faint">
+            <summary className="cursor-pointer select-none hover:text-muted">
+              Moteur : {selected?.label ?? '—'}
+            </summary>
+            <div className="mt-1.5 flex">
+              <select
+                aria-label={`Modèle — ${label}`}
+                value={selected?.key ?? ''}
+                onChange={(event) => setChoice(event.target.value)}
+                className="h-8 min-w-0 flex-1 rounded-md border border-border bg-surface px-1.5 text-xs"
+              >
+                {models.map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                    {m.available ? '' : ' (indisponible)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </details>
+        </>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <select
+            aria-label={`Modèle — ${label}`}
+            value={selected?.key ?? ''}
+            onChange={(event) => setChoice(event.target.value)}
+            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-surface px-1.5 text-xs"
+          >
+            {models.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+                {m.available ? '' : ' (indisponible)'}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => (quote?.paid ? setConfirming(true) : void submit())}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-gradient-to-r from-accent to-ai px-3 text-xs font-medium text-white shadow-card hover:opacity-90 disabled:opacity-35"
+          >
+            {busy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            {label}
+          </button>
+        </div>
+      )}
       <p
         data-testid="studio-cost"
         className={`text-[11px] ${problem || blocking || (quote && !quote.available) ? 'text-warn' : quote?.paid ? 'text-warn' : 'text-faint'}`}

@@ -210,6 +210,9 @@ def test_paid_generation_requires_exact_cost_confirmation(
     assert job["estimatedCost"] == 3
     assert broker.lrange(f"{ai_settings.ai_queue_prefix}:higgsfield", 0, -1) == [job["id"].encode()]
     assert alice.post(f"/generation-jobs/{job['id']}/cancel").json()["status"] == "cancelled"
+    # Une génération annulée s'efface de l'historique.
+    assert alice.delete(f"/generation-jobs/{job['id']}").status_code == 204
+    assert alice.get(f"/generation-jobs/{job['id']}").status_code == 404
 
 
 def test_blocking_mismatch_is_refused(
@@ -249,6 +252,8 @@ def test_simulated_generation_end_to_end(
         render_queue.close()
     done = alice.get(f"/generation-jobs/{job['id']}").json()
     assert done["status"] == "completed", done
+    # Ce qui a produit un résultat (et peut-être coûté) reste dans l'historique.
+    assert alice.delete(f"/generation-jobs/{job['id']}").status_code == 409
     asset_id = done["outputs"]["assets"][0]["assetId"]
     asset = alice.get(f"/assets/{asset_id}").json()
     assert asset["type"] == "image"

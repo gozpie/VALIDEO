@@ -43,6 +43,12 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 
 ### Modifié
 
+- Éditeur simplifié (maquette validée le 08/11) : à droite, « Faire le plan » en trois étapes (Image, Vidéo, Résultats).
+  La vidéo se choisit par une qualité (Essai, Bon, Final) avec son prix ; « Suivre le plateau » enregistre la vidéo grise
+  tout seul à l'envoi. Les autres outils IA sont repliés. À gauche : Personnages, Cadrage, Mouvement de caméra, Décor
+  (« Construire le décor avec Claude »), formes simples repliées ; la hiérarchie garde un tiers de la hauteur. Vue
+  caméra dégagée : réglages sous l'image. Échecs dits en clair (« aucun crédit dépensé »), repliés et effaçables
+  (`DELETE /generation-jobs/{id}`).
 - Seedance 2.5 : option `resolution` (480p, 720p, 1080p) ; tarif 1080p relevé à 16 crédits par seconde (table du site
   au 07/11/2026, 12 auparavant).
 

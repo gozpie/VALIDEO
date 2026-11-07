@@ -154,7 +154,11 @@ export interface paths {
         get: operations["get_generation_generation_jobs__job_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Generation
+         * @description Efface de l'historique une génération en échec ou annulée : elle n'a rien produit.
+         */
+        delete: operations["delete_generation_generation_jobs__job_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2673,6 +2677,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GenerationJobOut"];
                 };
+            };
+        };
+    };
+    delete_generation_generation_jobs__job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erreur client (problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Erreur serveur (problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemOut"];
+                };
+            };
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

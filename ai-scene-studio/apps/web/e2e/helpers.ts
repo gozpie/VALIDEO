@@ -27,3 +27,13 @@ export async function createShot(page: Page, durationFrames = 48): Promise<strin
   const shot = await post(`/sequences/${sequence.id}/shots`, { name: 'Plan 1', durationFrames });
   return shot.id;
 }
+
+/** Ouvre « Formes simples » (cube, caméra, lumières…) dans le panneau du plateau et le renvoie. */
+export async function formesSimples(page: Page) {
+  const ajouter = page.getByRole('region', { name: 'Ajouter' });
+  const formes = ajouter.locator('details').filter({ hasText: 'Formes simples' });
+  if ((await formes.getAttribute('open')) === null) {
+    await formes.locator('summary').click();
+  }
+  return ajouter;
+}

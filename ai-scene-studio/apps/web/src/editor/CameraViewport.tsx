@@ -4,12 +4,11 @@ import { evaluatedScene } from '@ass/editor-ui';
 import { setActiveCamera, verticalFovDegrees, worldMatrix } from '@ass/scene-engine';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { GenerationJob, ShotVersion } from '@ass/api-client';
-import { Image as ImageIcon, Video } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from 'three';
 import { api, call } from '@/lib/api';
 import { useEditor, useEditorContext } from './context';
-import { dimensions, enregistrerVueCamera } from './videoGrise';
 import { EntityChildren, ViewOptions } from './Viewport';
 
 /** Caméra de rendu pilotée par la caméra active évaluée à la frame courante. */
@@ -123,14 +122,14 @@ function PhotoDuPlan() {
             className="pointer-events-none absolute inset-0 h-full w-full object-contain"
           />
         ))}
-      <div className="absolute bottom-2 left-2 flex items-center gap-2 rounded bg-black/70 px-2 py-1 text-xs text-text">
+      <div className="absolute left-0 top-full mt-2 flex items-center gap-2 text-xs text-muted">
         <label className="flex items-center gap-1.5">
           <input
             type="checkbox"
             checked={visible}
             onChange={(event) => setVisible(event.target.checked)}
           />
-          <ImageIcon size={13} /> Photo du plan
+          <ImageIcon size={13} /> Superposer l’image
         </label>
         {versions.length > 1 && (
           <select
@@ -175,7 +174,7 @@ function BandeCameras() {
     <div
       role="group"
       aria-label="Caméras du plateau"
-      className="absolute right-2 top-2 flex max-w-[70%] flex-wrap justify-end gap-1"
+      className="absolute right-0 top-full mt-2 flex max-w-[55%] flex-wrap justify-end gap-1"
     >
       {cameras.map((camera) => (
         <button
@@ -192,64 +191,6 @@ function BandeCameras() {
   );
 }
 
-/**
- * Enregistre la vue caméra sur toute la durée du plan, dans le navigateur : la vidéo grise qui
- * guidera le générateur (même mouvement de caméra, mêmes places).
- */
-function VideoGrise({ source }: { source: React.RefObject<HTMLCanvasElement | null> }) {
-  const { store } = useEditorContext();
-  const frames = useEditor((state) => state.scene.durationFrames);
-  const fps = useEditor((state) => state.scene.fps.numerator / state.scene.fps.denominator);
-  const width = useEditor((state) => state.scene.renderSettings.width);
-  const height = useEditor((state) => state.scene.renderSettings.height);
-  const [progres, setProgres] = useState<number | null>(null);
-  const [erreur, setErreur] = useState<string | null>(null);
-
-  const enregistrer = async () => {
-    const canvas = source.current;
-    if (!canvas) return;
-    const depart = store.getState().frame;
-    setErreur(null);
-    setProgres(0);
-    try {
-      const video = await enregistrerVueCamera({
-        source: canvas,
-        frames,
-        fps,
-        ...dimensions(width, height),
-        allerA: (frame) => store.getState().setFrame(frame),
-        onProgres: (frame) => setProgres(frame + 1),
-      });
-      const lien = document.createElement('a');
-      lien.href = URL.createObjectURL(video);
-      lien.download = `video-grise.${video.type.includes('mp4') ? 'mp4' : 'webm'}`;
-      lien.click();
-      setTimeout(() => URL.revokeObjectURL(lien.href), 10_000);
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Enregistrement impossible');
-    } finally {
-      store.getState().setFrame(depart);
-      setProgres(null);
-    }
-  };
-
-  return (
-    <div className="absolute bottom-2 right-2 flex items-center gap-2 rounded bg-black/70 px-2 py-1 text-xs text-text">
-      {erreur && <span className="text-red-400">{erreur}</span>}
-      <button
-        type="button"
-        disabled={progres !== null}
-        onClick={() => void enregistrer()}
-        title="Rejoue le plan dans la vue caméra et télécharge la vidéo grise (référence de mouvement)"
-        className="flex items-center gap-1.5 hover:text-white disabled:opacity-60"
-      >
-        <Video size={13} />
-        {progres === null ? 'Vidéo grise' : `Enregistrement ${progres}/${frames}`}
-      </button>
-    </div>
-  );
-}
-
 export function CameraViewport() {
   const width = useEditor((state) => state.scene.renderSettings.width);
   const height = useEditor((state) => state.scene.renderSettings.height);
@@ -258,7 +199,6 @@ export function CameraViewport() {
   );
   const hasLights = useEditor((state) => state.scene.lights.some((light) => light.visible));
   const aspect = width / height;
-  const toile = useRef<HTMLCanvasElement | null>(null);
 
   return (
     <div
@@ -266,15 +206,11 @@ export function CameraViewport() {
       data-testid="camera-view"
     >
       {active ? (
-        <div className="relative max-h-full w-full" style={{ aspectRatio: `${width} / ${height}` }}>
-          <Canvas
-            shadows
-            gl={{ preserveDrawingBuffer: true }}
-            onCreated={({ gl }) => {
-              toile.current = gl.domElement;
-            }}
-            className="!absolute inset-0"
-          >
+        <div
+          className="relative mb-9 max-h-[calc(100%-2.25rem)] w-full"
+          style={{ aspectRatio: `${width} / ${height}` }}
+        >
+          <Canvas shadows gl={{ preserveDrawingBuffer: true }} className="!absolute inset-0">
             <ViewOptions.Provider value={{ interactive: false, helpers: false }}>
               <ActiveCameraRig aspect={aspect} />
               <hemisphereLight args={['#ffffff', '#444444', hasLights ? 0.4 : 1.2]} />
@@ -284,7 +220,6 @@ export function CameraViewport() {
           </Canvas>
           <PhotoDuPlan />
           <BandeCameras />
-          <VideoGrise source={toile} />
           <span className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-text">
             {active.name} · {active.focalLengthMm.toFixed(1).replace('.', ',')} mm · {width}×
             {height}

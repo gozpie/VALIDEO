@@ -233,10 +233,17 @@ export function EditorShell({
         <div className="flex min-h-0 flex-1">
           <aside
             style={{ width: leftWidth }}
-            className="flex min-h-0 shrink-0 flex-col gap-4 overflow-auto bg-panel p-3"
+            className="flex min-h-0 shrink-0 flex-col gap-4 bg-panel p-3"
           >
-            {canEdit && <AddMenu workspaceId={workspaceId} />}
-            <Hierarchy />
+            {/* Le plateau défile seul ; la hiérarchie garde toujours au moins un tiers de la hauteur. */}
+            {canEdit && (
+              <div className="min-h-0 shrink overflow-auto pr-1" style={{ maxHeight: '62%' }}>
+                <AddMenu workspaceId={workspaceId} onSave={save} />
+              </div>
+            )}
+            <div className="flex min-h-[33%] flex-1 flex-col">
+              <Hierarchy />
+            </div>
           </aside>
           <ResizeHandle
             label="Largeur du panneau de gauche"
@@ -258,7 +265,7 @@ export function EditorShell({
                 }}
                 onKeyDown={(event) => event.key === 'Escape' && setAddMenu(false)}
               >
-                <AddMenu workspaceId={workspaceId} />
+                <AddMenu workspaceId={workspaceId} formesOuvertes />
                 <button
                   type="button"
                   className="mt-2 text-xs text-muted hover:text-text"

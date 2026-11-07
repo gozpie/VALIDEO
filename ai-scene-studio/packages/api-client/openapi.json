@@ -3217,6 +3217,51 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "generations"
+        ],
+        "summary": "Delete Generation",
+        "description": "Efface de l'historique une génération en échec ou annulée : elle n'a rien produit.",
+        "operationId": "delete_generation_generation_jobs__job_id__delete",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Erreur client (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Erreur serveur (problem details)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemOut"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/generation-jobs/{job_id}/cancel": {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { EMAIL, PASSWORD, createShot } from './helpers';
+import { EMAIL, PASSWORD, createShot, formesSimples } from './helpers';
 
 /** Phase 4 : raccourcis façon Blender et rendu final par le worker Blender, jusqu'à la vidéo et au .blend. */
 test.describe('rendu Blender et raccourcis façon Blender', () => {
@@ -39,10 +39,7 @@ test.describe('rendu Blender et raccourcis façon Blender', () => {
     ).toBeVisible();
 
     // Caméra (devient active) puis rendu à 10 % : vidéo et scène .blend publiées.
-    await page
-      .getByRole('region', { name: 'Ajouter' })
-      .getByRole('button', { name: 'Caméra' })
-      .click();
+    await (await formesSimples(page)).getByRole('button', { name: 'Caméra', exact: true }).click();
     await page.getByRole('tab', { name: 'Rendu' }).click();
     const panel = page.getByRole('region', { name: 'Rendu Blender' });
     await panel.getByLabel('Frame de fin').fill('1');

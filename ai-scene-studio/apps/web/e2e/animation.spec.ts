@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { EMAIL, PASSWORD, createShot } from './helpers';
+import { EMAIL, PASSWORD, createShot, formesSimples } from './helpers';
 
 /** Phase 3 : un plan animé (objet et caméra) est créé, relu, enregistré et rechargé. */
 test.describe('animation et caméras', () => {
@@ -14,8 +14,8 @@ test.describe('animation et caméras', () => {
     const frame = page.getByLabel('Frame courante');
     const x = page.getByLabel('Position X');
     const timeline = page.getByRole('region', { name: 'Timeline' });
-    const add = page.getByRole('region', { name: 'Ajouter' });
     await expect(page.locator('[data-testid="viewport"] canvas')).toBeVisible();
+    const add = await formesSimples(page);
 
     // Clé à 0, puis modification à 24 : la propriété animée reçoit une clé automatiquement.
     await add.getByRole('button', { name: 'Cube' }).click();
@@ -39,7 +39,7 @@ test.describe('animation et caméras', () => {
     await expect(x).toHaveValue('0');
 
     // Caméra : devient la caméra active, vise le cube ; vue double avec la vue caméra.
-    await add.getByRole('button', { name: 'Caméra' }).click();
+    await add.getByRole('button', { name: 'Caméra', exact: true }).click();
     await expect(page.getByLabel('Caméra active', { exact: true })).toHaveValue(/.+/);
     await page.getByLabel('Viser (look-at)').selectOption({ label: 'Cube' });
     await page.getByLabel('Disposition des vues').selectOption('split');

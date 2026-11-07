@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { EMAIL, PASSWORD, createShot } from './helpers';
+import { EMAIL, PASSWORD, createShot, formesSimples } from './helpers';
 
 /**
  * Phase 5 : panneau IA contre la vraie pile et le worker IA. Le fournisseur « simulation » est
@@ -15,13 +15,11 @@ test.describe('génération IA depuis l’éditeur', () => {
     const shotId = await createShot(page);
     await page.goto(`/shots/${shotId}/editor`);
     await expect(page.locator('[data-testid="viewport"] canvas')).toBeVisible();
-    await page
-      .getByRole('region', { name: 'Ajouter' })
-      .getByRole('button', { name: 'Cube' })
-      .click();
+    await (await formesSimples(page)).getByRole('button', { name: 'Cube' }).click();
 
     await page.getByRole('tab', { name: 'IA' }).click();
     const panel = page.getByRole('region', { name: 'Génération IA' });
+    await panel.getByText('Autres outils IA').click();
     await panel.getByRole('radio', { name: 'Simulation image' }).click();
     await expect(panel.getByRole('radio', { name: 'Simulation image' })).toHaveAttribute(
       'aria-checked',
@@ -52,12 +50,10 @@ test.describe('génération IA depuis l’éditeur', () => {
     const shotId = await createShot(page);
     await page.goto(`/shots/${shotId}/editor`);
     await expect(page.locator('[data-testid="viewport"] canvas')).toBeVisible();
-    await page
-      .getByRole('region', { name: 'Ajouter' })
-      .getByRole('button', { name: 'Cube' })
-      .click();
+    await (await formesSimples(page)).getByRole('button', { name: 'Cube' }).click();
     await page.getByRole('tab', { name: 'IA' }).click();
     const panel = page.getByRole('region', { name: 'Génération IA' });
+    await panel.getByText('Autres outils IA').click();
     await panel.getByRole('radio', { name: 'Claude Sonnet' }).click();
     await panel.getByRole('radio', { name: 'Assistant de scène' }).click();
     await panel

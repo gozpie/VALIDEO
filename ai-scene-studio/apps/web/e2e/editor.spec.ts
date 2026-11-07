@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
-import { EMAIL, PASSWORD, createShot } from './helpers';
+import { EMAIL, PASSWORD, createShot, formesSimples } from './helpers';
 
 /** Éditeur 3D contre la vraie pile : ajout, déplacement, annuler/rétablir, import GLB, sauvegarde, rechargement. */
 const CUBE_GLB = fileURLToPath(new URL('../../../tests/fixtures/assets/cube.glb', import.meta.url));
@@ -20,10 +20,7 @@ test.describe('éditeur de scène 3D', () => {
     await expect(status).toHaveText('Enregistré');
 
     // Ajout d'un cube : il apparaît dans la hiérarchie et devient la sélection.
-    await page
-      .getByRole('region', { name: 'Ajouter' })
-      .getByRole('button', { name: 'Cube' })
-      .click();
+    await (await formesSimples(page)).getByRole('button', { name: 'Cube' }).click();
     await expect(tree.getByRole('treeitem', { name: 'Cube' })).toHaveAttribute(
       'aria-selected',
       'true',

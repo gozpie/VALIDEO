@@ -88,7 +88,7 @@ test.describe('plan → scène 3D', () => {
     await expect(photo).toHaveCSS('opacity', '0.5');
     await page.getByLabel('Opacité de la photo').fill('25');
     await expect(photo).toHaveCSS('opacity', '0.25');
-    await page.getByLabel('Photo du plan').uncheck();
+    await page.getByLabel('Superposer l’image').uncheck();
     await expect(photo).toHaveCount(0);
 
     expect(errors).toEqual([]);

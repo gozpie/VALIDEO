@@ -617,6 +617,20 @@ def get_generation(job_id: uuid.UUID, current: CurrentSessionDep, db: DbDep) -> 
     return GenerationJobOut.model_validate(_job(db, current, job_id, Role.VIEWER))
 
 
+@router.delete("/generation-jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_generation(job_id: uuid.UUID, current: CurrentSessionDep, db: DbDep) -> Response:
+    """Efface de l'historique une génération en échec ou annulée : elle n'a rien produit."""
+    job = _job(db, current, job_id, Role.EDITOR)
+    db.refresh(job, with_for_update=True)
+    if job.status not in ("failed", "cancelled"):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Seules les générations en échec ou annulées s'effacent"
+        )
+    db.delete(job)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post("/generation-jobs/{job_id}/cancel", response_model=GenerationJobOut)
 def cancel_generation(job_id: uuid.UUID, current: CurrentSessionDep, db: DbDep) -> GenerationJobOut:
     job = _job(db, current, job_id, Role.EDITOR)

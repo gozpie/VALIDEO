@@ -22,6 +22,7 @@ import {
   Sparkles,
   Wand2,
   X,
+  Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/components/EmptyState';
@@ -30,7 +31,7 @@ import { API_URL } from '@/lib/config';
 import { toast } from '@/lib/toast';
 import { applyAiOperations, describeOperation, type AiOperation } from './aiOperations';
 import { useEditor, useEditorContext } from './context';
-import { GenerationCamera } from './GenerationCamera';
+import { Etape, GenerationCamera } from './GenerationCamera';
 
 const MODES: Record<GenerationMode, { label: string; hint: string }> = {
   text_to_image: { label: 'Image', hint: 'Une image à partir du prompt' },
@@ -216,6 +217,11 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
       .catch(() => undefined);
   }, [shotId]);
   useEffect(refresh, [refresh]);
+  // Une génération lancée ailleurs (décor demandé à Claude depuis le plateau) : on la suit aussi.
+  useEffect(() => {
+    window.addEventListener('chagomi:generations', refresh);
+    return () => window.removeEventListener('chagomi:generations', refresh);
+  }, [refresh]);
   const active = jobs.some((job) => !DONE.has(job.status));
   useEffect(() => {
     if (!active) return;
@@ -232,8 +238,7 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
         toast(`Génération terminée : ${MODES[job.mode as GenerationMode]?.label ?? job.mode}`, {
           kind: 'ai',
         });
-      else if (job.status === 'failed')
-        toast(`Génération en échec : ${job.errorDetails ?? job.message}`, { kind: 'error' });
+      else if (job.status === 'failed') toast(messageEchec(job), { kind: 'error' });
     }
   }, [jobs]);
 
@@ -324,6 +329,49 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
     !(requiresPrompt && prompt.trim() === '') &&
     !(mode === 'image_analysis' && !hasCamera);
 
+  /** Échec ou annulation sans coût : replié, effaçable. */
+  const echecs = jobs.filter(sansSuite);
+  const effacer = async (liste: GenerationJob[]) => {
+    try {
+      for (const job of liste) {
+        await call(
+          api.DELETE('/generation-jobs/{job_id}', { params: { path: { job_id: job.id } } }),
+        );
+      }
+    } catch (error) {
+      toast((error as Error).message, { kind: 'error' });
+    }
+    refresh();
+  };
+  const carte = (job: GenerationJob) => (
+    <JobCard
+      key={job.id}
+      job={job}
+      canEdit={canEdit}
+      applied={applied.has(job.id)}
+      onUsePrompt={(result) => {
+        setPrompt(result.prompt);
+        setNegative(result.negativePrompt);
+        toast('Prompt repris dans le champ', { kind: 'ai' });
+      }}
+      onReference={(id) => {
+        setReferences((list) => (list.includes(id) ? list : [...list, id].slice(-8)));
+        toast('Image ajoutée aux références', { kind: 'ai' });
+      }}
+      onApply={(result) => applyOperations(job, result)}
+      onEffacer={() => void effacer([job])}
+      onCancel={() =>
+        call(
+          api.POST('/generation-jobs/{job_id}/cancel', {
+            params: { path: { job_id: job.id } },
+          }),
+        )
+          .then(refresh)
+          .catch((error: Error) => toast(error.message, { kind: 'error' }))
+      }
+    />
+  );
+
   if (providers === null) return <p className="text-xs text-muted">Chargement des moteurs IA…</p>;
 
   return (
@@ -337,351 +385,375 @@ export function AiPanel({ shotId, onSave }: { shotId: string; onSave: () => Prom
           setJobs((list) => [job, ...list.filter((j) => j.id !== job.id)]);
         }}
       />
-      <div className="flex items-start gap-2">
-        <Sparkles size={16} className="mt-0.5 text-ai" />
-        <div>
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-            Génération IA
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            La caméra active cadre la génération : Blender rend l’image, la profondeur et les
-            normales de la frame courante, transmises au modèle selon ce qu’il sait exploiter.
-          </p>
-        </div>
-      </div>
-
-      <div role="radiogroup" aria-label="Moteur IA" className="flex flex-col gap-1.5">
-        {providers.map((item) => (
-          <div
-            key={item.id}
-            className={`rounded-lg border p-2 ${item.id === provider?.id ? 'border-ai/60 bg-ai/5' : 'border-border'}`}
-          >
-            <div className="flex items-center gap-2 text-xs">
-              <span
-                aria-hidden
-                className={`h-2 w-2 rounded-full ${item.available ? 'bg-ok' : 'bg-faint'}`}
-              />
-              <span className="font-medium">{item.label}</span>
-              <span className="ml-auto rounded bg-surface px-1.5 py-px text-[10px] text-faint">
-                {KIND_LABEL[item.kind]}
-              </span>
-            </div>
-            {!item.available && <p className="mt-1 text-[11px] text-faint">{item.reason}</p>}
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {item.models.map((m) => (
-                <button
-                  key={m.model}
-                  type="button"
-                  role="radio"
-                  aria-checked={item.id === provider?.id && m.model === model?.model}
-                  className={chip(item.id === provider?.id && m.model === model?.model)}
-                  title={m.notes}
-                  onClick={() => choose(item, m)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {model && (
-        <>
-          <div role="radiogroup" aria-label="Type de génération" className="flex flex-wrap gap-1">
-            {model.modes
-              .filter((value) => !STUDIO_ONLY.has(value as GenerationMode))
-              .map((value) => {
-                const item = MODES[value as GenerationMode];
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={mode === value}
-                    className={chip(mode === value)}
-                    title={item?.hint}
-                    onClick={() => setMode(value as GenerationMode)}
-                  >
-                    {item?.label ?? value}
-                  </button>
-                );
-              })}
-          </div>
-
-          <label className="flex flex-col gap-1 text-xs">
-            <span className="flex items-center justify-between text-muted">
-              {mode === 'scene_from_text'
-                ? 'Consigne'
-                : mode === 'image_analysis'
-                  ? 'Question (facultative)'
-                  : mode === 'prompt_from_scene'
-                    ? 'Intention (facultative)'
-                    : 'Prompt'}
-              {!textMode && claude?.available && (
-                <button
-                  type="button"
-                  className="flex items-center gap-1 text-ai hover:text-text disabled:opacity-40"
-                  disabled={!canEdit || busy}
-                  onClick={draftWithClaude}
-                  title="Claude rédige le prompt à partir de la caméra active et de votre intention"
-                >
-                  <Wand2 size={12} /> Rédiger avec Claude
-                </button>
-              )}
-            </span>
-            <textarea
-              value={prompt}
-              maxLength={4000}
-              rows={4}
-              disabled={!canEdit}
-              placeholder={
-                mode === 'scene_from_text'
-                  ? 'Ex. : ajoute une sphère rouge à gauche du cube et une lumière chaude au-dessus'
-                  : 'Décrivez le plan : sujet, ambiance, lumière, style…'
-              }
-              onChange={(event) => setPrompt(event.target.value)}
-              className="resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm placeholder:text-faint focus:border-ai focus:outline-none"
-            />
-          </label>
-          {!textMode && (
-            <details className="text-xs">
-              <summary className="cursor-pointer text-muted hover:text-text">
-                Prompt négatif
-              </summary>
-              <textarea
-                value={negative}
-                maxLength={2000}
-                rows={2}
-                disabled={!canEdit}
-                aria-label="Prompt négatif"
-                onChange={(event) => setNegative(event.target.value)}
-                className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm focus:border-ai focus:outline-none"
-              />
-            </details>
-          )}
-
-          <fieldset className="flex flex-col gap-2 text-xs">
-            <legend className="sr-only">Cadrage</legend>
-            {mode !== 'scene_from_text' && (
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={(useCamera || mode === 'image_analysis') && hasCamera}
-                  disabled={!hasCamera || mode === 'image_analysis'}
-                  onChange={(event) => setUseCamera(event.target.checked)}
-                />
-                <Clapperboard size={13} className="text-muted" />
-                {hasCamera
-                  ? `Cadrer avec la caméra active (frame ${frame})`
-                  : 'Aucune caméra active : ajoutez-en une pour cadrer'}
-              </label>
-            )}
-            {videoMode && useCamera && hasCamera && (
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={endFrame !== null}
-                  onChange={(event) => setEndFrame(event.target.checked ? duration - 1 : null)}
-                />
-                Image de fin à la frame
-                <input
-                  type="number"
-                  aria-label="Frame de l’image de fin"
-                  min={0}
-                  max={duration - 1}
-                  disabled={endFrame === null}
-                  value={endFrame ?? duration - 1}
-                  onChange={(event) =>
-                    setEndFrame(Math.min(duration - 1, Math.max(0, Number(event.target.value))))
-                  }
-                  className="h-6 w-16 rounded-md border border-border bg-surface px-1 font-mono disabled:opacity-40"
-                />
-              </label>
-            )}
-            {!textMode && model.aspectRatios.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1">
-                <span className="mr-1 text-muted">Format</span>
-                {model.aspectRatios.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={chip((aspect ?? model.aspectRatios[0]) === value)}
-                    onClick={() => setAspect(value)}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-            )}
-            {videoMode && model.durationsSeconds.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1">
-                <span className="mr-1 text-muted">Durée</span>
-                {model.durationsSeconds.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={chip((seconds ?? model.durationsSeconds[0]) === value)}
-                    onClick={() => setSeconds(value)}
-                  >
-                    {value} s
-                  </button>
-                ))}
-              </div>
-            )}
-          </fieldset>
-
-          {references.length > 0 && (
-            <div className="flex flex-wrap gap-1.5" aria-label="Références">
-              {references.map((id) => (
-                <span key={id} className="relative">
-                  <img
-                    src={content(id)}
-                    alt="Référence"
-                    className="h-12 w-12 rounded-md border border-border object-cover"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Retirer la référence"
-                    className="absolute -right-1 -top-1 rounded-full bg-elevated p-0.5 text-muted shadow-pop hover:text-text"
-                    onClick={() => setReferences((list) => list.filter((r) => r !== id))}
-                  >
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div
-            className="rounded-lg border border-border bg-surface/60 p-2 text-xs"
-            aria-live="polite"
-          >
-            {estimateError ? (
-              <p className="flex items-start gap-1.5 text-warn">
-                <CircleAlert size={13} className="mt-px shrink-0" /> {estimateError}
-              </p>
-            ) : estimate ? (
-              <>
-                <p
-                  className={`flex items-center gap-1.5 ${estimate.paid ? 'text-warn' : 'text-muted'}`}
-                >
-                  {estimate.paid ? <CircleAlert size={13} /> : <Info size={13} />}
-                  <span data-testid="ai-cost">{costLabel(estimate)}</span>
-                </p>
-                {!estimate.available && <p className="mt-1 text-error">{estimate.reason}</p>}
-                {estimate.mismatches.map((m) => (
-                  <p
-                    key={m.field}
-                    className={`mt-1 ${m.severity === 'blocking' ? 'text-error' : 'text-faint'}`}
-                  >
-                    {m.message}
-                  </p>
-                ))}
-              </>
-            ) : (
-              <p className="flex items-center gap-1.5 text-faint">
-                <Loader2 size={13} className="animate-spin" /> Estimation…
-              </p>
-            )}
-          </div>
-
-          {canEdit && (
-            <button
-              type="button"
-              disabled={!canLaunch}
-              onClick={launch}
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent to-ai text-sm font-medium text-white shadow-card transition-opacity hover:opacity-90 disabled:opacity-35"
-            >
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {mode === 'prompt_from_scene'
-                ? 'Rédiger le prompt'
-                : mode === 'scene_from_text'
-                  ? 'Proposer les modifications'
-                  : mode === 'image_analysis'
-                    ? 'Analyser'
-                    : 'Générer'}
-            </button>
-          )}
-        </>
-      )}
-
-      {confirming && body && (
-        <div
-          role="alertdialog"
-          aria-label="Confirmer la dépense"
-          className="animate-pop-in rounded-lg border border-warn/60 bg-warn/10 p-3 text-xs"
-        >
-          <p className="font-medium text-text">
-            Cette génération est payante : {confirming.amount.toLocaleString('fr-FR')}{' '}
-            {confirming.unit}.
-          </p>
-          <p className="mt-1 text-muted">{confirming.basis}</p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-warn px-3 py-1 font-medium text-black"
-              onClick={() => {
-                const amount = confirming.amount;
-                setConfirming(null);
-                void submit(body, amount);
-              }}
-            >
-              Confirmer {confirming.amount.toLocaleString('fr-FR')} {confirming.unit}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-border px-3 py-1"
-              onClick={() => setConfirming(null)}
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-faint">
-          Historique du plan
-        </h3>
+      <Etape numero={3} titre="Résultats" etat={jobs.length > 0 ? String(jobs.length) : undefined}>
         {jobs.length === 0 ? (
           <EmptyState icon={<ImagePlus size={20} />} title="Aucune génération">
             Les images, vidéos et propositions de Claude de ce plan apparaîtront ici.
           </EmptyState>
         ) : (
-          <ul className="flex flex-col gap-2" aria-label="Générations">
-            {jobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                canEdit={canEdit}
-                applied={applied.has(job.id)}
-                onUsePrompt={(result) => {
-                  setPrompt(result.prompt);
-                  setNegative(result.negativePrompt);
-                  toast('Prompt repris dans le champ', { kind: 'ai' });
-                }}
-                onReference={(id) => {
-                  setReferences((list) => (list.includes(id) ? list : [...list, id].slice(-8)));
-                  toast('Image ajoutée aux références', { kind: 'ai' });
-                }}
-                onApply={(result) => applyOperations(job, result)}
-                onCancel={() =>
-                  call(
-                    api.POST('/generation-jobs/{job_id}/cancel', {
-                      params: { path: { job_id: job.id } },
-                    }),
-                  )
-                    .then(refresh)
-                    .catch((error: Error) => toast(error.message, { kind: 'error' }))
-                }
-              />
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-2" aria-label="Générations">
+              {jobs.filter((job) => !sansSuite(job)).map(carte)}
+            </ul>
+            {echecs.length > 0 && (
+              <details className="rounded-lg border border-border p-2 text-xs text-muted">
+                <summary className="cursor-pointer select-none">
+                  {echecs.length === 1
+                    ? '1 essai refusé, aucun crédit dépensé'
+                    : `${echecs.length} essais refusés, aucun crédit dépensé`}
+                </summary>
+                <ul className="mt-2 flex flex-col gap-2" aria-label="Essais refusés">
+                  {echecs.map(carte)}
+                </ul>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="mt-2 flex items-center gap-1 rounded-md border border-border px-2 py-0.5 hover:border-error hover:text-error"
+                    onClick={() => void effacer(echecs)}
+                  >
+                    <Trash2 size={12} /> Tout effacer
+                  </button>
+                )}
+              </details>
+            )}
+          </>
         )}
-      </div>
+      </Etape>
+      <details className="rounded-lg border border-border bg-surface/30 p-2.5 text-xs">
+        <summary className="cursor-pointer select-none text-muted hover:text-text">
+          Autres outils IA : moteur au choix, assistant de scène, analyse de la vue
+        </summary>
+        <div className="mt-3 flex flex-col gap-4 text-sm">
+          <div className="flex items-start gap-2">
+            <Sparkles size={16} className="mt-0.5 text-ai" />
+            <div>
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+                Génération IA
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                La caméra active cadre la génération : Blender rend l’image, la profondeur et les
+                normales de la frame courante, transmises au modèle selon ce qu’il sait exploiter.
+              </p>
+            </div>
+          </div>
+
+          <div role="radiogroup" aria-label="Moteur IA" className="flex flex-col gap-1.5">
+            {providers.map((item) => (
+              <div
+                key={item.id}
+                className={`rounded-lg border p-2 ${item.id === provider?.id ? 'border-ai/60 bg-ai/5' : 'border-border'}`}
+              >
+                <div className="flex items-center gap-2 text-xs">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 rounded-full ${item.available ? 'bg-ok' : 'bg-faint'}`}
+                  />
+                  <span className="font-medium">{item.label}</span>
+                  <span className="ml-auto rounded bg-surface px-1.5 py-px text-[10px] text-faint">
+                    {KIND_LABEL[item.kind]}
+                  </span>
+                </div>
+                {!item.available && <p className="mt-1 text-[11px] text-faint">{item.reason}</p>}
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {item.models.map((m) => (
+                    <button
+                      key={m.model}
+                      type="button"
+                      role="radio"
+                      aria-checked={item.id === provider?.id && m.model === model?.model}
+                      className={chip(item.id === provider?.id && m.model === model?.model)}
+                      title={m.notes}
+                      onClick={() => choose(item, m)}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {model && (
+            <>
+              <div
+                role="radiogroup"
+                aria-label="Type de génération"
+                className="flex flex-wrap gap-1"
+              >
+                {model.modes
+                  .filter((value) => !STUDIO_ONLY.has(value as GenerationMode))
+                  .map((value) => {
+                    const item = MODES[value as GenerationMode];
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={mode === value}
+                        className={chip(mode === value)}
+                        title={item?.hint}
+                        onClick={() => setMode(value as GenerationMode)}
+                      >
+                        {item?.label ?? value}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <label className="flex flex-col gap-1 text-xs">
+                <span className="flex items-center justify-between text-muted">
+                  {mode === 'scene_from_text'
+                    ? 'Consigne'
+                    : mode === 'image_analysis'
+                      ? 'Question (facultative)'
+                      : mode === 'prompt_from_scene'
+                        ? 'Intention (facultative)'
+                        : 'Prompt'}
+                  {!textMode && claude?.available && (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-ai hover:text-text disabled:opacity-40"
+                      disabled={!canEdit || busy}
+                      onClick={draftWithClaude}
+                      title="Claude rédige le prompt à partir de la caméra active et de votre intention"
+                    >
+                      <Wand2 size={12} /> Rédiger avec Claude
+                    </button>
+                  )}
+                </span>
+                <textarea
+                  value={prompt}
+                  maxLength={4000}
+                  rows={4}
+                  disabled={!canEdit}
+                  placeholder={
+                    mode === 'scene_from_text'
+                      ? 'Ex. : ajoute une sphère rouge à gauche du cube et une lumière chaude au-dessus'
+                      : 'Décrivez le plan : sujet, ambiance, lumière, style…'
+                  }
+                  onChange={(event) => setPrompt(event.target.value)}
+                  className="resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm placeholder:text-faint focus:border-ai focus:outline-none"
+                />
+              </label>
+              {!textMode && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted hover:text-text">
+                    Prompt négatif
+                  </summary>
+                  <textarea
+                    value={negative}
+                    maxLength={2000}
+                    rows={2}
+                    disabled={!canEdit}
+                    aria-label="Prompt négatif"
+                    onChange={(event) => setNegative(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm focus:border-ai focus:outline-none"
+                  />
+                </details>
+              )}
+
+              <fieldset className="flex flex-col gap-2 text-xs">
+                <legend className="sr-only">Cadrage</legend>
+                {mode !== 'scene_from_text' && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={(useCamera || mode === 'image_analysis') && hasCamera}
+                      disabled={!hasCamera || mode === 'image_analysis'}
+                      onChange={(event) => setUseCamera(event.target.checked)}
+                    />
+                    <Clapperboard size={13} className="text-muted" />
+                    {hasCamera
+                      ? `Cadrer avec la caméra active (frame ${frame})`
+                      : 'Aucune caméra active : ajoutez-en une pour cadrer'}
+                  </label>
+                )}
+                {videoMode && useCamera && hasCamera && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={endFrame !== null}
+                      onChange={(event) => setEndFrame(event.target.checked ? duration - 1 : null)}
+                    />
+                    Image de fin à la frame
+                    <input
+                      type="number"
+                      aria-label="Frame de l’image de fin"
+                      min={0}
+                      max={duration - 1}
+                      disabled={endFrame === null}
+                      value={endFrame ?? duration - 1}
+                      onChange={(event) =>
+                        setEndFrame(Math.min(duration - 1, Math.max(0, Number(event.target.value))))
+                      }
+                      className="h-6 w-16 rounded-md border border-border bg-surface px-1 font-mono disabled:opacity-40"
+                    />
+                  </label>
+                )}
+                {!textMode && model.aspectRatios.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="mr-1 text-muted">Format</span>
+                    {model.aspectRatios.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={chip((aspect ?? model.aspectRatios[0]) === value)}
+                        onClick={() => setAspect(value)}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {videoMode && model.durationsSeconds.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="mr-1 text-muted">Durée</span>
+                    {model.durationsSeconds.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={chip((seconds ?? model.durationsSeconds[0]) === value)}
+                        onClick={() => setSeconds(value)}
+                      >
+                        {value} s
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
+
+              {references.length > 0 && (
+                <div className="flex flex-wrap gap-1.5" aria-label="Références">
+                  {references.map((id) => (
+                    <span key={id} className="relative">
+                      <img
+                        src={content(id)}
+                        alt="Référence"
+                        className="h-12 w-12 rounded-md border border-border object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Retirer la référence"
+                        className="absolute -right-1 -top-1 rounded-full bg-elevated p-0.5 text-muted shadow-pop hover:text-text"
+                        onClick={() => setReferences((list) => list.filter((r) => r !== id))}
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div
+                className="rounded-lg border border-border bg-surface/60 p-2 text-xs"
+                aria-live="polite"
+              >
+                {estimateError ? (
+                  <p className="flex items-start gap-1.5 text-warn">
+                    <CircleAlert size={13} className="mt-px shrink-0" /> {estimateError}
+                  </p>
+                ) : estimate ? (
+                  <>
+                    <p
+                      className={`flex items-center gap-1.5 ${estimate.paid ? 'text-warn' : 'text-muted'}`}
+                    >
+                      {estimate.paid ? <CircleAlert size={13} /> : <Info size={13} />}
+                      <span data-testid="ai-cost">{costLabel(estimate)}</span>
+                    </p>
+                    {!estimate.available && <p className="mt-1 text-error">{estimate.reason}</p>}
+                    {estimate.mismatches.map((m) => (
+                      <p
+                        key={m.field}
+                        className={`mt-1 ${m.severity === 'blocking' ? 'text-error' : 'text-faint'}`}
+                      >
+                        {m.message}
+                      </p>
+                    ))}
+                  </>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-faint">
+                    <Loader2 size={13} className="animate-spin" /> Estimation…
+                  </p>
+                )}
+              </div>
+
+              {canEdit && (
+                <button
+                  type="button"
+                  disabled={!canLaunch}
+                  onClick={launch}
+                  className="flex h-9 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent to-ai text-sm font-medium text-white shadow-card transition-opacity hover:opacity-90 disabled:opacity-35"
+                >
+                  {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                  {mode === 'prompt_from_scene'
+                    ? 'Rédiger le prompt'
+                    : mode === 'scene_from_text'
+                      ? 'Proposer les modifications'
+                      : mode === 'image_analysis'
+                        ? 'Analyser'
+                        : 'Générer'}
+                </button>
+              )}
+            </>
+          )}
+
+          {confirming && body && (
+            <div
+              role="alertdialog"
+              aria-label="Confirmer la dépense"
+              className="animate-pop-in rounded-lg border border-warn/60 bg-warn/10 p-3 text-xs"
+            >
+              <p className="font-medium text-text">
+                Cette génération est payante : {confirming.amount.toLocaleString('fr-FR')}{' '}
+                {confirming.unit}.
+              </p>
+              <p className="mt-1 text-muted">{confirming.basis}</p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-md bg-warn px-3 py-1 font-medium text-black"
+                  onClick={() => {
+                    const amount = confirming.amount;
+                    setConfirming(null);
+                    void submit(body, amount);
+                  }}
+                >
+                  Confirmer {confirming.amount.toLocaleString('fr-FR')} {confirming.unit}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-border px-3 py-1"
+                  onClick={() => setConfirming(null)}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </details>
     </section>
   );
+}
+
+/** Échec ou annulation qui n'a rien coûté : rien à garder dans l'historique. */
+const sansSuite = (job: GenerationJob) =>
+  (job.status === 'failed' || job.status === 'cancelled') && !job.actualCost;
+
+const RAISONS: Record<string, string> = {
+  content_policy: 'Refusé par le moteur : contenu jugé sensible.',
+  authentication: 'Higgsfield n’est plus connecté dans Chrome.',
+  provider_unavailable: 'Moteur indisponible : Chrome ou le worker du Mac sont fermés.',
+  timeout: 'Le moteur n’a pas répondu à temps.',
+  invalid_request: 'Demande incomplète pour ce moteur.',
+  cancelled: 'Génération annulée.',
+};
+
+/** Échec dit en clair, avec ce qu'il a coûté. */
+export function messageEchec(job: GenerationJob): string {
+  const code = (job.errorDetails ?? '').split(':')[0] ?? '';
+  const raison = RAISONS[code] ?? 'Le moteur a refusé la demande.';
+  return job.actualCost ? raison : `${raison} Aucun crédit dépensé.`;
 }
 
 function JobCard({
@@ -692,6 +764,7 @@ function JobCard({
   onReference,
   onApply,
   onCancel,
+  onEffacer,
 }: {
   job: GenerationJob;
   canEdit: boolean;
@@ -700,6 +773,7 @@ function JobCard({
   onReference: (assetId: string) => void;
   onApply: (result: SceneResult) => void;
   onCancel: () => void;
+  onEffacer: () => void;
 }) {
   const running = !DONE.has(job.status);
   const assets = ((job.outputs['assets'] as ResultAsset[] | undefined) ?? []).filter(
@@ -725,6 +799,17 @@ function JobCard({
         <span className="truncate text-faint">
           {job.provider} · {job.modelId}
         </span>
+        {(job.status === 'failed' || job.status === 'cancelled') && canEdit && (
+          <button
+            type="button"
+            aria-label="Effacer de l’historique"
+            title="Effacer de l’historique"
+            className="ml-auto text-faint hover:text-error"
+            onClick={onEffacer}
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
         {running && canEdit && (
           <button
             type="button"
@@ -749,7 +834,15 @@ function JobCard({
         </div>
       )}
       {job.status === 'failed' && (
-        <p className="mt-1 text-error">{job.errorDetails ?? job.message}</p>
+        <div className="mt-1">
+          <p className="text-error">{messageEchec(job)}</p>
+          <details className="text-faint">
+            <summary className="cursor-pointer select-none">Détail</summary>
+            <p className="mt-1 break-words font-mono text-[10px]">
+              {[job.message, job.errorDetails].filter(Boolean).join(' — ')}
+            </p>
+          </details>
+        </div>
       )}
       {assets.length > 0 && (
         <div className="mt-2 grid grid-cols-2 gap-1.5">
