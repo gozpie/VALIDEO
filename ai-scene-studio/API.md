@@ -197,7 +197,7 @@ arrière ; relancer crée un nouveau job). Un job actif sans signe de vie depuis
 
 Corps : `{ provider, model, mode, prompt?, negativePrompt?, revisionId?, sceneFrames? (≤ 2 frames de la caméra
 active, rendues par Blender avec profondeur et normales), referenceAssetIds? (≤ 8 images du workspace),
-aspectRatio?, durationSeconds?, seed?, options?, confirmedCost? }`. Modes : `text_to_image`, `image_to_image`,
+motionVideoAssetId? (vidéo grise du plateau, vidéo du workspace : contrôle `camera_motion`), aspectRatio?, durationSeconds?, seed?, options?, confirmedCost? }`. Modes : `text_to_image`, `image_to_image`,
 `text_to_video`, `image_to_video` (images et vidéos) ; `prompt_from_scene`, `scene_from_text`, `image_analysis`
 (Claude, sorties JSON). **Fournisseur payant** : `confirmedCost` doit reprendre exactement le montant de
 l'estimation, sinon `409` sans aucune dépense. Contrainte « bloquante » → `422` ; fournisseur sans worker

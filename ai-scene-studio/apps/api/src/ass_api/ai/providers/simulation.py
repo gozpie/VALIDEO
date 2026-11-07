@@ -51,7 +51,8 @@ class SimulationProvider(ProviderAdapter):
                 model="video",
                 label="Simulation vidéo",
                 modes=("text_to_video", "image_to_video"),
-                controls=controls,
+                # Accepte la vidéo grise du plateau (sans la regarder) : la chaîne se teste à vide.
+                controls=(*controls, "camera_motion"),
                 max_reference_images=4,
                 supports_seed=True,
                 max_width=3840,

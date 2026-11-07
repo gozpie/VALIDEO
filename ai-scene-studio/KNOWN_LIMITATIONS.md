@@ -41,6 +41,12 @@
   de sélection de références dans la bibliothèque d'assets (on reprend en référence une image générée) ; suivi par
   interrogation ; l'assistant de scène ignore les opérations impossibles en les signalant. Le premier test réel
   Higgsfield (payant) attend le GO de l'utilisateur.
+- Vidéo grise (vidéo de mouvement) : Genjutsu Lite, Seedance 2.5 et Kling 4.0 via la passerelle
+  (`workers/ai-worker/higgsfield/motion.mjs`). L'appel Genjutsu reprend celui du site (vérifié par un essai manuel) ;
+  ceux de Seedance (références vidéo) et de Kling 4.0 sont tirés de l'historique et du code du site, **non encore
+  vérifiés par une génération**. Le devis du site (gratuit) est demandé avant chaque lancement pour Genjutsu et Kling
+  ; Seedance n'a pas de devis, son tarif par seconde est appliqué. L'enregistrement exige la vue caméra affichée ;
+  la vidéo grise n'est pas refaite d'elle-même si la scène change.
 - Ergonomie (phase 5) : palette, menus contextuels, notifications et panneaux redimensionnables couvrent l'éditeur ;
   raccourcis toujours non configurables ; pas de glisser-déposer dans la hiérarchie ; inspecteur et timeline gardent
   leur présentation de la phase 3 (refonte prévue avec le montage, phase 7).

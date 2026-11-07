@@ -58,6 +58,7 @@ OPERATION: Final = {
                 "set_color",
                 "set_active_camera",
                 "look_at",
+                "camera_move",
             ],
         },
         "target": {
@@ -86,6 +87,27 @@ OPERATION: Final = {
             "description": "Couleur sRGB, composantes de 0 à 1",
         },
         "frame": {"type": "integer", "minimum": 0},
+        "endFrame": {"type": "integer", "minimum": 0},
+        "move": {
+            "type": "string",
+            "enum": [
+                "travelling_avant",
+                "travelling_arriere",
+                "travelling_gauche",
+                "travelling_droite",
+                "panoramique_gauche",
+                "panoramique_droite",
+                "grue_montee",
+                "grue_descente",
+                "orbite_gauche",
+                "orbite_droite",
+                "arc_avant",
+            ],
+        },
+        "amount": {
+            "type": "number",
+            "description": "camera_move : mètres (travelling, grue, arc), degrés (pano, orbite)",
+        },
         "focalLengthMm": {"type": "number"},
         "lookAt": {"type": "string"},
     },
@@ -197,7 +219,10 @@ Tu pilotes un éditeur 3D.
 Propose la liste d'opérations qui réalise la consigne, sans rien inventer d'autre. Désigne les
 entités par leur nom exact ; positions en mètres, rotations en degrés (Euler XYZ). set_key pose une
 clé de la transformation courante de la cible à la frame indiquée, après application des valeurs
-données dans la même opération.
+données dans la même opération. Pour un mouvement de caméra, préfère camera_move : target = la
+caméra, move = le mouvement, amount = mètres ou degrés, frame et endFrame = début et fin (tout le
+plan sinon), lookAt = ce qu'elle garde au centre (facultatif). Il part du cadrage actuel de la
+caméra et remplace son mouvement précédent.
 Consigne : {intent}"""
 
 SHOT_SCENE_TASK: Final = """\

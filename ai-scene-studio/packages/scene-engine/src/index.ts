@@ -3,3 +3,4 @@ export * from './math';
 export * from './ops';
 export * from './camera';
 export * from './plateau';
+export * from './mouvements';

@@ -33,6 +33,13 @@ test.describe('plateau gris', () => {
     await moyen.click();
     await expect(moyen).toHaveAttribute('aria-pressed', 'true');
 
+    // 2 bis. Un mouvement de caméra en un clic : la caméra active reçoit ses clés.
+    await expect(page.getByText(/Aucune animation/)).toBeVisible();
+    const mouvement = ajouter.getByRole('group', { name: 'Mouvement de caméra' });
+    await mouvement.getByLabel('Mouvement', { exact: true }).selectOption('travelling_avant');
+    await mouvement.getByRole('button', { name: 'Appliquer à la caméra active' }).click();
+    await expect(page.getByText(/Aucune animation/)).toHaveCount(0);
+
     // 3. L'image depuis cette caméra, avec le moteur simulé. La scène s'enregistre d'elle-même.
     await page.getByRole('tab', { name: 'IA' }).click();
     const section = page.getByRole('region', { name: 'Depuis la caméra' });
@@ -56,6 +63,25 @@ test.describe('plateau gris', () => {
     await expect(page.getByText(/Génération terminée : Image → vidéo/)).toBeVisible({
       timeout: 60_000,
     });
+
+    // 5. La vidéo grise : le plateau rejoué dans la vue caméra, puis repris par le modèle.
+    await section.getByRole('button', { name: 'Enregistrer la vidéo grise' }).click();
+    const grise = section.getByRole('button', { name: 'Animer avec la vidéo grise' });
+    await expect(grise).toBeVisible({ timeout: 60_000 });
+    await expect(
+      section.getByRole('button', { name: /Réenregistrer la vidéo grise/ }),
+    ).toBeVisible();
+    await section.getByLabel('Modèle — Animer avec la vidéo grise').selectOption({
+      label: 'Simulation vidéo',
+    });
+    await expect(grise).toBeEnabled({ timeout: 20_000 });
+    await grise.click();
+    const historique = page.getByRole('list', { name: 'Générations' });
+    await expect(
+      historique
+        .getByRole('listitem', { name: 'Image → vidéo — Terminé' })
+        .filter({ hasText: 'Recreate @video1' }),
+    ).toBeVisible({ timeout: 60_000 });
 
     expect(errors).toEqual([]);
   });

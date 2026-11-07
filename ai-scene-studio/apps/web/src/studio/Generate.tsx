@@ -14,11 +14,15 @@ import { toast } from '@/lib/toast';
 
 export type GenerationTarget = { kind: 'project'; id: string } | { kind: 'shot'; id: string };
 
-/** Modèles disponibles pour un mode (tous fournisseurs), avec leur disponibilité. */
-export function modelsFor(providers: AiProvider[], mode: GenerationMode) {
+/**
+ * Modèles disponibles pour un mode (tous fournisseurs), avec leur disponibilité ; `controle`
+ * ne garde que ceux qui savent tenir cette contrainte (ex. `camera_motion`).
+ */
+export function modelsFor(providers: AiProvider[], mode: GenerationMode, controle?: string) {
   return providers.flatMap((provider) =>
     provider.models
       .filter((model) => model.modes.includes(mode))
+      .filter((model) => !controle || model.controls.includes(controle))
       .map((model) => ({
         key: `${provider.id}:${model.model}`,
         provider: provider.id,
@@ -84,6 +88,7 @@ export function GenerateControl({
   defaultModel,
   compact = false,
   avant,
+  controle,
 }: {
   target: GenerationTarget;
   providers: AiProvider[];
@@ -96,8 +101,10 @@ export function GenerateControl({
   compact?: boolean;
   /** À faire juste avant d'envoyer (enregistrer la scène) ; `false` annule l'envoi. */
   avant?: () => Promise<boolean>;
+  /** Seuls les modèles qui tiennent cette contrainte sont proposés (ex. `camera_motion`). */
+  controle?: string;
 }) {
-  const models = useMemo(() => modelsFor(providers, mode), [providers, mode]);
+  const models = useMemo(() => modelsFor(providers, mode, controle), [providers, mode, controle]);
   const [choice, setChoice] = useState<string | null>(null);
   const selected =
     models.find((m) => m.key === choice) ??
@@ -132,6 +139,9 @@ export function GenerateControl({
   useEffect(() => {
     if (!full) return;
     let alive = true;
+    // Le devis précédent ne vaut plus : pas d'envoi ni de confirmation tant que le nouveau manque.
+    setQuote(null);
+    setConfirming(false);
     const timer = setTimeout(() => {
       estimate(target, full)
         .then((value) => {

@@ -109,6 +109,8 @@ class GenerationIn(ApiModel):
     script_id: uuid.UUID | None = None
     # Plan : ajoute en tête des références les images clés des éléments de bible liés au plan.
     bible_references: bool = False
+    # Vidéo de mouvement (vidéo grise du plateau) : le modèle reprend sa caméra et ses places.
+    motion_video_asset_id: uuid.UUID | None = None
 
 
 class MismatchOut(ApiModel):
@@ -234,6 +236,8 @@ def _build(
             controls.append("last_frame")
     if body.reference_asset_ids:
         controls.append("reference_images")
+    if body.motion_video_asset_id:
+        controls.append("camera_motion")
     aspect = body.aspect_ratio
     width, height = render["width"], render["height"]
     request = GenerationRequest(
@@ -269,6 +273,14 @@ def _check_references(db: Session, access: Access, body: GenerationIn) -> None:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Référence inconnue ou qui n'est pas une image"
         )
+    if body.motion_video_asset_id is not None:
+        video = db.get(Asset, body.motion_video_asset_id)
+        if (
+            video is None
+            or video.workspace_id != access.workspace.id
+            or video.mime_type not in ("video/mp4", "video/webm", "video/quicktime")
+        ):
+            raise _unprocessable("Vidéo de mouvement inconnue ou qui n'est pas une vidéo")
 
 
 def _unprocessable(message: str) -> HTTPException:
@@ -448,6 +460,9 @@ def _create(
             "controls": request.controls,
             "referenceCount": request.reference_count,
             "referenceAssetIds": [str(i) for i in body.reference_asset_ids],
+            "motionVideoAssetId": (
+                str(body.motion_video_asset_id) if body.motion_video_asset_id else None
+            ),
             "sceneFrames": sorted(set(body.scene_frames)),
             "seed": body.seed,
             "width": request.width,

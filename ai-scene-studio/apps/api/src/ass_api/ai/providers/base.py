@@ -63,6 +63,8 @@ class RunContext:
     brief: str = ""
     # Copie un asset du workspace vers un fichier local (fournisseurs qui montent des médias).
     fetch_asset: Callable[[str, Path], None] | None = None
+    # Vidéo de mouvement (vidéo grise du plateau) : caméra, places et rythme à reprendre.
+    motion_video: Path | None = None
 
 
 class ProviderError(Exception):

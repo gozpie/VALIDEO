@@ -1,11 +1,12 @@
 'use client';
 
 import type { AiProvider, GenerationJob } from '@ass/api-client';
-import { Camera as CameraIcon, Film } from 'lucide-react';
+import { Camera as CameraIcon, Film, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { api, call } from '@/lib/api';
+import { api, call, uploadProjectMedia } from '@/lib/api';
 import { GenerateControl } from '@/studio/Generate';
 import { useEditor, useEditorContext } from './context';
+import { dimensions, enregistrerVueCamera } from './videoGrise';
 
 const DEPART =
   '@image1 is a grey-box layout of the shot, from the exact camera to use. Keep its framing and ' +
@@ -22,6 +23,7 @@ interface Fiche {
 function useFichesDuPlan(shotId: string | undefined) {
   const [fiches, setFiches] = useState<Fiche[]>([]);
   const [description, setDescription] = useState({ image: '', video: '', negatif: '' });
+  const [projectId, setProjectId] = useState<string | null>(null);
   useEffect(() => {
     if (!shotId) return undefined;
     let vivant = true;
@@ -37,6 +39,7 @@ function useFichesDuPlan(shotId: string | undefined) {
       if (!vivant) return;
       const liees = new Set(plan.bibleEntryIds ?? []);
       setFiches(bible.filter((e) => liees.has(e.id) && e.keyAssetId));
+      setProjectId(plan.projectId);
       setDescription({
         image: plan.imagePrompt || plan.description || '',
         video: plan.videoPrompt || plan.description || '',
@@ -47,7 +50,7 @@ function useFichesDuPlan(shotId: string | undefined) {
       vivant = false;
     };
   }, [shotId]);
-  return { fiches, description };
+  return { fiches, description, projectId };
 }
 
 /**
@@ -66,14 +69,21 @@ export function GenerationCamera({
   onSave: () => Promise<boolean>;
   onCreated: (job: GenerationJob) => void;
 }) {
-  const { shotId, canEdit } = useEditorContext();
+  const { shotId, canEdit, store } = useEditorContext();
   const frame = useEditor((state) => state.frame);
   const camera = useEditor(
     (state) => state.scene.cameras.find((c) => c.id === state.scene.activeCameraId) ?? null,
   );
   const fps = useEditor((state) => state.scene.fps.numerator / state.scene.fps.denominator);
   const duree = useEditor((state) => state.scene.durationFrames);
-  const { fiches, description } = useFichesDuPlan(shotId);
+  const largeur = useEditor((state) => state.scene.renderSettings.width);
+  const hauteur = useEditor((state) => state.scene.renderSettings.height);
+  const { fiches, description, projectId } = useFichesDuPlan(shotId);
+  // Vidéo grise : le plateau rejoué dans la vue caméra, envoyée avec le projet.
+  const [grise, setGrise] = useState<{ assetId: string; heure: string } | null>(null);
+  const [progres, setProgres] = useState<number | null>(null);
+  const [erreurGrise, setErreurGrise] = useState<string | null>(null);
+  const [definition, setDefinition] = useState('');
   const [texteImage, setTexteImage] = useState<string | null>(null);
   const [texteVideo, setTexteVideo] = useState<string | null>(null);
 
@@ -105,6 +115,56 @@ export function GenerationCamera({
   ]
     .filter(Boolean)
     .join(' ');
+
+  const cadre = `@image${fiches.length + 1}`;
+  const promptGrise = [
+    'Recreate @video1 exactly: same camera move, framing and timing.',
+    `Turn the grey-box set into the place shown in ${cadre} and each grey mannequin into the ` +
+      `matching person from ${cadre}, at the same spot and size.`,
+    fiches.map((fiche, rang) => `@image${rang + 1} is ${fiche.name}.`).join(' '),
+    mouvement,
+    'Never show grey-box shapes or mannequins.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const enregistrerGrise = async () => {
+    const toile = document.querySelector<HTMLCanvasElement>('[data-testid="camera-view"] canvas');
+    if (!toile) {
+      setErreurGrise(
+        'Affichez la vue caméra (Disposition des vues) pour enregistrer la vidéo grise.',
+      );
+      return;
+    }
+    if (!projectId) return;
+    const depart = store.getState().frame;
+    setErreurGrise(null);
+    setProgres(0);
+    try {
+      const video = await enregistrerVueCamera({
+        source: toile,
+        frames: duree,
+        fps,
+        ...dimensions(largeur, hauteur),
+        allerA: (f) => store.getState().setFrame(f),
+        onProgres: (f) => setProgres(f + 1),
+      });
+      const extension = video.type.includes('mp4') ? 'mp4' : 'webm';
+      const envoye = await uploadProjectMedia(
+        projectId,
+        new File([video], `video-grise.${extension}`, { type: video.type }),
+      );
+      setGrise({
+        assetId: envoye.asset.id,
+        heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      });
+    } catch (e) {
+      setErreurGrise(e instanceof Error ? e.message : 'Enregistrement impossible');
+    } finally {
+      store.getState().setFrame(depart);
+      setProgres(null);
+    }
+  };
 
   if (!shotId || !canEdit) return null;
   const champ =
@@ -184,6 +244,64 @@ export function GenerationCamera({
             }}
             onCreated={onCreated}
           />
+          <h3 className="mt-1 flex items-center gap-1.5 font-semibold text-text">
+            <Video size={13} /> Animer avec la vidéo grise
+          </h3>
+          <p className="text-muted">
+            Le plateau est rejoué dans la vue caméra : le modèle reprend son mouvement de caméra,
+            ses places et son rythme, avec le rendu de cette image.
+          </p>
+          <button
+            type="button"
+            disabled={progres !== null}
+            onClick={() => void enregistrerGrise()}
+            className="self-start rounded-md border border-border px-2 py-1 hover:border-ai disabled:opacity-60"
+          >
+            {progres !== null
+              ? `Enregistrement ${progres}/${duree}`
+              : grise
+                ? `Réenregistrer la vidéo grise (actuelle : ${grise.heure})`
+                : 'Enregistrer la vidéo grise'}
+          </button>
+          {erreurGrise && <p className="text-red-400">{erreurGrise}</p>}
+          {grise && (
+            <>
+              <label className="flex items-center gap-2 text-muted">
+                Définition
+                <select
+                  aria-label="Définition de la vidéo"
+                  value={definition}
+                  onChange={(event) => setDefinition(event.target.value)}
+                  className="rounded bg-surface px-1"
+                >
+                  <option value="">la moins chère du modèle</option>
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                </select>
+              </label>
+              <GenerateControl
+                compact
+                target={{ kind: 'shot', id: shotId }}
+                providers={providers}
+                mode="image_to_video"
+                controle="camera_motion"
+                defaultModel="higgsfield:genjutsu_lite"
+                label="Animer avec la vidéo grise"
+                body={{
+                  prompt: promptGrise,
+                  negativePrompt: description.negatif,
+                  bibleReferences: true,
+                  referenceAssetIds: [sortie.assetId],
+                  motionVideoAssetId: grise.assetId,
+                  durationSeconds: Math.max(1, Math.round(duree / fps)),
+                  aspectRatio: '16:9',
+                  ...(definition ? { options: { resolution: definition } } : {}),
+                  ...(sortie.versionId ? { parentVersionId: sortie.versionId } : {}),
+                }}
+                onCreated={onCreated}
+              />
+            </>
+          )}
         </>
       )}
     </section>

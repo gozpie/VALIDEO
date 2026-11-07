@@ -32,9 +32,24 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Bouton « Vidéo grise » de la vue caméra : le plan est rejoué dans le navigateur (WebGL, temps réel) et téléchargé en
   MP4 (WebM à défaut), sans serveur de rendu. 5 s de plan s'enregistrent en 5 s, contre environ 20 min en Cycles sur
   le serveur. Sert de vidéo de référence de mouvement pour le générateur.
+- « Animer avec la vidéo grise » (onglet IA, depuis la caméra) : la vidéo grise est enregistrée, gardée avec le projet,
+  puis envoyée avec l'image validée à Genjutsu Lite, Seedance 2.5 ou Kling 4.0 (Higgsfield), qui reprennent le
+  mouvement de caméra, les places et le rythme du plateau. Coût confirmé avant chaque envoi ; le devis du site est
+  revérifié avant le lancement. Champ `motionVideoAssetId` des générations, contrôle `camera_motion`.
+- Mouvements de caméra du plateau (`scene-engine/mouvements.ts`) : travelling avant, arrière, latéral, panoramique,
+  grue, orbite, arc avant. En un clic (menu Plateau gris, caméra active, centré sur l'objet sélectionné) ou d'une
+  phrase à Claude (opération `camera_move`). Le mouvement part du cadrage actuel et devient des clés de position et
+  de rotation : vue caméra, vidéo grise et rendu le jouent à l'identique.
+
+### Modifié
+
+- Seedance 2.5 : option `resolution` (480p, 720p, 1080p) ; tarif 1080p relevé à 16 crédits par seconde (table du site
+  au 07/11/2026, 12 auparavant).
 
 ### Corrigé
 
+- Génération : en changeant de modèle, le bouton pouvait partir avec le devis du modèle précédent ; il attend désormais
+  le nouveau devis.
 - Claude pouvait être coupé à 10 minutes malgré le réglage de 30 minutes.
 - Vidéos avec images B (la plupart des H.264) : le moniteur n'affichait qu'une image sur deux environ, désormais toutes
   (décodage en continu en lecture, sans attente : 24 i/s mesurées en 1080p).

@@ -131,9 +131,14 @@ def _download(db: Session, storage: ObjectStorage, asset_id: str, folder: Path, 
     asset = db.get(Asset, uuid.UUID(asset_id))
     if asset is None:
         raise ProviderError("invalid_request", "Référence introuvable")
-    suffix = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}.get(
-        asset.mime_type, ".bin"
-    )
+    suffix = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/webp": ".webp",
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+    }.get(asset.mime_type, ".bin")
     target = folder / f"{name}{suffix}"
     body = storage.open_stream(asset.storage_key)
     with target.open("wb") as handle:
@@ -311,6 +316,10 @@ def _execute(
             for index, asset_id in enumerate(job.request.get("referenceAssetIds", [])):
                 references.append(_download(db, storage, asset_id, work, f"reference_{index + 1}"))
                 used.append({"role": "reference", "assetId": asset_id})
+            mouvement_id = job.request.get("motionVideoAssetId")
+            mouvement = (
+                _download(db, storage, mouvement_id, work, "motion_video") if mouvement_id else None
+            )
             taille: tuple[int, int] | None = None
             if job.mode == "scene_from_shot":
                 image, asset_id = _shot_image(db, storage, job, work, settings.ffmpeg_path)
@@ -338,6 +347,7 @@ def _execute(
                 "prompt": request.prompt,
                 "negativePrompt": request.negative_prompt,
                 "references": used[: len(references)],
+                "motionVideoAssetId": mouvement_id,
                 "controls": request.controls,
                 "warnings": job.request.get("warnings", []),
                 "sceneSummary": summary,
@@ -365,6 +375,7 @@ def _execute(
             fetch_asset=lambda asset_id, target: _fetch_asset(
                 db_factory, storage, asset_id, target
             ),
+            motion_video=mouvement,
         )
         external_id, outputs = provider.run(job.model_id, request, context)
         with db_factory() as db:

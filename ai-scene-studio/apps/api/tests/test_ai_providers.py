@@ -45,6 +45,60 @@ def test_higgsfield_costs_and_availability(tmp_path: Path) -> None:
     assert not available and "introuvables" in reason
 
 
+def test_motion_video_models_are_priced_per_second() -> None:
+    provider = HiggsfieldBridgeProvider("/nope")
+
+    def cost(model: str, **options: str | bool) -> float:
+        request = GenerationRequest("image_to_video", "x", duration_seconds=5, options=options)
+        return provider.estimate_cost(model, request).amount
+
+    assert cost("genjutsu_lite") == 10
+    assert cost("kling4_0") == 13.75
+    assert cost("kling4_0", resolution="1080p") == 20
+    assert cost("seedance_2_5", resolution="720p") == 35
+    # L'ancienne option « draft » reste comprise : 1080p au tarif relevé.
+    assert cost("seedance_2_5", draft=False) == 80
+    for model in ("genjutsu_lite", "kling4_0", "seedance_2_5"):
+        assert "camera_motion" in provider.capabilities_for(model).controls
+
+
+def test_motion_video_job_goes_to_the_motion_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    provider = HiggsfieldBridgeProvider(str(tmp_path))
+    monkeypatch.setattr(provider, "availability", lambda: (True, ""))
+    image = tmp_path / "image.png"
+    image.write_bytes(b"png")
+    request = GenerationRequest("image_to_video", "Recreate @video1", duration_seconds=5)
+    with pytest.raises(ProviderError) as missing:
+        provider.submit_generation("genjutsu_lite", request, _context(tmp_path, [image]))
+    assert missing.value.code == "invalid_request"
+
+    result = tmp_path / "result.mp4"
+    result.write_bytes(b"mp4")
+    seen: dict[str, object] = {}
+
+    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        seen["script"] = command[1]
+        seen["job"] = json.loads(Path(command[2]).read_text(encoding="utf-8"))
+        line = json.dumps({"ok": True, "id": "j1", "cost": 0, "url": result.as_uri()})
+        return subprocess.CompletedProcess(command, 0, stdout=line + "\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    context = _context(tmp_path, [image])
+    context.motion_video = tmp_path / "gris.mp4"
+    provider.submit_generation("genjutsu_lite", request, context)
+    outputs = provider.retrieve_outputs("j1", context)
+    assert str(seen["script"]).endswith("workers/ai-worker/higgsfield/motion.mjs")
+    job = seen["job"]
+    assert isinstance(job, dict)
+    assert job["model"] == "genjutsu_lite" and job["resolution"] == "720p"
+    assert job["video"] == {"path": str(context.motion_video)}
+    assert job["images"] == [{"path": str(image)}]
+    assert job["free"] is True and job["max_cost"] == 10
+    assert outputs[0].kind == "video" and outputs[0].metadata["actualCost"] == 0
+
+
 def _fake_claude(tmp_path: Path, payload: dict[str, object]) -> str:
     script = tmp_path / "fake-claude"
     script.write_text(

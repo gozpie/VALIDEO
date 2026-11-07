@@ -7,6 +7,8 @@ import {
   createPrimitiveNode,
   eulerDegreesToQuaternion,
   findEntity,
+  MOUVEMENTS,
+  mouvementCamera,
   removeEntities,
   renameEntity,
   setActiveCamera,
@@ -15,6 +17,7 @@ import {
   updateCamera,
   updateLight,
   type Entity,
+  type TypeMouvement,
 } from '@ass/scene-engine';
 import { evaluateFrame } from '@ass/scene-engine';
 
@@ -37,6 +40,9 @@ export interface AiOperation {
   frame?: number;
   focalLengthMm?: number;
   lookAt?: string;
+  move?: string;
+  amount?: number;
+  endFrame?: number;
 }
 
 export interface AiApplyResult {
@@ -172,6 +178,18 @@ export function applyAiOperations(
           } else if (op.op === 'set_active_camera') {
             if (target.kind !== 'camera') return skip('la cible n’est pas une caméra');
             next = setActiveCamera(next, id);
+          } else if (op.op === 'camera_move') {
+            if (target.kind !== 'camera') return skip('seule une caméra fait un mouvement');
+            if (!op.move || !(op.move in MOUVEMENTS)) return skip('mouvement inconnu');
+            const aim = op.lookAt ? byName(next, op.lookAt) : null;
+            if (op.lookAt && !aim) return skip(`cible « ${op.lookAt} » introuvable`);
+            next = mouvementCamera(next, id, {
+              type: op.move as TypeMouvement,
+              ...(Number.isFinite(op.amount) ? { amplitude: op.amount as number } : {}),
+              ...(Number.isInteger(op.frame) ? { debut: op.frame as number } : {}),
+              ...(Number.isInteger(op.endFrame) ? { fin: op.endFrame as number } : {}),
+              cibleId: aim?.value.id ?? null,
+            });
           } else if (op.op === 'look_at') {
             if (target.kind !== 'camera') return skip('seule une caméra peut viser');
             const aim = byName(next, op.lookAt);
@@ -214,6 +232,9 @@ export function describeOperation(op: AiOperation): string {
     set_color: `Couleur de « ${op.target ?? ''} »`,
     set_active_camera: `Caméra active : « ${op.target ?? ''} »`,
     look_at: `« ${op.target ?? ''} » vise « ${op.lookAt ?? ''} »`,
+    camera_move: `${
+      op.move && op.move in MOUVEMENTS ? MOUVEMENTS[op.move as TypeMouvement].label : 'Mouvement'
+    } de « ${op.target ?? ''} »${op.amount !== undefined ? ` (${op.amount} ${op.move && op.move in MOUVEMENTS ? MOUVEMENTS[op.move as TypeMouvement].unite : ''})` : ''}${op.lookAt ? `, centré sur « ${op.lookAt} »` : ''}`,
   };
   return [head[op.op] ?? op.op, values].filter(Boolean).join(' — ');
 }

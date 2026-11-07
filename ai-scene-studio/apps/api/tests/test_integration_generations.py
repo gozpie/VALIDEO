@@ -164,10 +164,11 @@ def test_estimate_and_mismatches(alice: ApiClient, shot: dict[str, str]) -> None
     assert (
         alice.post(f"/shots/{shot['id']}/generations/estimate", json=video).json()["amount"] == 30
     )
+    # 1080p : 16 crédits par seconde (table des coûts du site, 07/11/2026).
     draft_off = {**video, "options": {"draft": False}}
     assert (
         alice.post(f"/shots/{shot['id']}/generations/estimate", json=draft_off).json()["amount"]
-        == 120
+        == 160
     )
 
 
@@ -344,6 +345,26 @@ def test_references_must_be_workspace_images(
         "referenceAssetIds": [foreign],
     }
     assert alice.post(f"/shots/{shot['id']}/generations", json=body).status_code == 422
+
+
+def test_motion_video_must_be_a_workspace_video(
+    alice: ApiClient, shot: dict[str, str], broker: Any, ai_settings: Settings
+) -> None:
+    _beat(broker, ai_settings, "simulation")
+    model = alice.post(
+        f"/workspaces/{shot['workspace']}/assets",
+        files={"file": ("c.glb", cube_glb(), "model/gltf-binary")},
+    ).json()["asset"]["id"]
+    body = {
+        "provider": "simulation",
+        "model": "image",
+        "mode": "image_to_image",
+        "prompt": "x",
+        "motionVideoAssetId": model,
+    }
+    refused = alice.post(f"/shots/{shot['id']}/generations/estimate", json=body)
+    assert refused.status_code == 422
+    assert "Vidéo de mouvement" in refused.json()["detail"]
 
 
 def test_roles_and_isolation(

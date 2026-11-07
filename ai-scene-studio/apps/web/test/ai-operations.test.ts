@@ -70,6 +70,44 @@ describe('opérations de scène proposées par Claude', () => {
     expect(scene.nodes[0]?.transform.scale).toEqual([2, 2, 2]);
   });
 
+  it('fait un mouvement de caméra d’une phrase : orbite autour du cube, centrée sur lui', () => {
+    const { scene, applied, skipped } = applyAiOperations(
+      base(),
+      [
+        { op: 'add_camera', name: 'Cam', position: [0, 1.5, 4] },
+        { op: 'look_at', target: 'Cam', lookAt: 'Cube' },
+        {
+          op: 'camera_move',
+          target: 'Cam',
+          move: 'orbite_droite',
+          amount: 90,
+          lookAt: 'Cube',
+          frame: 0,
+          endFrame: 47,
+        },
+        { op: 'camera_move', target: 'Cube', move: 'travelling_avant' },
+        { op: 'camera_move', target: 'Cam', move: 'saut_perilleux' },
+      ],
+      0,
+    );
+    expect(applied).toBe(3);
+    expect(skipped.map((s) => s.reason)).toEqual([
+      'seule une caméra fait un mouvement',
+      'mouvement inconnu',
+    ]);
+    const camera = scene.cameras.find((c) => c.name === 'Cam');
+    const debut = evaluateFrame(scene, 0).cameras.find((c) => c.id === camera?.id);
+    const fin = evaluateFrame(scene, 47).cameras.find((c) => c.id === camera?.id);
+    expect(debut?.transform.position[0]).toBeCloseTo(0, 5);
+    // Un quart de tour autour du cube : la caméra passe de face à côté, à la même distance.
+    const [x, , z] = fin?.transform.position ?? [0, 0, 0];
+    expect(Math.hypot(x, z)).toBeCloseTo(4, 4);
+    expect(Math.abs(x)).toBeCloseTo(4, 4);
+    expect(
+      describeOperation({ op: 'camera_move', target: 'Cam', move: 'orbite_droite', amount: 90 }),
+    ).toBe('Orbite droite de « Cam » (90 °)');
+  });
+
   it('décrit chaque opération pour l’aperçu', () => {
     expect(describeOperation({ op: 'set_transform', target: 'Cube', position: [1, 2, 3] })).toBe(
       'Transformer « Cube » — position (1.00, 2.00, 3.00)',
