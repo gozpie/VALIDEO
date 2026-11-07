@@ -4,7 +4,8 @@ import { addEntity, setActiveCamera, setNodeColor } from './ops';
 
 /**
  * Plateau gris : doublures et caméras préréglées, comme sur un vrai tournage. Un mannequin n'est pas un
- * personnage : il dit seulement qui est où, à quelle taille. Le générateur d'images fera le reste.
+ * personnage : il dit seulement qui est où, à quelle taille, et vers où il regarde (son nez). Le
+ * générateur d'images fera le reste.
  */
 export type Pose = 'debout' | 'assis';
 
@@ -18,11 +19,13 @@ interface Partie {
 const PARTIES: Record<Pose, Partie[]> = {
   debout: [
     { nom: 'tête', primitive: 'sphere', position: [0, 1.6, 0], scale: [0.22, 0.27, 0.24] },
+    { nom: 'nez', primitive: 'sphere', position: [0, 1.59, 0.12], scale: [0.05, 0.07, 0.07] },
     { nom: 'buste', primitive: 'sphere', position: [0, 1.16, 0], scale: [0.46, 0.72, 0.3] },
     { nom: 'jambes', primitive: 'cylinder', position: [0, 0.43, 0], scale: [0.34, 0.86, 0.24] },
   ],
   assis: [
     { nom: 'tête', primitive: 'sphere', position: [0, 1.24, 0], scale: [0.22, 0.27, 0.24] },
+    { nom: 'nez', primitive: 'sphere', position: [0, 1.23, 0.12], scale: [0.05, 0.07, 0.07] },
     { nom: 'buste', primitive: 'sphere', position: [0, 0.8, 0], scale: [0.46, 0.66, 0.3] },
     { nom: 'cuisses', primitive: 'cube', position: [0, 0.46, 0.2], scale: [0.36, 0.16, 0.5] },
     { nom: 'tibias', primitive: 'cube', position: [0, 0.22, 0.42], scale: [0.3, 0.44, 0.13] },

@@ -146,6 +146,8 @@ export function GenerationCamera({
           sceneFrames: [frame],
           bibleReferences: true,
           aspectRatio: '16:9',
+          // Un guide se vérifie d'abord en petit : le moins cher, 1K en qualité basse.
+          options: { resolution: '1k' },
         }}
         onCreated={onCreated}
       />

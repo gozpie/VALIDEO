@@ -36,6 +36,14 @@ SIZES: Final = {
     "3:4": (1728, 2304),
     "21:9": (3168, 1344),
 }
+SIZES_1K: Final = {
+    "16:9": (1280, 720),
+    "9:16": (720, 1280),
+    "1:1": (1024, 1024),
+    "4:3": (1152, 864),
+    "3:4": (864, 1152),
+    "21:9": (1344, 576),
+}
 VIDEO_SIZES: Final = {
     True: {"16:9": (854, 480), "9:16": (480, 854), "1:1": (480, 480)},
     False: {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)},
@@ -103,6 +111,14 @@ class HiggsfieldBridgeProvider(ProviderAdapter):
 
     def estimate_cost(self, model: str, request: GenerationRequest) -> CostEstimate:
         if model == "gpt_image_2_5":
+            if request.options.get("resolution") == "1k":
+                # Tarif 1K non relevé : le coût réel est enregistré après la génération.
+                return CostEstimate(
+                    3,
+                    "crédits Higgsfield",
+                    "GPT Image 2.5, 1K, qualité basse : au plus 3 crédits",
+                    paid=True,
+                )
             return CostEstimate(
                 3, "crédits Higgsfield", "GPT Image 2.5, 2k, 1 image = 3 crédits", paid=True
             )
@@ -123,14 +139,15 @@ class HiggsfieldBridgeProvider(ProviderAdapter):
         refs = [{"path": str(path), "name": path.name} for path in context.references]
         aspect = request.aspect_ratio or "16:9"
         if model == "gpt_image_2_5":
-            width, height = SIZES.get(aspect, SIZES["16:9"])
+            economique = request.options.get("resolution") == "1k"
+            width, height = (SIZES_1K if economique else SIZES).get(aspect, SIZES["16:9"])
             job = {
                 "prompt": request.prompt,
                 "refs": refs,
                 "model": "sunburst",
                 "aspect_ratio": aspect,
-                "quality": "high",
-                "resolution": "2k",
+                "quality": "low" if economique else "high",
+                "resolution": "1k" if economique else "2k",
                 "width": width,
                 "height": height,
                 "batch_size": 1,

@@ -63,24 +63,31 @@ function PhotoDuPlan() {
   const [opacite, setOpacite] = useState(50);
   const video = useRef<HTMLVideoElement | null>(null);
 
+  // Relue régulièrement : une image qui vient d'être générée se pose d'elle-même sur la 3D.
+  const choixManuel = useRef(false);
   useEffect(() => {
     if (!shotId) return undefined;
     let vivant = true;
-    void Promise.all([
-      call(api.GET('/shots/{shot_id}/versions', { params: { path: { shot_id: shotId } } })),
-      call(api.GET('/shots/{shot_id}/generations', { params: { path: { shot_id: shotId } } })),
-    ])
-      .then(([liste, jobs]: [ShotVersion[], GenerationJob[]]) => {
-        if (!vivant) return;
-        setVersions(liste);
-        const origine = jobs.find((job) => job.mode === 'scene_from_shot')?.request[
-          'parentVersionId'
-        ];
-        setVersionId(typeof origine === 'string' ? origine : (liste[0]?.id ?? null));
-      })
-      .catch(() => undefined);
+    const lire = () =>
+      Promise.all([
+        call(api.GET('/shots/{shot_id}/versions', { params: { path: { shot_id: shotId } } })),
+        call(api.GET('/shots/{shot_id}/generations', { params: { path: { shot_id: shotId } } })),
+      ])
+        .then(([liste, jobs]: [ShotVersion[], GenerationJob[]]) => {
+          if (!vivant) return;
+          setVersions(liste);
+          if (choixManuel.current) return;
+          const plusRecent = jobs.find((job) => job.status === 'completed');
+          const origine =
+            plusRecent?.mode === 'scene_from_shot' ? plusRecent.request['parentVersionId'] : null;
+          setVersionId(typeof origine === 'string' ? origine : (liste[0]?.id ?? null));
+        })
+        .catch(() => undefined);
+    void lire();
+    const minuterie = setInterval(() => void lire(), 8000);
     return () => {
       vivant = false;
+      clearInterval(minuterie);
     };
   }, [shotId]);
 
@@ -128,7 +135,10 @@ function PhotoDuPlan() {
           <select
             aria-label="Version superposée"
             value={version.id}
-            onChange={(event) => setVersionId(event.target.value)}
+            onChange={(event) => {
+              choixManuel.current = true;
+              setVersionId(event.target.value);
+            }}
             className="rounded bg-surface px-1"
           >
             {versions.map((v) => (

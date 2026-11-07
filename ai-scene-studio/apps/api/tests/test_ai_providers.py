@@ -101,6 +101,15 @@ def test_claude_errors_are_normalized(tmp_path: Path) -> None:
     )
 
 
+def test_gpt_image_1k_is_announced_at_its_ceiling() -> None:
+    provider = HiggsfieldBridgeProvider("/nope")
+    cout = provider.estimate_cost(
+        "gpt_image_2_5", GenerationRequest("text_to_image", "x", options={"resolution": "1k"})
+    )
+    assert cout.amount == 3
+    assert "1K" in cout.basis
+
+
 @pytest.mark.integration
 def test_first_frame_of_a_real_video(tmp_path: Path) -> None:
     video = tmp_path / "plan.mp4"

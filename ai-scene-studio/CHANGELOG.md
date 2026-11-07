@@ -26,6 +26,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement
 - Plateau gris dans l'éditeur : mannequin en un clic (un par personnage de la bible), caméras préréglées (large, plan moyen,
   par-dessus l'épaule, gros plan) et bande pour passer de l'une à l'autre. Bouton « Générer l'image depuis cette caméra »
   (vue de la caméra + fiches du plan), puis « Animer cette image » : coût confirmé avant chaque génération payante.
+- Image depuis la caméra en GPT Image 2.5 1K, qualité basse (au plus 3 crédits annoncés, 0,25 constaté). Le mannequin a un
+  nez qui montre où regarde le personnage. La vue caméra relit les versions du plan toutes les 8 s : la dernière image
+  générée se superpose seule à la 3D.
 
 ### Corrigé
 
