@@ -43,8 +43,8 @@
   Higgsfield (payant) attend le GO de l'utilisateur.
 - Vidéo grise (vidéo de mouvement) : Genjutsu Lite, Seedance 2.5 et Kling 4.0 via la passerelle
   (`workers/ai-worker/higgsfield/motion.mjs`). L'appel Genjutsu reprend celui du site (vérifié par un essai manuel) ;
-  ceux de Seedance (références vidéo) et de Kling 4.0 sont tirés de l'historique et du code du site, **non encore
-  vérifiés par une génération**. Le devis du site (gratuit) est demandé avant chaque lancement pour Genjutsu et Kling
+  Kling 4.0 est vérifié par une génération lancée depuis Chagomi (07/11, 13,75 crédits) ; l'appel Seedance (références
+  vidéo) est tiré de l'historique et du code du site, **non encore vérifié par une génération**. Le devis du site (gratuit) est demandé avant chaque lancement pour Genjutsu et Kling
   ; Seedance n'a pas de devis, son tarif par seconde est appliqué. L'enregistrement exige la vue caméra affichée ;
   la vidéo grise n'est pas refaite d'elle-même si la scène change.
 - Ergonomie (phase 5) : palette, menus contextuels, notifications et panneaux redimensionnables couvrent l'éditeur ;

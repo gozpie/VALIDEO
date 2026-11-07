@@ -212,7 +212,13 @@ const params =
           model: 'default',
           use_unlim: false,
         }
-      : { ...communs, mode: 'reference-to-video', aspect_ratio: job.aspect };
+      : {
+          ...communs,
+          width: job.width,
+          height: job.height,
+          mode: 'reference-to-video',
+          aspect_ratio: job.aspect,
+        };
 const corps = {
   params,
   use_unlim: false,
