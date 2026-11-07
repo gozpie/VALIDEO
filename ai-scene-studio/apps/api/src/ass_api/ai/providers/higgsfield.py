@@ -51,7 +51,7 @@ SIZES_1K: Final = {
 IMAGE_SCRIPT: Final = "generate_higgsfield_image_api.mjs"
 VIDEO_SCRIPT: Final = "generate_higgsfield_seedance_api.mjs"
 MOTION_SCRIPT: Final = (
-    Path(__file__).resolve().parents[5] / "workers" / "ai-worker" / "higgsfield" / "motion.mjs"
+    Path(__file__).resolve().parents[6] / "workers" / "ai-worker" / "higgsfield" / "motion.mjs"
 )
 VIDEO_MODELS: Final = frozenset({"seedance_2_5", "genjutsu_lite", "kling4_0"})
 # Crédits par seconde selon la définition (table des coûts du site, 07/11/2026).

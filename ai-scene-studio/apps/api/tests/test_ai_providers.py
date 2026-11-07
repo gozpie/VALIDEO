@@ -90,6 +90,7 @@ def test_motion_video_job_goes_to_the_motion_script(
     provider.submit_generation("genjutsu_lite", request, context)
     outputs = provider.retrieve_outputs("j1", context)
     assert str(seen["script"]).endswith("workers/ai-worker/higgsfield/motion.mjs")
+    assert Path(str(seen["script"])).is_file()
     job = seen["job"]
     assert isinstance(job, dict)
     assert job["model"] == "genjutsu_lite" and job["resolution"] == "720p"
